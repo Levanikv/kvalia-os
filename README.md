@@ -23,7 +23,8 @@ supabase/
 
 ```bash
 corepack enable && pnpm install
-cp .env.example .env            # puis remplir les clés
+cp .env.example .env
+ln -s ../../.env apps/web/.env.local   # Next.js lit le .env de son propre dossier            # puis remplir les clés
 pnpm dev                        # web sur :3000, agent sur :8787
 ```
 
