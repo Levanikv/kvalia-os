@@ -72,8 +72,9 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     }
 
     case "liste_actuelle": {
-      const { data: liste } = await ctx.db.from("listes").select("id").eq("user_id", ctx.userId).eq("etat", "active")
+      const { data: liste, error: errListe } = await ctx.db.from("listes").select("id").eq("user_id", ctx.userId).eq("etat", "active")
         .order("creee_le", { ascending: false }).limit(1).maybeSingle();
+      if (errListe) throw errListe;
       if (!liste) return { liste_id: null, rayons: [] } as ToolOutput<T>;
       const { data: lignes, error } = await ctx.db.from("lignes").select("*, produits(nom, rayon)").eq("liste_id", liste.id);
       if (error) throw error;
