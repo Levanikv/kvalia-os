@@ -1,0 +1,24 @@
+{
+  "name": "kvalia-os",
+  "private": true,
+  "version": "0.0.1",
+  "description": "KVALIA OS — personal life OS: mobile-first PWA + MCP agent (Next.js, Supabase, Claude Agent SDK)",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:types": "supabase gen types typescript --project-id gspidvxtnmtgifnlgcsu --schema public > packages/core/src/database.types.ts",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.28.0"
+}

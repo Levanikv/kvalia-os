@@ -1,0 +1,52 @@
+/*
+  KVALIA OS — tokens v0 (placeholder en attendant l'export Figma « KVALIA OS DS »).
+  Règle : un shell commun, une identité par module. `--module-accent` est résolu par l'attribut data-module du <main>.
+*/
+:root {
+  /* primitifs */
+  --neutral-0: #ffffff;
+  --neutral-50: #f6f6f7;
+  --neutral-100: #ececee;
+  --neutral-200: #d9d9dd;
+  --neutral-400: #9a9aa3;
+  --neutral-600: #5d5d66;
+  --neutral-800: #26262c;
+  --neutral-950: #0f0f12;
+
+  --accent-home: #4f6bff;
+  --accent-quotidien: #1fa971;
+  --accent-sport: #e5484d;
+  --accent-nutrition: #f0872b;
+  --accent-finances: #d9a400;
+  --accent-docs: #8b5a2b;
+  --accent-alexa: #7c4dff;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 999px;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* sémantiques (light) */
+  --surface: var(--neutral-0);
+  --surface-2: var(--neutral-50);
+  --text: var(--neutral-950);
+  --text-2: var(--neutral-600);
+  --border: var(--neutral-200);
+  --module-accent: var(--accent-home);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: var(--neutral-950);
+    --surface-2: var(--neutral-800);
+    --text: var(--neutral-50);
+    --text-2: var(--neutral-400);
+    --border: #33333b;
+  }
+}
+
+[data-module="home"]      { --module-accent: var(--accent-home); }
+[data-module="quotidien"] { --module-accent: var(--accent-quotidien); }
+[data-module="sport"]     { --module-accent: var(--accent-sport); color-scheme: dark; }
+[data-module="nutrition"] { --module-accent: var(--accent-nutrition); }
+[data-module="finances"]  { --module-accent: var(--accent-finances); }
+[data-module="docs"]      { --module-accent: var(--accent-docs); }
