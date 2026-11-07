@@ -7,7 +7,8 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "seed:exercices": "node scripts/seed-exercices.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.0",
