@@ -191,7 +191,7 @@ function prescription(params: ParametresSport, bloc: number, semaineDansBloc: nu
   if (deload) return { series: 2, reps: iso ? "12" : "8", repos_s: 60, focus: "deload" };
   const progression = semaineDansBloc === 3 ? 1 : 0; // semaine 3 : une série de plus
   if (params.objectif === "endurance") return { series: 3 + progression, reps: "15", repos_s: 45, focus };
-  if (focus === "force") return iso ? { series: 3 + progression, reps: "8-10", repos_s: 60, focus } : { series: 4 + progression, reps: "5-6", repos_s: 150, focus };
+  if (focus === "force") return iso ? { series: 3 + progression, reps: "8-10", repos_s: 60, focus } : { series: 4 + progression, reps: "5-6", repos_s: 120, focus };
   if (focus === "hypertrophie") return iso ? { series: 3 + progression, reps: "12-15", repos_s: 60, focus } : { series: 3 + progression, reps: "8-12", repos_s: 90, focus };
   return iso ? { series: 3, reps: "10-12", repos_s: 60, focus } : { series: 3 + progression, reps: "6-10", repos_s: 120, focus };
 }

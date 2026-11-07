@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: Props) {
   const jour = /^\d{4}-\d{2}-\d{2}$/.test(sp.jour ?? "") ? sp.jour! : auj;
   const semaine = semaineDe(jour);
 
-  const [seance, params, { data: semaineSeances }, { data: programme }, { data: faitesMois }, { data: nbExos }] = await Promise.all([
+  const [seance, params, { data: semaineSeances }, { data: programme }, { data: faitesMois }, { count: nbExos }] = await Promise.all([
     seancePourJour(supabase, jour),
     parametresSport(supabase, user.id),
     supabase.from("seances").select("id, jour, type, etat").gte("jour", semaine[0]).lte("jour", semaine[6]),
