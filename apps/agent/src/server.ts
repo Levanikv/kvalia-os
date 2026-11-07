@@ -21,6 +21,12 @@ if (existsSync(ENV_RACINE)) process.loadEnvFile(ENV_RACINE);
 
 const PORT = Number(process.env.PORT ?? 8787);
 
+/**
+ * v0 sans OAuth : le serveur n'est joignable que sur /mcp/<MCP_TOKEN>. claude.ai ne permet pas d'ajouter d'en-tête
+ * custom, d'où le secret dans l'URL. Si MCP_TOKEN est vide (dev local), /mcp reste ouvert.
+ */
+const MCP_TOKEN = process.env.MCP_TOKEN?.trim() || null;
+
 /** v0 : un seul utilisateur, identifié par KVALIA_USER_ID. Remplacé par OAuth en fin de phase 0. */
 const USER_ID: string = process.env.KVALIA_USER_ID ?? (() => {
   throw new Error("KVALIA_USER_ID manquant (uuid de ton utilisateur Supabase)");
@@ -77,12 +83,20 @@ app.onError((err, c) => {
 app.get("/health", (c) => c.json({ ok: true, node: process.version, outils: Object.keys(tools) }));
 
 // Un transport par requête (stateless) : simple et suffisant pour un usage perso.
-app.all("/mcp", async (c) => {
+async function traiterMcp(c: { req: { raw: Request } }) {
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const mcp = creerServeurMcp();
   await mcp.connect(transport);
   return transport.handleRequest(c.req.raw);
-});
+}
+
+if (MCP_TOKEN) {
+  app.all("/mcp/:token", (c) => (c.req.param("token") === MCP_TOKEN ? traiterMcp(c) : c.text("Not found", 404)));
+  app.all("/mcp", (c) => c.text("Not found", 404));
+} else {
+  console.warn("[kvalia] MCP_TOKEN absent : /mcp est ouvert sans authentification (ok en local seulement)");
+  app.all("/mcp", (c) => traiterMcp(c));
+}
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`KVALIA OS agent — MCP sur http://localhost:${PORT}/mcp`);

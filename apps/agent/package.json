@@ -10,16 +10,16 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.0",
     "@kvalia/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "@supabase/supabase-js": "^2.58.0",
     "hono": "^4.9.0",
-    "@hono/node-server": "^1.19.0",
+    "tsx": "^4.20.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
 }

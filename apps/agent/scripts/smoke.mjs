@@ -3,7 +3,13 @@
  * Test de fumée des outils MCP : appelle chaque outil sur le serveur local et affiche la réponse.
  * Usage : pnpm --filter @kvalia/agent smoke   (serveur lancé à côté avec `pnpm --filter @kvalia/agent dev`)
  */
-const URL_MCP = process.env.MCP_URL ?? "http://localhost:8787/mcp";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+const ENV_RACINE = fileURLToPath(new URL("../../../.env", import.meta.url));
+if (existsSync(ENV_RACINE)) process.loadEnvFile(ENV_RACINE);
+const token = process.env.MCP_TOKEN?.trim();
+const URL_MCP = process.env.MCP_URL ?? `http://localhost:${process.env.PORT ?? 8787}/mcp${token ? `/${token}` : ""}`;
+console.log(`→ ${URL_MCP.replace(/\/mcp\/.+$/, "/mcp/<token>")}`);
 
 const appels = [
   ["liste_actuelle", {}],
