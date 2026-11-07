@@ -8,6 +8,8 @@ import { deconnexion } from "./actions";
 export const metadata: Metadata = { title: "Réglages" };
 
 const ENTREES = [
+  { href: "/reglages/sport", icone: "fitness_center", label: "Programme sportif", note: "rythme, matériel, objectif" },
+  { href: "/reglages/nutrition", icone: "restaurant", label: "Nutrition", note: "cible kcal, protéines" },
   { href: "/reglages/widgets", icone: "dashboard_customize", label: "Widgets de la Home", note: "phase 1" },
   { href: "/reglages/modules", icone: "apps", label: "Modules & tab bar", note: "phase 1" },
   { href: "/reglages/agent", icone: "smart_toy", label: "Contexte de l’agent", note: "phase 4" },

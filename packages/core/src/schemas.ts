@@ -88,7 +88,8 @@ export const VueJour = z.object({
     id: z.string().uuid(), nom: z.string(), moment: MomentJournee, non_negociable: z.boolean(), fait: z.boolean(),
   })),
   seance: z.object({
-    id: z.string().uuid(), type: z.string(), duree_min: z.number().nullable(), etat: z.string(), nb_exercices: z.number(),
+    id: z.string().uuid(), type: z.string(), titre: z.string().nullable().optional(), duree_min: z.number().nullable(), etat: z.string(),
+    kcal: z.number().nullable().optional(), nb_exercices: z.number(), nb_faits: z.number().optional(),
   }).nullable(),
   repas: z.array(z.object({
     repas: z.string(), recette_id: z.string().uuid(), recette: z.string(), portions: z.number(), pris: z.boolean(),

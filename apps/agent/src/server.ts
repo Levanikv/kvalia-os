@@ -1,7 +1,7 @@
 /**
  * Serveur MCP « KVALIA OS » — v0 (phase 0).
  *
- * Expose les 5 outils du contrat (packages/core/src/tools.ts) en HTTP (Streamable HTTP) pour claude.ai, Claude Code
+ * Expose les outils du contrat (packages/core/src/tools.ts) en HTTP (Streamable HTTP) pour claude.ai, Claude Code
  * et plus tard l'orchestrateur. Chaque appel est journalisé dans `appels_outils`.
  *
  * TODO phase 0 : OAuth (compte unique), hébergement Railway, puis brancher en connecteur custom dans claude.ai.
@@ -10,7 +10,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { createServiceClient, executer, tools, type ToolName } from "@kvalia/core";
+import { createServiceClient, executer, tools, toolsAvecConfirmation, type ToolName } from "@kvalia/core";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -49,7 +49,13 @@ function creerServeurMcp() {
     const def = tools[nom];
     mcp.registerTool(
       nom,
-      { description: def.description, inputSchema: def.input.shape },
+      {
+        description: def.description,
+        inputSchema: def.input.shape,
+        annotations: toolsAvecConfirmation.has(nom)
+          ? { destructiveHint: true, title: `${nom} (à confirmer)` }
+          : { destructiveHint: false },
+      },
       async (args: unknown) => {
         const debut = Date.now();
         try {

@@ -5,6 +5,9 @@
 import type { KvaliaClient } from "./supabase";
 import type { VueJour } from "./schemas";
 import type { ToolInput, ToolName, ToolOutput } from "./tools";
+import {
+  ParametresSport, cocherExercice, enregistrerParametresSport, genererProgramme, parametresSport, seanceDuJour, terminerSeance,
+} from "./sport";
 
 export type ContexteOutil = { db: KvaliaClient; userId: string };
 type Ctx = ContexteOutil;
@@ -27,6 +30,14 @@ async function produitId(ctx: Ctx, nom: string, unite?: string): Promise<string>
     .from("produits").insert({ user_id: ctx.userId, nom: nomNorm, unite: unite ?? "pièce" }).select("id").single();
   if (error) throw error;
   return cree.id;
+}
+
+/** Fuseau de l'utilisateur (v0 : un seul utilisateur, Paris). Le serveur tourne en UTC : « aujourd'hui » doit être calendaire côté utilisateur. */
+export const FUSEAU = process.env.KVALIA_TZ ?? "Europe/Paris";
+
+/** Date du jour (YYYY-MM-DD) dans le fuseau de l'utilisateur. */
+export function aujourdhuiIso(maintenant = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSEAU, year: "numeric", month: "2-digit", day: "2-digit" }).format(maintenant);
 }
 
 /** Date relative FR → ISO (v0 : demain, après-demain, jours de la semaine, jj/mm, ISO). */
@@ -104,7 +115,7 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "agenda_du_jour": {
       const e = entree as ToolInput<"agenda_du_jour">;
-      const jour = e.jour ?? new Date().toISOString().slice(0, 10);
+      const jour = e.jour ?? aujourdhuiIso();
       const { data, error } = await ctx.db.from("evenements_cache").select("id, titre, debut, fin, lieu")
         .eq("user_id", ctx.userId).gte("debut", `${jour}T00:00:00Z`).lt("debut", `${jour}T23:59:59Z`).order("debut");
       if (error) throw error;
@@ -116,9 +127,62 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
       // vue_jour(p_jour, p_user_id) : filtre sur coalesce(auth.uid(), p_user_id).
       // Avec le service role (auth.uid() nul) on nomme l'utilisateur ; avec un JWT utilisateur, auth.uid() prime
       // et la RLS des tables empêche de lire la journée de quelqu'un d'autre.
-      const { data, error } = await ctx.db.rpc("vue_jour", { p_jour: e.jour, p_user_id: ctx.userId });
+      const { data, error } = await ctx.db.rpc("vue_jour", { p_jour: e.jour ?? aujourdhuiIso(), p_user_id: ctx.userId });
       if (error) throw error;
       return data as VueJour as ToolOutput<T>;
+    }
+
+    // ---------- Sport ----------
+    case "parametres_sport": {
+      return (await parametresSport(ctx.db, ctx.userId)) as ToolOutput<T>;
+    }
+
+    case "regler_sport": {
+      const e = entree as ToolInput<"regler_sport">;
+      const actuels = await parametresSport(ctx.db, ctx.userId);
+      const fusion = ParametresSport.parse({ ...actuels, ...e, rythme: { ...actuels.rythme, ...(e.rythme ?? {}) } });
+      await enregistrerParametresSport(ctx.db, ctx.userId, fusion);
+      return fusion as ToolOutput<T>;
+    }
+
+    case "generer_programme": {
+      const e = entree as ToolInput<"generer_programme">;
+      const base = await parametresSport(ctx.db, ctx.userId);
+      const params = e.parametres
+        ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } })
+        : base;
+      if (e.parametres) await enregistrerParametresSport(ctx.db, ctx.userId, params);
+      return (await genererProgramme(ctx.db, ctx.userId, params, e.debut)) as ToolOutput<T>;
+    }
+
+    case "seance_du_jour": {
+      const e = entree as ToolInput<"seance_du_jour">;
+      const jour = e.jour ?? aujourdhuiIso();
+      const s = await seanceDuJour(ctx.db, ctx.userId, jour);
+      if (!s) return { jour, seance: null } as ToolOutput<T>;
+      const exercices = s.exercices_seance.map((x) => ({
+        id: x.id, ordre: x.ordre, exercice: x.exercices_ref?.nom ?? "?", exercice_id: x.exercice_id,
+        partie_corps: x.exercices_ref?.partie_corps ?? null, series: x.series, reps: x.reps, repos_s: x.repos_s,
+        duree_s: x.duree_s, kcal: x.kcal === null ? null : Number(x.kcal), fait: x.fait,
+      }));
+      return {
+        jour,
+        seance: {
+          id: s.id, jour: s.jour, type: s.type, titre: s.titre, etat: s.etat, focus: s.focus, bloc: s.bloc, semaine: s.semaine,
+          duree_min: s.duree_min, kcal: s.kcal === null ? null : Number(s.kcal),
+          kcal_prevues: exercices.reduce((a, x) => a + (x.kcal ?? 0), 0), notes: s.notes, exercices,
+        },
+      } as ToolOutput<T>;
+    }
+
+    case "cocher_exercice": {
+      const e = entree as ToolInput<"cocher_exercice">;
+      return (await cocherExercice(ctx.db, ctx.userId, e.exercice_seance_id, e.fait)) as ToolOutput<T>;
+    }
+
+    case "terminer_seance": {
+      const e = entree as ToolInput<"terminer_seance">;
+      return (await terminerSeance(ctx.db, ctx.userId, e.seance_id, e.ressenti, e.notes)) as ToolOutput<T>;
     }
   }
   throw new Error(`Outil inconnu : ${String(nom)}`);

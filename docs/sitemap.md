@@ -12,10 +12,14 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /quotidien/taches             Tâches (dues, à venir, faites)
 │   └── /quotidien/habitudes          Habitudes du jour + séries
 ├── /sport                Mini-app Sport (sombre)
-│   ├── /sport                        Programme en cours (blocs / semaines) + séance du jour
-│   ├── /sport/seance/[id]            Séance plein écran (vidéo, séries, minuteur)
-│   ├── /sport/exercices/[id]         Fiche exercice (vidéo, muscles, consignes)
-│   └── /sport/historique             Séances faites, progression par exercice
+│   ├── /sport                        Vue Jour (défaut) : bande semaine, hero « séance du jour », cartes d'entrée
+│   │                                 (?jour=YYYY-MM-DD pour un autre jour)
+│   ├── /sport/seance/[id]            Séance : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
+│   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
+│   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
+│   │                                 (?seance=<id> : prescription + « Fait → suivant »)
+│   ├── /sport/programme              Programme actif : avancement, blocs / semaines dépliables
+│   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition (clair)
 │   ├── /nutrition                    Journal du jour (anneau, 3 barres, repas) · ?jour=YYYY-MM-DD
 │   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD
@@ -42,6 +46,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 ├── /capture              Feuille « + » (texte, micro) — aussi cible du raccourci iOS (?texte=)
 ├── /reglages
 │   ├── /reglages                     Profil, thème, fenêtre de jeûne, ordre des rayons
+│   ├── /reglages/sport               Admin du programme : rythme, jours, durée, matériel, objectif, niveau, poids → Générer
+│   ├── /reglages/nutrition           Cible kcal de base, protéines, ajustement avec le sport
 │   ├── /reglages/widgets             Ordre et activation des widgets Home
 │   ├── /reglages/modules             Modules activés, ordre de la tab bar
 │   ├── /reglages/agent               Contexte / mémoire de l'agent (éditable)

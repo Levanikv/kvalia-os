@@ -1,4 +1,3 @@
-// Généré par `supabase gen types` (projet kvalia-os). Ne pas éditer à la main : `pnpm db:types`.
 export type Json =
   | string
   | number
@@ -261,55 +260,94 @@ export type Database = {
       }
       exercices_ref: {
         Row: {
+          alias: string[]
+          compose: boolean
           consignes: string[]
+          description: string | null
+          difficulte: string | null
           equipement: string | null
+          erreurs: string[]
           gif_url: string | null
           id: string
           image_url: string | null
+          image_url_f: string | null
+          met: number
           muscles: string[]
           muscles_secondaires: string[]
           nom: string
           nom_fr: string | null
+          partie_corps: string | null
+          reperes: string[]
+          respiration: string | null
           source: string
+          unilateral: boolean
           updated_at: string
           video_url: string | null
+          video_url_f: string | null
         }
         Insert: {
+          alias?: string[]
+          compose?: boolean
           consignes?: string[]
+          description?: string | null
+          difficulte?: string | null
           equipement?: string | null
+          erreurs?: string[]
           gif_url?: string | null
           id: string
           image_url?: string | null
+          image_url_f?: string | null
+          met?: number
           muscles?: string[]
           muscles_secondaires?: string[]
           nom: string
           nom_fr?: string | null
+          partie_corps?: string | null
+          reperes?: string[]
+          respiration?: string | null
           source?: string
+          unilateral?: boolean
           updated_at?: string
           video_url?: string | null
+          video_url_f?: string | null
         }
         Update: {
+          alias?: string[]
+          compose?: boolean
           consignes?: string[]
+          description?: string | null
+          difficulte?: string | null
           equipement?: string | null
+          erreurs?: string[]
           gif_url?: string | null
           id?: string
           image_url?: string | null
+          image_url_f?: string | null
+          met?: number
           muscles?: string[]
           muscles_secondaires?: string[]
           nom?: string
           nom_fr?: string | null
+          partie_corps?: string | null
+          reperes?: string[]
+          respiration?: string | null
           source?: string
+          unilateral?: boolean
           updated_at?: string
           video_url?: string | null
+          video_url_f?: string | null
         }
         Relationships: []
       }
       exercices_seance: {
         Row: {
           charge_kg: number | null
+          duree_s: number | null
           exercice_id: string
           fait: boolean
+          fait_le: string | null
           id: string
+          kcal: number | null
           ordre: number
           realise: Json | null
           repos_s: number
@@ -321,9 +359,12 @@ export type Database = {
         }
         Insert: {
           charge_kg?: number | null
+          duree_s?: number | null
           exercice_id: string
           fait?: boolean
+          fait_le?: string | null
           id?: string
+          kcal?: number | null
           ordre?: number
           realise?: Json | null
           repos_s?: number
@@ -335,9 +376,12 @@ export type Database = {
         }
         Update: {
           charge_kg?: number | null
+          duree_s?: number | null
           exercice_id?: string
           fait?: boolean
+          fait_le?: string | null
           id?: string
+          kcal?: number | null
           ordre?: number
           realise?: Json | null
           repos_s?: number
@@ -990,43 +1034,61 @@ export type Database = {
       }
       seances: {
         Row: {
+          bloc: number | null
           created_at: string
+          debut_le: string | null
           duree_min: number | null
           etat: Database["public"]["Enums"]["seance_etat"]
           faite_le: string | null
+          focus: string | null
           id: string
           jour: string
+          kcal: number | null
           notes: string | null
           programme_id: string | null
           ressenti: number | null
+          semaine: number | null
+          titre: string | null
           type: Database["public"]["Enums"]["seance_type"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          bloc?: number | null
           created_at?: string
+          debut_le?: string | null
           duree_min?: number | null
           etat?: Database["public"]["Enums"]["seance_etat"]
           faite_le?: string | null
+          focus?: string | null
           id?: string
           jour: string
+          kcal?: number | null
           notes?: string | null
           programme_id?: string | null
           ressenti?: number | null
+          semaine?: number | null
+          titre?: string | null
           type: Database["public"]["Enums"]["seance_type"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          bloc?: number | null
           created_at?: string
+          debut_le?: string | null
           duree_min?: number | null
           etat?: Database["public"]["Enums"]["seance_etat"]
           faite_le?: string | null
+          focus?: string | null
           id?: string
           jour?: string
+          kcal?: number | null
           notes?: string | null
           programme_id?: string | null
           ressenti?: number | null
+          semaine?: number | null
+          titre?: string | null
           type?: Database["public"]["Enums"]["seance_type"]
           updated_at?: string
           user_id?: string

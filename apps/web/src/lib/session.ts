@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { aujourdhuiIso } from "@kvalia/core";
 import { createClient } from "@/lib/supabase/server";
 
 /** Client + utilisateur pour les server actions et les pages : redirige vers /connexion si la session a sauté. */
@@ -9,7 +10,7 @@ export async function session() {
   return { supabase, user };
 }
 
+/** Date du jour côté utilisateur (Europe/Paris) — le serveur Railway tourne en UTC. */
 export function aujourdhui(): string {
-  // Date locale (Europe/Paris côté serveur Railway = UTC ; on reste en ISO calendaire du navigateur en phase 1).
-  return new Date().toISOString().slice(0, 10);
+  return aujourdhuiIso();
 }

@@ -19,7 +19,7 @@ export default async function Home() {
 
   return (
     <ModuleFrame module="home" titre="Aujourd’hui" sousTitre={date.charAt(0).toUpperCase() + date.slice(1)}>
-      <RealtimeRefresh tables={["lignes", "taches", "habitudes_log"]} />
+      <RealtimeRefresh tables={["lignes", "taches", "habitudes_log", "seances", "exercices_seance"]} />
       <div className="grid gap-3 pt-2 lg:grid-cols-2">
         <Carte titre="Aujourd’hui" icone="today" href="/quotidien/taches" module="home">
           {vue && (vue.evenements.length > 0 || tachesDues.length > 0) ? (
@@ -71,11 +71,22 @@ export default async function Home() {
           )}
         </Carte>
 
-        <Carte titre="Séance du jour" icone="fitness_center" href="/sport" module="sport">
+        <Carte titre="Séance du jour" icone="fitness_center" href={vue?.seance ? `/sport/seance/${vue.seance.id}` : "/sport"} module="sport">
           {vue?.seance ? (
-            <p className="text-sm">{vue.seance.type} · {vue.seance.nb_exercices} exercices{vue.seance.duree_min ? ` · ${vue.seance.duree_min} min` : ""}</p>
+            <div>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="truncate text-lg font-semibold tracking-tight">{vue.seance.titre ?? vue.seance.type}</p>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${vue.seance.etat === "faite" ? "bg-success/15 text-success" : vue.seance.etat === "en_cours" ? "bg-accent/15 text-accent" : "bg-surface-3 text-text-2"}`}>
+                  {vue.seance.etat === "faite" ? `✓ ${vue.seance.kcal ?? 0} kcal` : vue.seance.etat === "en_cours" ? `${vue.seance.nb_faits ?? 0}/${vue.seance.nb_exercices}` : "Prévue"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm text-text-2">
+                {vue.seance.nb_exercices > 0 ? `${vue.seance.nb_exercices} exercices` : "Séance libre"}{vue.seance.duree_min ? ` · ${vue.seance.duree_min} min` : ""}
+                {vue.seance.etat !== "faite" && <span className="text-accent"> · Démarrer →</span>}
+              </p>
+            </div>
           ) : (
-            <p className="text-sm text-text-3">Pas de séance planifiée. Programme en phase 2.</p>
+            <p className="text-sm text-text-3">Repos aujourd’hui — ou pas encore de programme.</p>
           )}
         </Carte>
 
