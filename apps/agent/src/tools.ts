@@ -108,10 +108,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "brief": {
       const e = entree as ToolInput<"brief">;
-      // vue_jour est SECURITY INVOKER et filtre sur auth.uid() : avec le service role il faut passer par un client
-      // « au nom de l'utilisateur ». En v0 mono-utilisateur on l'appelle via un JWT utilisateur (voir createUserClient)
-      // ou, à défaut, on reconstruit le brief côté serveur. Ici : appel RPC direct, à remplacer par createUserClient.
-      const { data, error } = await ctx.db.rpc("vue_jour", { p_jour: e.jour });
+      // vue_jour(p_jour, p_user_id) : filtre sur coalesce(auth.uid(), p_user_id).
+      // Avec le service role (auth.uid() nul) on nomme l'utilisateur ; avec un JWT utilisateur, auth.uid() prime
+      // et la RLS des tables empêche de lire la journée de quelqu'un d'autre.
+      const { data, error } = await ctx.db.rpc("vue_jour", { p_jour: e.jour, p_user_id: ctx.userId });
       if (error) throw error;
       return data as VueJour as ToolOutput<T>;
     }

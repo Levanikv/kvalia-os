@@ -1204,7 +1204,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      vue_jour: { Args: { p_jour?: string }; Returns: Json }
+      vue_jour: { Args: { p_jour?: string; p_user_id?: string }; Returns: Json }
     }
     Enums: {
       canal: "claude" | "siri" | "telegram" | "alexa" | "app" | "job"
