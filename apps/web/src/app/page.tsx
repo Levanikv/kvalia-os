@@ -7,33 +7,33 @@ import { tools } from "@kvalia/core";
  */
 export default function Home() {
   return (
-    <main data-module="home" className="mx-auto flex max-w-md flex-col gap-6 px-4 pb-24 pt-[max(env(safe-area-inset-top),16px)]">
+    <main data-brand="home" className="mx-auto flex max-w-md flex-col gap-6 px-4 pb-24 pt-[max(env(safe-area-inset-top),16px)]">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">KVALIA OS</h1>
-        <span className="rounded-full bg-[var(--module-accent)]/15 px-3 py-1 text-xs font-medium text-[var(--module-accent)]">phase 0</span>
+        <h1 className="kv-type-headline-md">KVALIA OS</h1>
+        <span className="kv-type-label-md rounded-pill bg-accent-subtle px-3 py-1 text-fg-accent">phase 0</span>
       </header>
 
-      <section className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-2)] p-4">
-        <p className="text-sm text-[var(--text-2)]">Shell en place. Prochaine étape : brancher le serveur MCP dans claude.ai et voir une ligne de courses apparaître ici.</p>
+      <section className="rounded-container border border-line-subtle bg-surface p-4">
+        <p className="kv-type-body-sm text-fg-secondary">Shell en place. Prochaine étape : brancher le serveur MCP dans claude.ai et voir une ligne de courses apparaître ici.</p>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-medium text-[var(--text-2)]">Outils MCP v0</h2>
-        <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)]">
+        <h2 className="kv-type-title-sm mb-2 text-fg-secondary">Outils MCP v0</h2>
+        <ul className="divide-y divide-line-subtle overflow-hidden rounded-container border border-line-subtle bg-surface">
           {Object.entries(tools).map(([nom, def]) => (
             <li key={nom} className="px-3 py-2">
               <code className="text-sm">{nom}</code>
-              <p className="text-xs text-[var(--text-2)]">{def.description}</p>
+              <p className="kv-type-caption text-fg-secondary">{def.description}</p>
             </li>
           ))}
         </ul>
       </section>
 
-      <nav className="fixed inset-x-0 bottom-0 border-t border-[var(--border)] bg-[var(--surface)]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 border-t border-line-subtle bg-glass pb-[env(safe-area-inset-bottom)] backdrop-blur-[var(--kv-blur-glass)]">
         <ul className="mx-auto flex max-w-md justify-around py-2">
           {modules.map((m) => (
-            <li key={m.key} data-module={m.key} className="flex flex-col items-center gap-0.5 text-[10px] text-[var(--text-2)]">
-              <span className="material-symbols-rounded text-[var(--module-accent)]" aria-hidden>{m.icon}</span>
+            <li key={m.key} data-brand={m.key} className="kv-type-label-sm flex flex-col items-center gap-0.5 text-fg-secondary">
+              <span className="material-symbols-rounded text-icon-accent" aria-hidden>{m.icon}</span>
               {m.label}
             </li>
           ))}

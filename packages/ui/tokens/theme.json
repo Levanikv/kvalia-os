@@ -1,0 +1,445 @@
+{
+  "$collection": "Theme",
+  "$description": "Rôles sémantiques de couleur. Light/Dark. Les rôles 'accent' pointent vers Brand : changer de mini-app re-colore tout sans toucher au thème.",
+  "$modes": [
+    "light",
+    "dark"
+  ],
+  "bg": {
+    "canvas": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.25}",
+        "dark": "{color.neutral.950}"
+      },
+      "$description": "Fond de page."
+    },
+    "surface": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.900}"
+      },
+      "$description": "Surface par défaut (cartes, listes)."
+    },
+    "surface-raised": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.850}"
+      },
+      "$description": "Surface au-dessus d'une surface (sheet, menu, popover)."
+    },
+    "surface-sunken": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.50}",
+        "dark": "{color.neutral.1000}"
+      },
+      "$description": "Zone en creux (champ, piste, bulle agent)."
+    },
+    "surface-inverse": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.900}",
+        "dark": "{color.neutral.50}"
+      },
+      "$description": "Toast, tooltip."
+    },
+    "glass": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.white.80}",
+        "dark": "{color.alpha.ink.80}"
+      },
+      "$description": "Barres translucides (nav, header) + blur."
+    },
+    "scrim": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.black.48}",
+        "dark": "{color.alpha.black.64}"
+      },
+      "$description": "Voile derrière modale/sheet."
+    },
+    "hover": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.black.4}",
+        "dark": "{color.alpha.white.6}"
+      },
+      "$description": "Calque d'interaction au survol."
+    },
+    "pressed": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.black.8}",
+        "dark": "{color.alpha.white.12}"
+      },
+      "$description": "Calque d'interaction à l'appui."
+    },
+    "selected": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.50}",
+        "dark": "{brand.accent.950}"
+      }
+    },
+    "disabled": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.100}",
+        "dark": "{color.neutral.800}"
+      }
+    },
+    "accent-solid": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.solid}",
+        "dark": "{brand.accent.solid}"
+      }
+    },
+    "accent-solid-hover": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.solid-hover}",
+        "dark": "{brand.accent.solid-hover}"
+      }
+    },
+    "accent-solid-pressed": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.solid-pressed}",
+        "dark": "{brand.accent.solid-pressed}"
+      }
+    },
+    "accent-subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.50}",
+        "dark": "{brand.accent.950}"
+      }
+    },
+    "accent-muted": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.100}",
+        "dark": "{brand.accent.900}"
+      }
+    },
+    "success-solid": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.green.700}",
+        "dark": "{color.green.700}"
+      }
+    },
+    "success-subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.green.50}",
+        "dark": "{color.green.950}"
+      }
+    },
+    "warning-solid": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.amber.400}",
+        "dark": "{color.amber.400}"
+      }
+    },
+    "warning-subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.amber.50}",
+        "dark": "{color.amber.950}"
+      }
+    },
+    "danger-solid": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.red.600}",
+        "dark": "{color.red.600}"
+      }
+    },
+    "danger-subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.red.50}",
+        "dark": "{color.red.950}"
+      }
+    },
+    "info-solid": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.blue.600}",
+        "dark": "{color.blue.600}"
+      }
+    },
+    "info-subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.blue.50}",
+        "dark": "{color.blue.950}"
+      }
+    }
+  },
+  "text": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.950}",
+        "dark": "{color.neutral.50}"
+      }
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.600}",
+        "dark": "{color.neutral.400}"
+      }
+    },
+    "tertiary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.500}",
+        "dark": "{color.neutral.400}"
+      },
+      "$description": "Métadonnées, placeholders. AA garanti sur surface/canvas."
+    },
+    "disabled": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.400}",
+        "dark": "{color.neutral.600}"
+      },
+      "$description": "Exempté AA (WCAG 1.4.3)."
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.950}"
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.700}",
+        "dark": "{brand.accent.300}"
+      }
+    },
+    "on-accent": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.on-solid}",
+        "dark": "{brand.accent.on-solid}"
+      }
+    },
+    "link": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.700}",
+        "dark": "{brand.accent.300}"
+      }
+    },
+    "success": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.green.700}",
+        "dark": "{color.green.300}"
+      }
+    },
+    "warning": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.amber.800}",
+        "dark": "{color.amber.300}"
+      }
+    },
+    "danger": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.red.700}",
+        "dark": "{color.red.300}"
+      }
+    },
+    "info": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.blue.700}",
+        "dark": "{color.blue.300}"
+      }
+    },
+    "on-success": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.0}"
+      }
+    },
+    "on-warning": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.1000}",
+        "dark": "{color.neutral.1000}"
+      }
+    },
+    "on-danger": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.0}"
+      }
+    },
+    "on-info": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.0}",
+        "dark": "{color.neutral.0}"
+      }
+    }
+  },
+  "icon": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.900}",
+        "dark": "{color.neutral.100}"
+      }
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.600}",
+        "dark": "{color.neutral.400}"
+      }
+    },
+    "tertiary": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.400}",
+        "dark": "{color.neutral.600}"
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.600}",
+        "dark": "{brand.accent.400}"
+      }
+    },
+    "on-accent": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.on-solid}",
+        "dark": "{brand.accent.on-solid}"
+      }
+    },
+    "success": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.green.600}",
+        "dark": "{color.green.400}"
+      }
+    },
+    "warning": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.amber.600}",
+        "dark": "{color.amber.400}"
+      }
+    },
+    "danger": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.red.600}",
+        "dark": "{color.red.400}"
+      }
+    },
+    "info": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.blue.600}",
+        "dark": "{color.blue.400}"
+      }
+    }
+  },
+  "border": {
+    "subtle": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.100}",
+        "dark": "{color.neutral.850}"
+      }
+    },
+    "default": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.200}",
+        "dark": "{color.neutral.800}"
+      }
+    },
+    "strong": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.neutral.500}",
+        "dark": "{color.neutral.500}"
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.500}",
+        "dark": "{brand.accent.400}"
+      }
+    },
+    "focus": {
+      "$type": "color",
+      "$value": {
+        "light": "{brand.accent.600}",
+        "dark": "{brand.accent.400}"
+      },
+      "$description": "Anneau de focus. ≥ 3:1 sur toutes les surfaces."
+    },
+    "success": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.green.500}",
+        "dark": "{color.green.400}"
+      }
+    },
+    "warning": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.amber.500}",
+        "dark": "{color.amber.400}"
+      }
+    },
+    "danger": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.red.500}",
+        "dark": "{color.red.400}"
+      }
+    }
+  },
+  "effect": {
+    "shadow-key": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.black.8}",
+        "dark": "{color.alpha.black.48}"
+      },
+      "$description": "Ombre directionnelle."
+    },
+    "shadow-ambient": {
+      "$type": "color",
+      "$value": {
+        "light": "{color.alpha.black.4}",
+        "dark": "{color.alpha.black.32}"
+      },
+      "$description": "Ombre diffuse."
+    }
+  }
+}

@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f12" },
+    { media: "(prefers-color-scheme: light)", color: "#FAFBFD" },
+    { media: "(prefers-color-scheme: dark)", color: "#111115" },
   ],
   viewportFit: "cover",
   width: "device-width",
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
-      <body className="min-h-dvh bg-[var(--surface)] text-[var(--text)] antialiased">{children}</body>
+      <body className="min-h-dvh bg-canvas text-fg-primary antialiased">{children}</body>
     </html>
   );
 }

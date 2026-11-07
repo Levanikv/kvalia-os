@@ -1,0 +1,310 @@
+{
+  "$collection": "Brand",
+  "$description": "Identité d'une mini-app. Un mode par mini-app. Ne contient QUE ce qui change d'une mini-app à l'autre : palette d'accent, typo display, forme.",
+  "$modes": [
+    "home",
+    "sport",
+    "nutrition",
+    "quotidien",
+    "finances",
+    "docs",
+    "agent"
+  ],
+  "$meta": {
+    "home": {
+      "label": "Home",
+      "icon": "home",
+      "defaultTheme": "system",
+      "hue": "indigo"
+    },
+    "sport": {
+      "label": "Sport",
+      "icon": "fitness_center",
+      "defaultTheme": "dark",
+      "hue": "crimson"
+    },
+    "nutrition": {
+      "label": "Nutrition",
+      "icon": "restaurant",
+      "defaultTheme": "system",
+      "hue": "orange"
+    },
+    "quotidien": {
+      "label": "Courses",
+      "icon": "shopping_cart",
+      "defaultTheme": "system",
+      "hue": "emerald"
+    },
+    "finances": {
+      "label": "Finances",
+      "icon": "account_balance_wallet",
+      "defaultTheme": "system",
+      "hue": "gold"
+    },
+    "docs": {
+      "label": "Docs",
+      "icon": "folder",
+      "defaultTheme": "system",
+      "hue": "brown"
+    },
+    "agent": {
+      "label": "Agent",
+      "icon": "auto_awesome",
+      "defaultTheme": "system",
+      "hue": "violet"
+    }
+  },
+  "brand": {
+    "accent": {
+      "50": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.50}",
+          "sport": "{color.crimson.50}",
+          "nutrition": "{color.orange.50}",
+          "quotidien": "{color.emerald.50}",
+          "finances": "{color.gold.50}",
+          "docs": "{color.brown.50}",
+          "agent": "{color.violet.50}"
+        }
+      },
+      "100": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.100}",
+          "sport": "{color.crimson.100}",
+          "nutrition": "{color.orange.100}",
+          "quotidien": "{color.emerald.100}",
+          "finances": "{color.gold.100}",
+          "docs": "{color.brown.100}",
+          "agent": "{color.violet.100}"
+        }
+      },
+      "200": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.200}",
+          "sport": "{color.crimson.200}",
+          "nutrition": "{color.orange.200}",
+          "quotidien": "{color.emerald.200}",
+          "finances": "{color.gold.200}",
+          "docs": "{color.brown.200}",
+          "agent": "{color.violet.200}"
+        }
+      },
+      "300": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.300}",
+          "sport": "{color.crimson.300}",
+          "nutrition": "{color.orange.300}",
+          "quotidien": "{color.emerald.300}",
+          "finances": "{color.gold.300}",
+          "docs": "{color.brown.300}",
+          "agent": "{color.violet.300}"
+        }
+      },
+      "400": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.400}",
+          "sport": "{color.crimson.400}",
+          "nutrition": "{color.orange.400}",
+          "quotidien": "{color.emerald.400}",
+          "finances": "{color.gold.400}",
+          "docs": "{color.brown.400}",
+          "agent": "{color.violet.400}"
+        }
+      },
+      "500": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.500}",
+          "sport": "{color.crimson.500}",
+          "nutrition": "{color.orange.500}",
+          "quotidien": "{color.emerald.500}",
+          "finances": "{color.gold.500}",
+          "docs": "{color.brown.500}",
+          "agent": "{color.violet.500}"
+        }
+      },
+      "600": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.600}",
+          "sport": "{color.crimson.600}",
+          "nutrition": "{color.orange.600}",
+          "quotidien": "{color.emerald.600}",
+          "finances": "{color.gold.600}",
+          "docs": "{color.brown.600}",
+          "agent": "{color.violet.600}"
+        }
+      },
+      "700": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.700}",
+          "sport": "{color.crimson.700}",
+          "nutrition": "{color.orange.700}",
+          "quotidien": "{color.emerald.700}",
+          "finances": "{color.gold.700}",
+          "docs": "{color.brown.700}",
+          "agent": "{color.violet.700}"
+        }
+      },
+      "800": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.800}",
+          "sport": "{color.crimson.800}",
+          "nutrition": "{color.orange.800}",
+          "quotidien": "{color.emerald.800}",
+          "finances": "{color.gold.800}",
+          "docs": "{color.brown.800}",
+          "agent": "{color.violet.800}"
+        }
+      },
+      "900": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.900}",
+          "sport": "{color.crimson.900}",
+          "nutrition": "{color.orange.900}",
+          "quotidien": "{color.emerald.900}",
+          "finances": "{color.gold.900}",
+          "docs": "{color.brown.900}",
+          "agent": "{color.violet.900}"
+        }
+      },
+      "950": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.950}",
+          "sport": "{color.crimson.950}",
+          "nutrition": "{color.orange.950}",
+          "quotidien": "{color.emerald.950}",
+          "finances": "{color.gold.950}",
+          "docs": "{color.brown.950}",
+          "agent": "{color.violet.950}"
+        }
+      },
+      "solid": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.600}",
+          "sport": "{color.crimson.600}",
+          "nutrition": "{color.orange.400}",
+          "quotidien": "{color.emerald.700}",
+          "finances": "{color.gold.400}",
+          "docs": "{color.brown.600}",
+          "agent": "{color.violet.600}"
+        },
+        "$description": "Fond plein de l'accent (boutons primaires, FAB). Choisi par mini-app pour garantir AA avec on-solid."
+      },
+      "solid-hover": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.700}",
+          "sport": "{color.crimson.700}",
+          "nutrition": "{color.orange.300}",
+          "quotidien": "{color.emerald.800}",
+          "finances": "{color.gold.300}",
+          "docs": "{color.brown.700}",
+          "agent": "{color.violet.700}"
+        }
+      },
+      "solid-pressed": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.indigo.800}",
+          "sport": "{color.crimson.800}",
+          "nutrition": "{color.orange.200}",
+          "quotidien": "{color.emerald.900}",
+          "finances": "{color.gold.200}",
+          "docs": "{color.brown.800}",
+          "agent": "{color.violet.800}"
+        }
+      },
+      "on-solid": {
+        "$type": "color",
+        "$value": {
+          "home": "{color.neutral.0}",
+          "sport": "{color.neutral.0}",
+          "nutrition": "{color.neutral.1000}",
+          "quotidien": "{color.neutral.0}",
+          "finances": "{color.neutral.1000}",
+          "docs": "{color.neutral.0}",
+          "agent": "{color.neutral.0}"
+        },
+        "$description": "Texte/icône posé sur accent.solid."
+      }
+    },
+    "font": {
+      "display": {
+        "$type": "fontFamily",
+        "$value": {
+          "home": "{font.family.sans}",
+          "sport": "{font.family.condensed}",
+          "nutrition": "{font.family.sans}",
+          "quotidien": "{font.family.sans}",
+          "finances": "{font.family.sans}",
+          "docs": "{font.family.serif}",
+          "agent": "{font.family.grotesk}"
+        }
+      },
+      "display-style": {
+        "$type": "string",
+        "$value": {
+          "home": "{font.style.inter-bold}",
+          "sport": "{font.style.condensed-bold}",
+          "nutrition": "{font.style.inter-bold}",
+          "quotidien": "{font.style.inter-bold}",
+          "finances": "{font.style.inter-semibold}",
+          "docs": "{font.style.serif-semibold}",
+          "agent": "{font.style.grotesk-bold}"
+        },
+        "$description": "Nom de style Figma de la police display."
+      },
+      "display-weight": {
+        "$type": "fontWeight",
+        "$value": {
+          "home": "{font.weight.700}",
+          "sport": "{font.weight.700}",
+          "nutrition": "{font.weight.700}",
+          "quotidien": "{font.weight.700}",
+          "finances": "{font.weight.600}",
+          "docs": "{font.weight.600}",
+          "agent": "{font.weight.700}"
+        }
+      }
+    },
+    "shape": {
+      "radius-control": {
+        "$type": "dimension",
+        "$value": {
+          "home": "{radius.12}",
+          "sport": "{radius.6}",
+          "nutrition": "{radius.14}",
+          "quotidien": "{radius.12}",
+          "finances": "{radius.8}",
+          "docs": "{radius.8}",
+          "agent": "{radius.16}"
+        },
+        "$description": "Rayon des contrôles (boutons, champs, chips carrés)."
+      },
+      "radius-container": {
+        "$type": "dimension",
+        "$value": {
+          "home": "{radius.20}",
+          "sport": "{radius.12}",
+          "nutrition": "{radius.24}",
+          "quotidien": "{radius.20}",
+          "finances": "{radius.16}",
+          "docs": "{radius.16}",
+          "agent": "{radius.24}"
+        },
+        "$description": "Rayon des conteneurs (cartes, widgets, sheets)."
+      }
+    }
+  }
+}

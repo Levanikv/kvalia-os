@@ -1,0 +1,358 @@
+{
+  "$collection": "Layout",
+  "$description": "Espacements, tailles et rayons sémantiques. Densité Comfortable (mobile, tactile) / Compact (desktop, pointeur).",
+  "$modes": [
+    "comfortable",
+    "compact"
+  ],
+  "space": {
+    "inset": {
+      "none": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.0}",
+          "compact": "{dimension.0}"
+        }
+      },
+      "2xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.4}",
+          "compact": "{dimension.2}"
+        }
+      },
+      "xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.8}",
+          "compact": "{dimension.4}"
+        }
+      },
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.12}",
+          "compact": "{dimension.8}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.16}",
+          "compact": "{dimension.12}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.20}",
+          "compact": "{dimension.16}"
+        }
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.24}",
+          "compact": "{dimension.20}"
+        }
+      },
+      "2xl": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.32}",
+          "compact": "{dimension.24}"
+        }
+      }
+    },
+    "stack": {
+      "2xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.4}",
+          "compact": "{dimension.2}"
+        }
+      },
+      "xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.8}",
+          "compact": "{dimension.4}"
+        }
+      },
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.12}",
+          "compact": "{dimension.8}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.16}",
+          "compact": "{dimension.12}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.24}",
+          "compact": "{dimension.16}"
+        }
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.32}",
+          "compact": "{dimension.24}"
+        }
+      },
+      "2xl": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.48}",
+          "compact": "{dimension.32}"
+        }
+      }
+    },
+    "inline": {
+      "2xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.4}",
+          "compact": "{dimension.2}"
+        }
+      },
+      "xs": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.6}",
+          "compact": "{dimension.4}"
+        }
+      },
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.8}",
+          "compact": "{dimension.6}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.12}",
+          "compact": "{dimension.8}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.16}",
+          "compact": "{dimension.12}"
+        }
+      }
+    }
+  },
+  "layout": {
+    "gutter": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.16}",
+        "compact": "{dimension.12}"
+      },
+      "$description": "Marge latérale de page."
+    },
+    "section-gap": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.24}",
+        "compact": "{dimension.16}"
+      },
+      "$description": "Espace entre deux sections de page."
+    },
+    "page-max": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.448}",
+        "compact": "{dimension.448}"
+      },
+      "$description": "Largeur max du contenu mobile-first."
+    },
+    "header-height": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.56}",
+        "compact": "{dimension.48}"
+      }
+    },
+    "nav-height": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.64}",
+        "compact": "{dimension.56}"
+      }
+    }
+  },
+  "size": {
+    "control": {
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.32}",
+          "compact": "{dimension.28}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.44}",
+          "compact": "{dimension.36}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.52}",
+          "compact": "{dimension.44}"
+        }
+      }
+    },
+    "touch-target": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.44}",
+        "compact": "{dimension.44}"
+      },
+      "$description": "Cible tactile minimale, toutes densités."
+    },
+    "icon": {
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.16}",
+          "compact": "{dimension.16}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.20}",
+          "compact": "{dimension.20}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.24}",
+          "compact": "{dimension.24}"
+        }
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.32}",
+          "compact": "{dimension.32}"
+        }
+      }
+    },
+    "avatar": {
+      "sm": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.24}",
+          "compact": "{dimension.24}"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.32}",
+          "compact": "{dimension.32}"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": {
+          "comfortable": "{dimension.40}",
+          "compact": "{dimension.40}"
+        }
+      }
+    },
+    "fab": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{dimension.56}",
+        "compact": "{dimension.56}"
+      }
+    }
+  },
+  "radius": {
+    "none": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{radius.0}",
+        "compact": "{radius.0}"
+      }
+    },
+    "xs": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{radius.4}",
+        "compact": "{radius.4}"
+      }
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{radius.8}",
+        "compact": "{radius.8}"
+      }
+    },
+    "control": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{brand.shape.radius-control}",
+        "compact": "{brand.shape.radius-control}"
+      },
+      "$description": "→ Brand. Boutons, champs."
+    },
+    "container": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{brand.shape.radius-container}",
+        "compact": "{brand.shape.radius-container}"
+      },
+      "$description": "→ Brand. Cartes, widgets, sheets."
+    },
+    "pill": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{radius.full}",
+        "compact": "{radius.full}"
+      }
+    }
+  },
+  "border-width": {
+    "default": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{border-width.1}",
+        "compact": "{border-width.1}"
+      }
+    },
+    "strong": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{border-width.2}",
+        "compact": "{border-width.2}"
+      }
+    },
+    "focus": {
+      "$type": "dimension",
+      "$value": {
+        "comfortable": "{border-width.2}",
+        "compact": "{border-width.2}"
+      }
+    }
+  }
+}

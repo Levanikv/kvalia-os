@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KVALIA OS — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Barlow+Condensed:wght@600;700&family=Fraunces:opsz,wght@9..144,600&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../src/tokens.css" />
+<script src="./data.js"></script>
+<style>
+  /* Le spécimen n'utilise QUE des tokens sémantiques / composants (règle du DS). */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--kv-bg-canvas); color: var(--kv-text-primary); font-family: var(--kv-font-family-sans); }
+  .page { max-width: 1240px; margin: 0 auto; padding: var(--kv-space-inset-xl) var(--kv-layout-gutter) 96px; display: flex; flex-direction: column; gap: var(--kv-space-stack-2xl); }
+  .toolbar { position: sticky; top: 0; z-index: 10; background: var(--kv-bg-glass); backdrop-filter: blur(var(--kv-blur-glass)); -webkit-backdrop-filter: blur(var(--kv-blur-glass)); border-bottom: 1px solid var(--kv-border-subtle); }
+  .toolbar-inner { max-width: 1240px; margin: 0 auto; padding: var(--kv-space-inset-sm) var(--kv-layout-gutter); display: flex; flex-wrap: wrap; gap: var(--kv-space-inline-md); align-items: center; }
+  .toolbar label { display: flex; gap: var(--kv-space-inline-xs); align-items: center; color: var(--kv-text-secondary); }
+  select { font: inherit; color: var(--kv-input-fg); background: var(--kv-input-bg); border: 1px solid var(--kv-input-border); border-radius: var(--kv-input-radius); height: var(--kv-size-control-sm); padding: 0 var(--kv-space-inset-xs); }
+  section { display: flex; flex-direction: column; gap: var(--kv-space-stack-md); }
+  .sec-head { display: flex; flex-direction: column; gap: var(--kv-space-stack-2xs); border-top: 1px solid var(--kv-border-default); padding-top: var(--kv-space-inset-lg); }
+  .muted { color: var(--kv-text-secondary); }
+  .tertiary { color: var(--kv-text-tertiary); }
+  code, .mono { font-family: var(--kv-font-family-mono); font-size: 12px; }
+  .grid { display: grid; gap: var(--kv-space-stack-sm); }
+  .card { background: var(--kv-card-bg); border: 1px solid var(--kv-card-border); border-radius: var(--kv-card-radius); padding: var(--kv-card-padding); display: flex; flex-direction: column; gap: var(--kv-card-gap); }
+
+  /* mini-app matrix */
+  .matrix { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .phone { background: var(--kv-bg-canvas); color: var(--kv-text-primary); border: 1px solid var(--kv-border-default); border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--kv-elevation-2); }
+  .phone-head { height: var(--kv-app-header-height); padding: 0 var(--kv-app-header-padding-x); display: flex; align-items: center; justify-content: space-between; background: var(--kv-app-header-bg); border-bottom: 1px solid var(--kv-border-subtle); }
+  .phone-body { padding: var(--kv-layout-gutter); display: flex; flex-direction: column; gap: var(--kv-space-stack-sm); }
+  .phone-nav { height: var(--kv-nav-bar-height); background: var(--kv-nav-bar-bg); border-top: 1px solid var(--kv-nav-bar-border); display: flex; justify-content: space-around; align-items: center; margin-top: auto; }
+  .nav-item { font-size: 10px; font-weight: 500; color: var(--kv-nav-bar-item-fg); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .nav-item .dot { width: 32px; height: 16px; border-radius: 999px; }
+  .nav-item.active { color: var(--kv-nav-bar-item-fg-active); }
+  .nav-item.active .dot { background: var(--kv-nav-bar-indicator); }
+  .widget { background: var(--kv-widget-bg); border: 1px solid var(--kv-widget-border); border-radius: var(--kv-widget-radius); padding: var(--kv-widget-padding); display: flex; flex-direction: column; gap: var(--kv-widget-gap); }
+  .widget .t { color: var(--kv-widget-title-fg); }
+  .widget .v { color: var(--kv-widget-value-fg); }
+  .progress { height: 8px; background: var(--kv-progress-track); border-radius: var(--kv-progress-radius); overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 64%; background: var(--kv-progress-fill); border-radius: inherit; }
+
+  /* components */
+  .row { display: flex; flex-wrap: wrap; gap: var(--kv-space-inline-sm); align-items: center; }
+  .btn { font: inherit; font-family: var(--kv-type-label-lg-family); font-size: var(--kv-type-label-lg-size); font-weight: var(--kv-type-label-lg-weight); border: 0; cursor: pointer; height: var(--kv-button-height-md); padding: 0 var(--kv-button-padding-x-md); border-radius: var(--kv-button-radius); display: inline-flex; align-items: center; gap: var(--kv-button-gap); transition: background-color var(--kv-motion-duration-fast) var(--kv-motion-easing-standard), transform var(--kv-motion-duration-fast) var(--kv-motion-easing-standard); }
+  .btn:active { transform: scale(0.97); }
+  .btn:focus-visible { outline: none; box-shadow: var(--kv-focus-ring); }
+  .btn.sm { height: var(--kv-button-height-sm); padding: 0 var(--kv-button-padding-x-sm); }
+  .btn.lg { height: var(--kv-button-height-lg); padding: 0 var(--kv-button-padding-x-lg); }
+  .primary { background: var(--kv-button-primary-bg); color: var(--kv-button-primary-fg); }
+  .primary:hover { background: var(--kv-button-primary-bg-hover); }
+  .primary:active { background: var(--kv-button-primary-bg-pressed); }
+  .secondary { background: var(--kv-button-secondary-bg); color: var(--kv-button-secondary-fg); }
+  .secondary:hover { background: var(--kv-button-secondary-bg-hover); }
+  .ghost { background: transparent; color: var(--kv-button-ghost-fg); }
+  .ghost:hover { background: var(--kv-button-ghost-bg); }
+  .danger { background: var(--kv-button-danger-bg); color: var(--kv-button-danger-fg); }
+  .btn[disabled] { background: var(--kv-button-disabled-bg); color: var(--kv-button-disabled-fg); cursor: not-allowed; transform: none; }
+  .field { display: flex; flex-direction: column; gap: var(--kv-input-gap); min-width: 220px; flex: 1; }
+  .field label { color: var(--kv-input-label); font-size: var(--kv-type-label-md-size); font-weight: var(--kv-type-label-md-weight); }
+  .field input { font: inherit; height: var(--kv-input-height); padding: 0 var(--kv-input-padding-x); border-radius: var(--kv-input-radius); border: 1px solid var(--kv-input-border); background: var(--kv-input-bg); color: var(--kv-input-fg); transition: border-color var(--kv-motion-duration-fast) var(--kv-motion-easing-standard); }
+  .field input::placeholder { color: var(--kv-input-placeholder); }
+  .field input:hover { border-color: var(--kv-input-border-hover); }
+  .field input:focus { outline: none; border-color: var(--kv-input-border-focus); box-shadow: 0 0 0 1px var(--kv-input-border-focus); }
+  .field.err input { border-color: var(--kv-input-border-error); }
+  .field small { color: var(--kv-input-helper); font-size: var(--kv-type-caption-size); }
+  .field.err small { color: var(--kv-input-error); }
+  .chip { height: var(--kv-chip-height); padding: 0 var(--kv-chip-padding-x); border-radius: var(--kv-chip-radius); border: 1px solid var(--kv-chip-border); background: var(--kv-chip-bg); color: var(--kv-chip-fg); display: inline-flex; align-items: center; font-size: var(--kv-type-label-md-size); font-weight: 500; }
+  .chip.on { background: var(--kv-chip-bg-selected); color: var(--kv-chip-fg-selected); border-color: var(--kv-chip-border-selected); }
+  .badge { background: var(--kv-badge-bg); color: var(--kv-badge-fg); border-radius: var(--kv-badge-radius); padding: 2px var(--kv-badge-padding-x); font-size: var(--kv-type-label-sm-size); font-weight: 600; }
+  .fab { width: var(--kv-fab-size); height: var(--kv-fab-size); border-radius: var(--kv-fab-radius); background: var(--kv-fab-bg); color: var(--kv-fab-fg); display: grid; place-items: center; font-size: 28px; box-shadow: var(--kv-elevation-3); border: 0; }
+  .toast { background: var(--kv-toast-bg); color: var(--kv-toast-fg); border-radius: var(--kv-toast-radius); padding: var(--kv-toast-padding) var(--kv-space-inset-md); box-shadow: var(--kv-elevation-3); }
+  .bubble { max-width: 80%; padding: var(--kv-agent-bubble-padding) var(--kv-space-inset-md); border-radius: var(--kv-agent-bubble-radius); }
+  .bubble.a { background: var(--kv-agent-bubble-assistant-bg); color: var(--kv-agent-bubble-assistant-fg); border-bottom-left-radius: 4px; }
+  .bubble.u { background: var(--kv-agent-bubble-user-bg); color: var(--kv-agent-bubble-user-fg); margin-left: auto; border-bottom-right-radius: 4px; }
+  .list { border: 1px solid var(--kv-card-border); border-radius: var(--kv-card-radius); overflow: hidden; background: var(--kv-card-bg); }
+  .li { min-height: var(--kv-list-item-min-height); padding: 0 var(--kv-list-item-padding-x); display: flex; align-items: center; gap: var(--kv-list-item-gap); border-bottom: 1px solid var(--kv-list-item-divider); }
+  .li:last-child { border-bottom: 0; }
+  .li:hover { background: var(--kv-list-item-bg-hover); }
+  .status { padding: var(--kv-space-inset-xs) var(--kv-space-inset-sm); border-radius: var(--kv-radius-sm); }
+
+  /* foundations */
+  .ramps { grid-template-columns: 110px repeat(11, 1fr); gap: 4px; align-items: stretch; font-size: 11px; }
+  .sw { height: 40px; border-radius: 6px; display: flex; align-items: end; padding: 4px; font-family: var(--kv-font-family-mono); font-size: 9px; }
+  .sem { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .sem .tile { border: 1px solid var(--kv-border-subtle); border-radius: var(--kv-radius-sm); overflow: hidden; background: var(--kv-bg-surface); }
+  .sem .chip-c { height: 44px; }
+  .sem .meta { padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td, th { text-align: left; padding: 8px; border-bottom: 1px solid var(--kv-border-subtle); vertical-align: middle; }
+  th { color: var(--kv-text-secondary); font-weight: 500; }
+  .bar { height: 12px; background: var(--kv-bg-accent-solid); border-radius: 3px; }
+  .elev { grid-template-columns: repeat(5, 1fr); }
+  .elev > div { height: 96px; background: var(--kv-bg-surface-raised); border-radius: var(--kv-radius-container); display: grid; place-items: center; }
+  .motion-demo { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .track { height: 44px; background: var(--kv-bg-surface-sunken); border-radius: var(--kv-radius-pill); position: relative; overflow: hidden; }
+  .ball { position: absolute; top: 6px; left: 6px; width: 32px; height: 32px; border-radius: 999px; background: var(--kv-bg-accent-solid); }
+  .motion-demo .card:hover .ball { transform: translateX(120px); }
+  .layers { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; align-items: stretch; }
+  .layers div { border-radius: 10px; padding: 10px; font-size: 12px; background: var(--kv-bg-accent-subtle); color: var(--kv-text-accent); }
+  .layers div b { display: block; color: var(--kv-text-primary); }
+  .stats { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+</style>
+</head>
+<body>
+<div class="toolbar"><div class="toolbar-inner">
+  <strong class="kv-type-title-md">KVALIA OS · DS</strong>
+  <label>Mini-app <select id="brand"></select></label>
+  <label>Thème <select id="theme"><option value="">Système</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  <label>Densité <select id="density"><option value="">Comfortable</option><option value="compact">Compact</option></select></label>
+  <label>Motion <select id="motion"><option value="">Default</option><option value="reduced">Reduced</option></select></label>
+</div></div>
+
+<div id="scope" class="page">
+  <header style="display:flex;flex-direction:column;gap:var(--kv-space-stack-xs)">
+    <span class="kv-type-overline" style="color:var(--kv-text-accent)">Design system · v1</span>
+    <h1 class="kv-type-display-lg" style="margin:0">Un shell, des mini-apps.</h1>
+    <p class="kv-type-body-lg muted" style="margin:0;max-width:720px">Primitives → Brand (une identité par mini-app) → Theme (light/dark) → Layout · Typography · Motion → Components. Change la mini-app, le thème, la densité ou le motion en haut : tout se recompose depuis les mêmes tokens.</p>
+  </header>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Architecture</h2><p class="muted" style="margin:0">8 collections, chaque couche ne référence que les couches en dessous. Le build refuse toute violation.</p></div>
+    <div class="layers" id="layers"></div>
+    <div class="grid stats" id="stats"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Matrice mini-apps × thèmes</h2><p class="muted" style="margin:0">Mêmes composants, mêmes tokens sémantiques. Seuls les attributs <code>data-brand</code> / <code>data-theme</code> changent.</p></div>
+    <div class="grid matrix" id="matrix"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Composants (tokens de composants)</h2></div>
+    <div class="card">
+      <div class="row"><button class="btn primary">Primaire</button><button class="btn secondary">Secondaire</button><button class="btn ghost">Ghost</button><button class="btn danger">Supprimer</button><button class="btn primary" disabled>Désactivé</button><button class="btn primary sm">Small</button><button class="btn primary lg">Large</button><button class="fab" aria-label="Ajouter">+</button></div>
+      <div class="row"><div class="field"><label>Produit</label><input placeholder="ex. Skyr nature" /><small>Ajouté à la liste de courses</small></div><div class="field err"><label>Montant</label><input value="12,5O" /><small>Format invalide : utilise des chiffres</small></div></div>
+      <div class="row"><span class="chip on">Aujourd'hui</span><span class="chip">Semaine</span><span class="chip">Mois</span><span class="badge">Nouveau</span><span class="badge">3</span></div>
+      <div class="row"><span class="status" style="background:var(--kv-bg-success-subtle);color:var(--kv-text-success)">Objectif atteint</span><span class="status" style="background:var(--kv-bg-warning-subtle);color:var(--kv-text-warning)">Budget à 90 %</span><span class="status" style="background:var(--kv-bg-danger-subtle);color:var(--kv-text-danger)">Document expiré</span><span class="status" style="background:var(--kv-bg-info-subtle);color:var(--kv-text-info)">Synchronisé</span><span class="toast">Ligne ajoutée · <u>Annuler</u></span></div>
+      <div class="list"><div class="li"><span class="kv-type-body-md" style="flex:1">Lait d'avoine</span><span class="tertiary kv-type-caption">Rayon frais</span></div><div class="li"><span class="kv-type-body-md" style="flex:1">Œufs ×12</span><span class="tertiary kv-type-caption">Rayon frais</span></div><div class="li"><span class="kv-type-body-md" style="flex:1">Riz basmati</span><span class="tertiary kv-type-caption">Épicerie</span></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="bubble u">Ajoute 2 skyr et dis-moi mon budget courses restant</div><div class="bubble a">C'est fait. Il te reste <b>84,20 €</b> sur 300 € ce mois-ci.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Couleur · Theme (sémantique)</h2><p class="muted" style="margin:0">Valeurs pour la mini-app et le thème sélectionnés. Seuls ces rôles sont utilisables dans l'UI.</p></div>
+    <div class="grid sem" id="semantic"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Couleur · Primitives</h2><p class="muted" style="margin:0">Rampes OKLCH 50 → 950. 7 teintes de marque (mini-apps) + 4 teintes de statut + neutres. Invisibles dans les pickers Figma.</p></div>
+    <div class="grid" id="neutrals" style="grid-template-columns:repeat(16,1fr);gap:4px"></div>
+    <div class="grid ramps" id="ramps"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Typographie</h2><p class="muted" style="margin:0">Display / headline suivent la police de la mini-app. Desktop (≥ 1024 px) agrandit display, headline et numeric.</p></div>
+    <div class="card"><table id="type"></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Espacement, tailles & rayons</h2><p class="muted" style="margin:0">Grille de 4 px. Densité Comfortable / Compact. Rayons <code>control</code> / <code>container</code> pilotés par la mini-app.</p></div>
+    <div class="card"><table id="layout"></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Effets · élévation</h2></div>
+    <div class="grid elev" id="elev"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="kv-type-headline-md" style="margin:0">Motion</h2><p class="muted" style="margin:0">Survole une carte pour jouer la durée et la courbe. En Reduced, tout devient instantané sauf les fondus.</p></div>
+    <div class="grid motion-demo" id="motiondemo"></div>
+  </section>
+</div>
+
+<script>
+  const KV = window.KV;
+  const $ = (id) => document.getElementById(id);
+  const scope = $("scope");
+  const set = (k, v) => (v ? scope.setAttribute(k, v) : scope.removeAttribute(k));
+  $("brand").innerHTML = KV.brands.map((b) => `<option value="${b.key}">${b.label}</option>`).join("");
+  scope.setAttribute("data-brand", "home");
+  $("brand").onchange = (e) => set("data-brand", e.target.value);
+  $("theme").onchange = (e) => set("data-theme", e.target.value);
+  $("density").onchange = (e) => set("data-density", e.target.value);
+  $("motion").onchange = (e) => set("data-motion", e.target.value);
+
+  const layers = [["Primitives", "valeurs brutes"], ["Brand", "7 mini-apps"], ["Theme", "light · dark"], ["Layout", "comfortable · compact"], ["Typography", "mobile · desktop"], ["Motion", "default · reduced"], ["Effects", "ombres, focus, flous"], ["Components", "alias only"]];
+  $("layers").innerHTML = layers.map(([n, d], i) => `<div><b>${i + 1}. ${n}</b>${d}</div>`).join("");
+  $("stats").innerHTML = Object.entries(KV.stats).map(([n, s]) => `<div class="card"><span class="kv-type-numeric-lg">${s.count}</span><span class="muted kv-type-label-md">${n} · ${s.modes.length} mode${s.modes.length > 1 ? "s" : ""}</span></div>`).join("");
+
+  const values = { home: ["Aujourd'hui", "3 / 5", "tâches"], sport: ["Séance", "42:10", "min"], nutrition: ["Calories", "1 640", "kcal"], quotidien: ["Courses", "12", "articles"], finances: ["Budget", "84,20", "€"], docs: ["Documents", "128", "fichiers"], agent: ["Agent", "6", "actions"] };
+  $("matrix").innerHTML = KV.brands.flatMap((b) => ["light", "dark"].map((t) => `
+    <div class="phone" data-brand="${b.key}" data-theme="${t}">
+      <div class="phone-head"><span class="kv-type-headline-sm">${b.label}</span><span class="badge">${t}</span></div>
+      <div class="phone-body">
+        <div class="widget"><span class="t kv-type-label-md">${values[b.key][0]}</span><span class="v"><span class="kv-type-numeric-lg">${values[b.key][1]}</span> <span class="kv-type-body-sm muted">${values[b.key][2]}</span></span><div class="progress"><i></i></div></div>
+        <div class="row"><span class="chip on">Jour</span><span class="chip">Semaine</span></div>
+        <div class="row"><button class="btn primary sm">Ajouter</button><button class="btn secondary sm">Voir</button></div>
+      </div>
+      <div class="phone-nav"><span class="nav-item active"><span class="dot"></span>${b.label}</span><span class="nav-item"><span class="dot"></span>Home</span><span class="nav-item"><span class="dot"></span>Agent</span></div>
+    </div>`)).join("");
+
+  $("semantic").innerHTML = KV.theme.map((t) => {
+    const [g] = t.id.split(".");
+    const onBg = { "text.inverse": "surface-inverse", "text.on-accent": "accent-solid", "icon.on-accent": "accent-solid", "text.on-success": "success-solid", "text.on-warning": "warning-solid", "text.on-danger": "danger-solid", "text.on-info": "info-solid" }[t.id] ?? "surface";
+    const sample = g === "text" ? `<div class="chip-c" style="display:grid;place-items:center;background:var(--kv-bg-${onBg});color:var(${t.css});font-weight:600">Aa Texte</div>`
+      : g === "icon" ? `<div class="chip-c" style="display:grid;place-items:center;background:var(--kv-bg-${onBg})"><span style="width:20px;height:20px;border-radius:5px;background:var(${t.css})"></span></div>`
+      : g === "border" ? `<div class="chip-c" style="background:var(--kv-bg-surface);display:grid;place-items:center"><span style="width:70%;height:24px;border:2px solid var(${t.css});border-radius:6px"></span></div>`
+      : `<div class="chip-c" style="background:var(${t.css})"></div>`;
+    return `<div class="tile">${sample}<div class="meta"><code>${t.id}</code><span class="tertiary" style="font-size:11px">${t.values.light} · ${t.values.dark}</span></div></div>`;
+  }).join("");
+
+  const steps = KV.hues[1].steps.map((s) => s.step);
+  const neutral = KV.hues.find((h) => h.name === "neutral");
+  $("neutrals").innerHTML = neutral.steps.map((s) => `<div class="sw" style="height:56px;flex-direction:column;align-items:start;justify-content:end;background:var(${s.css});color:${parseInt(s.step) >= 500 ? "#fff" : "#000"};border:1px solid var(--kv-border-subtle)"><b>${s.step}</b>${s.hex.slice(1)}</div>`).join("");
+  $("ramps").innerHTML = `<span></span>` + steps.map((s) => `<span class="tertiary mono">${s}</span>`).join("") + KV.hues.filter((h) => h.name !== "neutral").map((h) => {
+    const brand = KV.brands.find((b) => b.hue === h.name);
+    const label = `<span class="mono">${h.name}${brand ? `<br><span class="tertiary">${brand.label}</span>` : ["green", "amber", "red", "blue"].includes(h.name) ? `<br><span class="tertiary">statut</span>` : ""}</span>`;
+    const cells = h.steps.map((s) => `<div class="sw" style="background:var(${s.css});color:${parseInt(s.step) >= 500 ? "#fff" : "#000"}">${s.hex.slice(1)}</div>`).join("");
+    return label + cells;
+  }).join("");
+
+  const roles = [...new Set(KV.typography.map((t) => t.id.split(".")[1]))];
+  const tv = (role, k) => KV.typography.find((t) => t.id === `type.${role}.${k}`).values;
+  $("type").innerHTML = `<tr><th>Rôle</th><th>Spécimen</th><th>Mobile</th><th>Desktop</th></tr>` + roles.map((r) => {
+    const s = tv(r, "size"), lh = tv(r, "line-height");
+    const n = (v) => v.split(".").pop();
+    return `<tr><td><code>${r}</code></td><td><span class="kv-type-${r}">${r.startsWith("numeric") ? "1 234,56 €" : r === "code" ? "tool.add_item()" : "Tout en moins de 10 s"}</span></td><td class="mono tertiary">${n(s.mobile)}/${n(lh.mobile)}</td><td class="mono tertiary">${n(s.desktop)}/${n(lh.desktop)}</td></tr>`;
+  }).join("");
+
+  $("layout").innerHTML = `<tr><th>Token</th><th>Comfortable</th><th>Compact</th><th>Aperçu</th></tr>` + KV.layout.map((t) => {
+    const v = (m) => t.values[m].split(".").slice(-1)[0];
+    const prev = t.id.startsWith("radius") ? `<span style="display:inline-block;width:48px;height:32px;background:var(--kv-bg-accent-subtle);border:1px solid var(--kv-border-accent);border-radius:var(${t.css})"></span>`
+      : t.id.includes("page-max") ? "" : `<div class="bar" style="width:min(100%, var(${t.css}))"></div>`;
+    return `<tr><td><code>${t.id}</code></td><td class="mono">${v("comfortable")}</td><td class="mono">${v("compact")}</td><td style="width:40%">${prev}</td></tr>`;
+  }).join("");
+
+  $("elev").innerHTML = [0, 1, 2, 3, 4].map((i) => `<div style="box-shadow:var(--kv-elevation-${i})"><code>elevation.${i}</code></div>`).join("");
+
+  const durs = KV.motion.filter((t) => t.id.includes(".duration.")), eases = KV.motion.filter((t) => t.id.includes(".easing."));
+  $("motiondemo").innerHTML = [...durs.map((d) => [d, eases[0]]), ...eases.map((e) => [durs.find((d) => d.id.endsWith("deliberate")), e])].map(([d, e]) => `
+    <div class="card"><code>${d.id.split(".").pop()} · ${e.id.split(".").pop()}</code><div class="track"><span class="ball" style="transition: transform var(${d.css}) var(${e.css})"></span></div><span class="tertiary" style="font-size:11px">${d.desc || e.desc}</span></div>`).join("");
+</script>
+</body>
+</html>

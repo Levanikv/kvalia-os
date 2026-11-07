@@ -1,0 +1,117 @@
+{
+  "$collection": "Motion",
+  "$description": "Durées et courbes. Default / Reduced (prefers-reduced-motion). En Reduced, seuls les fondus (duration.fade) subsistent.",
+  "$modes": [
+    "default",
+    "reduced"
+  ],
+  "motion": {
+    "duration": {
+      "instant": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.0}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Changement d'état immédiat (toggle, check)."
+      },
+      "fast": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.100}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Micro-interactions : press, hover, couleur."
+      },
+      "moderate": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.200}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Apparition d'éléments petits : tooltip, chip, menu."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.300}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Éléments moyens : carte qui s'étend, sheet partielle."
+      },
+      "deliberate": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.500}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Transitions de page / mini-app, sheet plein écran."
+      },
+      "fade": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.150}",
+          "reduced": "{duration.100}"
+        },
+        "$description": "Fondus d'opacité — conservés en Reduced."
+      },
+      "stagger": {
+        "$type": "duration",
+        "$value": {
+          "default": "{duration.50}",
+          "reduced": "{duration.0}"
+        },
+        "$description": "Décalage entre éléments d'une liste qui apparaît."
+      }
+    },
+    "easing": {
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": {
+          "default": "{easing.standard}",
+          "reduced": "{easing.linear}"
+        },
+        "$description": "Élément qui bouge dans l'écran."
+      },
+      "enter": {
+        "$type": "cubicBezier",
+        "$value": {
+          "default": "{easing.decelerate}",
+          "reduced": "{easing.linear}"
+        },
+        "$description": "Élément qui entre."
+      },
+      "exit": {
+        "$type": "cubicBezier",
+        "$value": {
+          "default": "{easing.accelerate}",
+          "reduced": "{easing.linear}"
+        },
+        "$description": "Élément qui sort."
+      },
+      "emphasized": {
+        "$type": "cubicBezier",
+        "$value": {
+          "default": "{easing.emphasized}",
+          "reduced": "{easing.linear}"
+        },
+        "$description": "Transitions de mini-app, sheets."
+      },
+      "emphasized-exit": {
+        "$type": "cubicBezier",
+        "$value": {
+          "default": "{easing.emphasized-accelerate}",
+          "reduced": "{easing.linear}"
+        }
+      },
+      "spring": {
+        "$type": "string",
+        "$value": {
+          "default": "{easing.spring}",
+          "reduced": "{easing.none}"
+        },
+        "$description": "Réordonnancement de widgets, feedback ludique. CSS uniquement."
+      }
+    }
+  }
+}

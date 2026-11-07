@@ -1,0 +1,131 @@
+{
+  "$collection": "Effects",
+  "$description": "Ombres (élévation), anneau de focus, flous et opacités. Les couleurs pointent vers Theme → les ombres s'adaptent au dark.",
+  "$modes": [
+    "value"
+  ],
+  "elevation": {
+    "0": {
+      "$type": "shadow",
+      "$value": [],
+      "$description": "À plat. Séparation par bordure."
+    },
+    "1": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": "{effect.shadow-key}",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 2,
+          "spread": 0
+        },
+        {
+          "color": "{effect.shadow-ambient}",
+          "offsetX": 0,
+          "offsetY": 1,
+          "blur": 3,
+          "spread": 0
+        }
+      ]
+    },
+    "2": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": "{effect.shadow-key}",
+          "offsetX": 0,
+          "offsetY": 2,
+          "blur": 4,
+          "spread": -1
+        },
+        {
+          "color": "{effect.shadow-ambient}",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 12,
+          "spread": -2
+        }
+      ]
+    },
+    "3": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": "{effect.shadow-key}",
+          "offsetX": 0,
+          "offsetY": 4,
+          "blur": 8,
+          "spread": -2
+        },
+        {
+          "color": "{effect.shadow-ambient}",
+          "offsetX": 0,
+          "offsetY": 12,
+          "blur": 24,
+          "spread": -4
+        }
+      ]
+    },
+    "4": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": "{effect.shadow-key}",
+          "offsetX": 0,
+          "offsetY": 8,
+          "blur": 16,
+          "spread": -4
+        },
+        {
+          "color": "{effect.shadow-ambient}",
+          "offsetX": 0,
+          "offsetY": 24,
+          "blur": 48,
+          "spread": -8
+        }
+      ]
+    }
+  },
+  "focus": {
+    "ring": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": "{bg.canvas}",
+          "offsetX": 0,
+          "offsetY": 0,
+          "blur": 0,
+          "spread": 2
+        },
+        {
+          "color": "{border.focus}",
+          "offsetX": 0,
+          "offsetY": 0,
+          "blur": 0,
+          "spread": 4
+        }
+      ]
+    }
+  },
+  "blur": {
+    "glass": {
+      "$type": "dimension",
+      "$value": "{blur.16}"
+    },
+    "scrim": {
+      "$type": "dimension",
+      "$value": "{blur.4}"
+    }
+  },
+  "opacity": {
+    "disabled": {
+      "$type": "number",
+      "$value": "{opacity.0_4}"
+    },
+    "muted": {
+      "$type": "number",
+      "$value": "{opacity.0_64}"
+    }
+  }
+}
