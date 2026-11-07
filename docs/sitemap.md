@@ -21,11 +21,17 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD
 │   ├── /nutrition/recettes           Recettes (base + versions temporaires)
 │   └── /nutrition/recettes/[id]      Fiche recette (ingrédients, macros, substituts)
-├── /finances             Mini-app Finances (perso / SASU via ?perimetre=)
+├── /finances             Mini-app Finances — perso (BoursoBank)
 │   ├── /finances                     À catégoriser (swipe) + résumé du mois
 │   ├── /finances/transactions        Recherche, filtres, lien document
 │   ├── /finances/budgets             Budgets par catégorie, reste à dépenser
 │   └── /finances/comptes             Comptes, dernière sync, consentement
+├── /entreprise           Mini-app Entreprise — la SASU (Tiime)
+│   ├── /entreprise                   Pilotage : CA encaissé / facturé, charges, jauge « encore passable en frais », projection fin d'année
+│   ├── /entreprise/factures          Factures et clients (émises, payées, en retard) · ?annee=
+│   ├── /entreprise/charges           Dépenses pro, catégorie déductible, justificatif lié (→ /documents/[id])
+│   ├── /entreprise/echeances         TVA, URSSAF, IR, CFE… avec montants estimés et rappels
+│   └── /entreprise/simulateur        What-if : « si je facture X / passe Y en frais » → impact sur le net et l'impôt
 ├── /documents            Mini-app Porte-documents
 │   ├── /documents                    Coffre (grille par type, badges expiration, recherche)
 │   ├── /documents/[id]               Aperçu plein écran, champs, envoyer, partager 24 h
@@ -46,17 +52,19 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 
 ## Navigation
 
-- **Tab bar (5)** : Home · Quotidien · Sport · Nutrition · Plus. « Plus » ouvre une feuille : Finances, Documents, Objectifs, Réglages. Ordre et contenu modifiables dans `/reglages/modules` (la tab bar reflète les modules activés).
+- **Tab bar (5)** : Home · Quotidien · Sport & Nutrition · Finances · Entreprise. Pas d'entrée « Plus » : Documents, Objectifs et Réglages sont dans le **menu du header** (avatar en haut à droite, présent sur tous les écrans), et les widgets Home y mènent directement. Ordre et contenu modifiables dans `/reglages/modules`.
+- **Sport & Nutrition** : un seul onglet, deux modules. L'onglet ouvre `/sport` ; un segmented control Sport / Nutrition bascule vers `/nutrition`. Chaque module garde son préfixe, son accent et son identité (Sport sombre, Nutrition clair) — seule la tab bar les réunit.
+- **Finances vs Entreprise** : Finances = comptes perso ; Entreprise = tout ce qui touche la SASU (comptes pro, factures, charges, échéances, simulateur, conseils). Une transaction appartient à l'un ou à l'autre (`perimetre`), jamais aux deux.
 - **Bouton « + » flottant** sur tous les écrans → `/capture` en feuille (texte ou micro navigateur). Le texte part à l'agent, la réponse s'affiche dans la feuille.
 - **Header de mini-app** : titre du module, accent de couleur, action contextuelle à droite (ex. « Courses faites », « Démarrer »).
-- **Sous-onglets** dans Quotidien (Courses / Tâches / Habitudes) : segmented control sous le header, pas de tab bar imbriquée.
+- **Sous-onglets** dans Quotidien (Courses / Tâches / Habitudes) : segmented control sous le header, pas de tab bar imbriquée. Une seule mini-app : c'est ce qu'on ouvre dix fois par jour, tout doit être à un tap.
 - **Desktop (≥ 1024 px)** : la tab bar devient une sidebar à gauche, même ordre, même « + ».
 
 ## Conventions
 
 - Préfixe = module. Le layout lit le premier segment et pose `data-module` sur `<html>` → l'accent et le thème (Sport sombre) suivent.
 - Date dans la query, jamais dans le path : `?jour=2026-11-08`, `?semaine=2026-11-02`. Sans paramètre = aujourd'hui.
-- États d'écran dans la query : `?mode=magasin` (courses plein écran sombre), `?perimetre=sasu`.
+- États d'écran dans la query : `?mode=magasin` (courses plein écran sombre), `?annee=2026`.
 - Les ids sont les uuid Supabase ; pas de slugs.
 - Les widgets Home ouvrent toujours un deep link de cette liste (jamais une route privée).
 - Le raccourci iOS et Alexa n'ouvrent pas l'app : ils appellent l'API. Seul « voir la liste » ouvre `/quotidien/courses`.
@@ -69,9 +77,19 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 | Quotidien | Courses (+ mode magasin) · Produits & stock · Tâches · Habitudes | Agenda complet |
 | Sport | Programme · Séance plein écran · Fiche exercice · Historique | Charge / récupération |
 | Nutrition | Journal · Plan semaine · Fiche recette · Pesée (feuille) | Scan, photo |
-| Finances | À catégoriser · Transactions · Budgets · Comptes | Tracker SASU, abonnements |
+| Finances | À catégoriser · Transactions · Budgets · Comptes | Abonnements oubliés, épargne |
+| Entreprise | Pilotage · Factures · Charges · Échéances (+ simulateur en feuille) | Conseils de l'agent (juridique, investissement), devis, relances auto |
 | Documents | Coffre · Aperçu · Ajout | Mode voyage |
 | Transverse | Objectifs · Capture · Réglages (4) · Onboarding · Connexion | Multi-utilisateur |
+
+## Entreprise — ce que le module doit savoir faire
+
+- Encaisser une facture (PDF ou chiffre) → CA à jour, **impact immédiat** : ce qu'il reste de passable en frais au prorata de l'année, bénéfice projeté, impôt estimé (SASU à l'IR : le résultat remonte sur le foyer).
+- Jauge de frais : plafond raisonnable de charges déductibles calculé sur le CA, consommé par les dépenses pro catégorisées.
+- Échéancier fiscal et social avec montants estimés, rappels 15 jours avant.
+- Simulateur what-if : facturer X de plus, passer Y en frais, se verser Z → effet sur le net et l'impôt.
+- Conseils de l'agent : questions en langage naturel (« je peux passer mon vélo en frais ? »), **avec le disclaimer** : ce n'est pas un comptable, les chiffres se valident avec le sien.
+- Source : Tiime (CSV, ou API interne via SDK communautaire), factures uploadées dans Documents (type `sasu`).
 
 ## 4 flux clés (à maquetter en FigJam)
 
