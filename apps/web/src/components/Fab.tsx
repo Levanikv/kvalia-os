@@ -1,0 +1,20 @@
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Icon } from "./Icon";
+
+/** Bouton « + » flottant : capture rapide (texte, micro). Masqué sur la page de capture elle-même. */
+export function Fab() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/capture")) return null;
+  return (
+    <Link
+      href="/capture"
+      aria-label="Capture rapide"
+      className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg shadow-black/20 transition-transform active:scale-95"
+      style={{ bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)" }}
+    >
+      <Icon name="add" size={28} />
+    </Link>
+  );
+}

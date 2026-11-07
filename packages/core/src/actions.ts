@@ -1,9 +1,13 @@
 /**
- * Implémentation des outils v0. Les règles métier migreront dans packages/core dès qu'elles seront partagées avec l'API web.
+ * Implémentation des outils (règles métier v0). Un seul endroit : le serveur MCP (apps/agent) et l'app web
+ * (server actions) appellent `executer` avec un client Supabase — service role côté agent, session utilisateur côté web.
  */
-import type { KvaliaClient, ToolInput, ToolName, ToolOutput, VueJour } from "@kvalia/core";
+import type { KvaliaClient } from "./supabase";
+import type { VueJour } from "./schemas";
+import type { ToolInput, ToolName, ToolOutput } from "./tools";
 
-type Ctx = { db: KvaliaClient; userId: string };
+export type ContexteOutil = { db: KvaliaClient; userId: string };
+type Ctx = ContexteOutil;
 
 async function listeActiveId(ctx: Ctx): Promise<string> {
   const { data } = await ctx.db

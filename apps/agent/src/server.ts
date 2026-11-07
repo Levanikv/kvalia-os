@@ -10,10 +10,9 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { createServiceClient, tools, type ToolName } from "@kvalia/core";
+import { createServiceClient, executer, tools, type ToolName } from "@kvalia/core";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { executer } from "./tools.js";
 
 // Charge le .env à la racine du mono-repo (apps/agent/src → ../../../.env). En prod les variables viennent de l'hébergeur.
 const ENV_RACINE = fileURLToPath(new URL("../../../.env", import.meta.url));

@@ -1,6 +1,7 @@
 /*
   KVALIA OS — tokens v0 (placeholder en attendant l'export Figma « KVALIA OS DS »).
-  Règle : un shell commun, une identité par module. `--module-accent` est résolu par l'attribut data-module du <main>.
+  Règle : un shell commun, une identité par module. `--module-accent` est résolu par l'attribut data-module
+  posé par le cadre de chaque mini-app (ModuleFrame). Sport bascule ses surfaces en sombre.
 */
 :root {
   /* primitifs */
@@ -11,6 +12,7 @@
   --neutral-400: #9a9aa3;
   --neutral-600: #5d5d66;
   --neutral-800: #26262c;
+  --neutral-900: #18181c;
   --neutral-950: #0f0f12;
 
   --accent-home: #4f6bff;
@@ -18,35 +20,66 @@
   --accent-sport: #e5484d;
   --accent-nutrition: #f0872b;
   --accent-finances: #d9a400;
-  --accent-docs: #8b5a2b;
+  --accent-entreprise: #2f7f9f;
+  --accent-documents: #8b5a2b;
+  --accent-objectifs: #7c4dff;
+  --accent-reglages: #5d5d66;
+  --accent-capture: #4f6bff;
   --accent-alexa: #7c4dff;
 
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 999px;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
+  /* hauteurs du shell */
+  --tabbar-h: 64px;
+  --header-h: 56px;
+
   /* sémantiques (light) */
   --surface: var(--neutral-0);
   --surface-2: var(--neutral-50);
+  --surface-3: var(--neutral-100);
   --text: var(--neutral-950);
   --text-2: var(--neutral-600);
+  --text-3: var(--neutral-400);
   --border: var(--neutral-200);
   --module-accent: var(--accent-home);
+  --module-accent-soft: color-mix(in srgb, var(--module-accent) 14%, var(--surface));
+  --danger: #e5484d;
+  --success: #1fa971;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --surface: var(--neutral-950);
-    --surface-2: var(--neutral-800);
+    --surface-2: var(--neutral-900);
+    --surface-3: var(--neutral-800);
     --text: var(--neutral-50);
     --text-2: var(--neutral-400);
-    --border: #33333b;
+    --text-3: var(--neutral-600);
+    --border: #2b2b33;
   }
 }
 
-[data-module="home"]      { --module-accent: var(--accent-home); }
-[data-module="quotidien"] { --module-accent: var(--accent-quotidien); }
-[data-module="sport"]     { --module-accent: var(--accent-sport); color-scheme: dark; }
-[data-module="nutrition"] { --module-accent: var(--accent-nutrition); }
-[data-module="finances"]  { --module-accent: var(--accent-finances); }
-[data-module="docs"]      { --module-accent: var(--accent-docs); }
+[data-module="home"]       { --module-accent: var(--accent-home); }
+[data-module="quotidien"]  { --module-accent: var(--accent-quotidien); }
+[data-module="nutrition"]  { --module-accent: var(--accent-nutrition); }
+[data-module="finances"]   { --module-accent: var(--accent-finances); }
+[data-module="entreprise"] { --module-accent: var(--accent-entreprise); }
+[data-module="documents"]  { --module-accent: var(--accent-documents); }
+[data-module="objectifs"]  { --module-accent: var(--accent-objectifs); }
+[data-module="reglages"]   { --module-accent: var(--accent-reglages); }
+[data-module="capture"]    { --module-accent: var(--accent-capture); }
+
+/* Sport : identité sombre quel que soit le thème système */
+[data-module="sport"] {
+  --module-accent: var(--accent-sport);
+  --surface: var(--neutral-950);
+  --surface-2: var(--neutral-900);
+  --surface-3: var(--neutral-800);
+  --text: var(--neutral-50);
+  --text-2: var(--neutral-400);
+  --text-3: var(--neutral-600);
+  --border: #2b2b33;
+  color-scheme: dark;
+}
