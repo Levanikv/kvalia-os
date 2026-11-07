@@ -2,7 +2,9 @@
   KVALIA OS — import des tokens dans Figma (Plugin API).
   Template : `__PAYLOAD__` est remplacé par figma/variables.json au build → figma/import.js.
 
-  Exécution : coller figma/import.js dans le MCP Figma `use_figma` (ou un plugin type Scripter).
+  Exécution : coller figma/import.js dans un plugin type Scripter, ou exécuter figma/chunks/*.js dans l'ordre
+  via le MCP Figma `use_figma` (limite de taille par appel). Les alias vers des variables créées par un morceau
+  précédent sont résolus depuis le fichier.
   Idempotent : collections, modes, variables et styles sont retrouvés par nom puis mis à jour.
   Ordre : collections → modes → variables (pass 1) → valeurs/alias (pass 2) → text styles → effect styles.
 */
@@ -18,7 +20,26 @@ const existingColls = await figma.variables.getLocalVariableCollectionsAsync();
 const existingVars = await figma.variables.getLocalVariablesAsync();
 const byKey = new Map(); // "Collection::name" -> Variable
 const collObjs = new Map();
+const lookup = (key) => {
+  if (byKey.has(key)) return byKey.get(key);
+  const [cName, vName] = key.split("::");
+  const coll = existingColls.find((c) => c.name === cName);
+  const v = coll && existingVars.find((x) => x.variableCollectionId === coll.id && x.name === vName);
+  if (v) byKey.set(key, v);
+  return v;
+};
 
+P.collections = P.collections ?? [];
+// Format compact (morceaux use_figma) : [nom, C|F|S, indexScopes, valeur(s), description?, sansCodeSyntax?]
+// alias compact : "@<indexCollection>:<nom>" ; code syntax WEB dérivé de c.prefix + nom.
+const dec = (val) => (typeof val === "string" && val[0] === "@" ? { alias: `${P.C[+val.slice(1, val.indexOf(":"))]}::${val.slice(val.indexOf(":") + 1)}` } : val);
+for (const c of P.collections) {
+  c.variables = c.variables.map((v) => (!Array.isArray(v) ? v : {
+    name: v[0], type: { C: "COLOR", F: "FLOAT", S: "STRING" }[v[1]], scopes: P.S[v[2]], description: v[4] || "",
+    web: v[5] ? null : `var(--kv-${c.prefix}${v[0].replace(/\//g, "-")})`,
+    values: Object.fromEntries(c.modes.map((m, i) => [m, dec(c.modes.length === 1 ? v[3] : v[3][i])])),
+  }));
+}
 // 1. Collections + modes
 for (const c of P.collections) {
   let coll = existingColls.find((x) => x.name === c.name) ?? figma.variables.createVariableCollection(c.name);
@@ -54,7 +75,7 @@ for (const c of P.collections) {
     for (const [modeName, val] of Object.entries(v.values)) {
       const modeId = coll.modes.find((m) => m.name === modeName).modeId;
       if (val && typeof val === "object" && "alias" in val) {
-        const target = byKey.get(val.alias);
+        const target = lookup(val.alias);
         if (!target) { report.warnings.push(`alias introuvable ${v.name} → ${val.alias}`); continue; }
         variable.setValueForMode(modeId, figma.variables.createVariableAlias(target));
       } else {
@@ -65,21 +86,14 @@ for (const c of P.collections) {
 }
 
 // 4. Text styles (liés aux variables Typography → suivent Brand + Mobile/Desktop)
-const fonts = new Set();
-const brandColl = P.collections.find((c) => c.name === "Brand");
-const prim = P.collections.find((c) => c.name === "Primitives");
-const primVal = (name) => prim.variables.find((x) => x.name === name)?.values.Value;
-for (const v of brandColl.variables.filter((x) => x.name === "font/display")) {
-  const styles = brandColl.variables.find((x) => x.name === "font/display-style").values;
-  for (const [mode, val] of Object.entries(v.values)) fonts.add(JSON.stringify({ family: primVal(val.alias.split("::")[1]), style: primVal(styles[mode].alias.split("::")[1]) }));
-}
-for (const t of P.textStyles) fonts.add(JSON.stringify({ family: t.fallback.family, style: t.fallback.style }));
+// Toutes les polices atteignables par les variables (tous modes) doivent être chargées avant le binding.
+const fonts = new Set((P.fonts ?? []).map((f) => JSON.stringify(f)));
 const loaded = new Set();
 for (const f of fonts) {
   try { await figma.loadFontAsync(JSON.parse(f)); loaded.add(f); } catch (e) { report.warnings.push(`police indisponible : ${f}`); }
 }
 const localText = await figma.getLocalTextStylesAsync();
-for (const t of P.textStyles) {
+for (const t of P.textStyles ?? []) {
   const name = `kvalia/${t.name}`;
   const style = localText.find((s) => s.name === name) ?? figma.createTextStyle();
   style.name = name;
@@ -90,7 +104,7 @@ for (const t of P.textStyles) {
   style.letterSpacing = { unit: "PERCENT", value: t.tracking };
   style.textCase = t.uppercase ? "UPPER" : "ORIGINAL";
   for (const [field, key] of Object.entries(t.bind)) {
-    const variable = byKey.get(key);
+    const variable = lookup(key);
     try { style.setBoundVariable(field, variable); } catch (e) { report.warnings.push(`bind ${name}.${field} : ${e.message}`); }
   }
   report.textStyles++;
@@ -98,7 +112,7 @@ for (const t of P.textStyles) {
 
 // 5. Effect styles (couleurs d'ombre liées à Theme → s'adaptent au dark)
 const localFx = await figma.getLocalEffectStylesAsync();
-for (const e of P.effectStyles) {
+for (const e of P.effectStyles ?? []) {
   const name = `kvalia/${e.name}`;
   const style = localFx.find((s) => s.name === name) ?? figma.createEffectStyle();
   style.name = name;
@@ -107,7 +121,7 @@ for (const e of P.effectStyles) {
     style.effects = [{ type: "BACKGROUND_BLUR", blurType: "NORMAL", radius: e.backgroundBlur, visible: true }];
   } else {
     style.effects = e.layers.map((l) => {
-      const variable = byKey.get(l.color);
+      const variable = lookup(l.color);
       const base = { type: "DROP_SHADOW", color: { r: 0, g: 0, b: 0, a: 0.1 }, offset: { x: l.offsetX, y: l.offsetY }, radius: l.blur, spread: l.spread, visible: true, blendMode: "NORMAL", showShadowBehindNode: false };
       return variable ? figma.variables.setBoundVariableForEffect(base, "color", variable) : base;
     });

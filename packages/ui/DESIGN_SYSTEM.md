@@ -398,15 +398,32 @@ Finances, nutrition, sport : `numeric-*`, séparateur de milliers insécable fin
 - Code syntax WEB = `var(--kv-…)` sur chaque variable → Dev Mode affiche les vrais noms CSS.
 - Text styles `kvalia/<rôle>` liés aux variables Typography (famille, style, taille, interligne) → suivent la mini-app et Mobile/Desktop.
 - Effect styles `kvalia/elevation/0…4`, `kvalia/focus/ring`, `kvalia/blur/glass`, couleurs liées à Theme.
-- 7 modes Brand ⇒ plan Organization ou Enterprise (Professional est limité à 4 modes par collection).
+- 7 modes Brand : vérifié sur le fichier actuel (plan Professional, 8 modes acceptés). Si une limite de modes apparaît sur un autre plan, `addMode` échoue et l'import s'arrête.
 
 ### 9.2 Import
 
-`figma/import.js` est généré au build (payload inclus) et idempotent : il crée ou met à jour collections, modes, variables, alias, scopes, code syntax, text styles et effect styles. L'exécuter via le MCP Figma (`use_figma`) ou un plugin type Scripter sur le fichier cible, avec un compte **éditeur** du fichier.
+Fichier Figma : https://www.figma.com/design/Wsysc6DJl1WLzN7do7Ujjl (686 variables, 20 text styles `kvalia/*`, 7 effect styles, 7 pages de documentation).
 
-### 9.3 Pages canvas prévues
+`figma/import.js` est généré au build (payload inclus) et idempotent : il crée ou met à jour collections, modes, variables, alias, scopes, code syntax, text styles et effect styles. Deux façons de l'exécuter, avec un compte **éditeur** du fichier :
 
-`Cover` · `Foundations / Color` (primitives + matrice sémantique Light/Dark) · `Foundations / Type` · `Foundations / Spacing & Radius` · `Foundations / Effects` · `Foundations / Motion` · `Brands` (matrice mini-apps × thèmes, identique au spécimen) · `Components` (une page par composant, variantes liées aux tokens de composants).
+- plugin type Scripter : coller `figma/import.js` en entier ;
+- MCP Figma (`use_figma`, limité à ~50 Ko par appel) : exécuter `figma/chunks/import-01.js`, `-02`, `-03` **dans l'ordre**. Les morceaux utilisent un format compact et résolvent les alias vers les variables créées par les morceaux précédents.
+
+31 variables n'ont volontairement pas de code syntax WEB : ce sont les noms de style Figma (`font/style/*`, `font/display-style`, `*/style`), sans équivalent CSS.
+
+### 9.3 Pages du canvas
+
+| Page | Contenu |
+|---|---|
+| Cover | Pastilles des 7 mini-apps (chacune dans son mode Brand), 8 couches, axes, règles d'or |
+| Foundations · Color | Rampes primitives + tous les rôles Theme en Light et Dark |
+| Foundations · Typography | Police display par mini-app, 20 text styles en Mobile / Desktop |
+| Foundations · Layout | Barres liées aux variables en Comfortable / Compact, rayons par mini-app, contrôles |
+| Foundations · Effects & Motion | Élévation 0–4 Light/Dark, focus, verre, durées Default/Reduced, courbes |
+| Brands × Themes | Composant `Mini-app preview` (tokens Components uniquement) + 14 instances, une par mini-app × thème |
+| Component tokens | Les 101 tokens de composants avec leur alias |
+
+Règle de construction : tout est lié aux variables ; une frame change d'identité en changeant ses modes Brand / Theme / Layout / Typography (panneau Appearance).
 
 ---
 

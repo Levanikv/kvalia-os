@@ -369,6 +369,10 @@ function buildFigma() {
     out.effectStyles.push({ name: t.path.join("/"), description: t.description ?? "", layers: t.values.value.map((l) => ({ ...l, color: `Theme::${figmaName(tokens.get(refId(l.color)))}` })) });
   }
   out.effectStyles.push({ name: "blur/glass", description: "Flou d'arrière-plan des barres translucides", backgroundBlur: resolve("blur.glass") });
+  // Polices atteignables par les text styles, tous modes Brand confondus (à charger avant binding).
+  const fonts = new Set();
+  for (const brand of collections.brand.modes) for (const role of roles) fonts.add(JSON.stringify({ family: resolve(`type.${role}.family`, { ...DEFAULT_CTX, brand }), style: resolve(`type.${role}.style`, { ...DEFAULT_CTX, brand }) }));
+  out.fonts = [...fonts].map((f) => JSON.parse(f));
   return out;
 }
 
@@ -455,6 +459,49 @@ const outputs = {
   "tokens/CONTRAST.md": contrast + "\n",
   "specimen/data.js": buildSpecimenData(),
 };
+// Morceaux < 45 Ko pour use_figma : variables découpées par collection (ordre des couches), styles à la fin.
+{
+  const tpl = fs.readFileSync(path.join(ROOT, "figma/import.template.js"), "utf8");
+  const LIMIT = 45000 - tpl.length;
+  // Compactage
+  const C = figma.collections.map((c) => c.name);
+  const S = [];
+  const prefix = { Brand: "brand-", Typography: "type-", Motion: "motion-" };
+  const enc = (val) => (val && typeof val === "object" && "alias" in val ? `@${C.indexOf(val.alias.split("::")[0])}:${val.alias.split("::")[1]}` : val);
+  const compact = figma.collections.map((c) => ({
+    name: c.name, description: c.description, modes: c.modes, prefix: prefix[c.name] ?? "",
+    variables: c.variables.map((v) => {
+      const sk = JSON.stringify(v.scopes);
+      if (!S.some((x) => JSON.stringify(x) === sk)) S.push(v.scopes);
+      const vals = c.modes.map((m) => enc(v.values[m]));
+      const derived = `var(--kv-${prefix[c.name] ?? ""}${v.name.replace(/\//g, "-")})`;
+      if (v.web && v.web !== derived) throw new Error(`code syntax non dérivable : ${v.name}`);
+      const row = [v.name, v.type[0], S.findIndex((x) => JSON.stringify(x) === sk), c.modes.length === 1 ? vals[0] : vals, v.description || 0, v.web ? 0 : 1];
+      while (row.length > 4 && !row.at(-1)) row.pop();
+      return row;
+    }),
+  }));
+  const chunks = [];
+  const fresh = () => ({ C, S, collections: [] });
+  let cur = fresh();
+  const size = (o) => JSON.stringify(o).length;
+  for (const c of compact) {
+    let part = { ...c, variables: [] };
+    for (const v of c.variables) {
+      part.variables.push(v);
+      if (size(cur) + size(part) > LIMIT) {
+        part.variables.pop();
+        if (part.variables.length) cur.collections.push(part);
+        chunks.push(cur); cur = fresh(); part = { ...c, variables: [v] };
+      }
+    }
+    cur.collections.push(part);
+  }
+  chunks.push(cur);
+  chunks.push({ textStyles: figma.textStyles, effectStyles: figma.effectStyles, fonts: figma.fonts });
+  for (const f of fs.existsSync(path.join(ROOT, "figma/chunks")) ? fs.readdirSync(path.join(ROOT, "figma/chunks")) : []) if (!CHECK_ONLY) fs.rmSync(path.join(ROOT, "figma/chunks", f));
+  chunks.forEach((ch, i) => { outputs[`figma/chunks/import-${String(i + 1).padStart(2, "0")}.js`] = tpl.replace("const P = __PAYLOAD__;", () => `const P = ${JSON.stringify(ch)};`); });
+}
 const stats = Object.fromEntries(Object.values(collections).map((c) => [c.name, [...tokens.values()].filter((t) => t.coll === c).length]));
 if (CHECK_ONLY) {
   const stale = Object.entries(outputs).filter(([f, c]) => !fs.existsSync(path.join(ROOT, f)) || fs.readFileSync(path.join(ROOT, f), "utf8") !== c).map(([f]) => f);
