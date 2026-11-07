@@ -26,6 +26,16 @@ const USER_ID: string = process.env.KVALIA_USER_ID ?? (() => {
   throw new Error("KVALIA_USER_ID manquant (uuid de ton utilisateur Supabase)");
 })();
 
+/** Supabase renvoie des PostgrestError (objets simples) : on extrait un message lisible. */
+function messageErreur(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) {
+    const e = err as { message: string; code?: string; details?: string; hint?: string };
+    return [e.code, e.message, e.details, e.hint].filter(Boolean).join(" — ");
+  }
+  return String(err);
+}
+
 function creerServeurMcp() {
   const mcp = new McpServer({ name: "kvalia-os", version: "0.0.1" });
   const db = createServiceClient();
@@ -46,7 +56,7 @@ function creerServeurMcp() {
           });
           return { content: [{ type: "text" as const, text: JSON.stringify(sortie) }] };
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          const message = messageErreur(err);
           await db.from("appels_outils").insert({
             user_id: USER_ID, outil: nom, canal: "claude", entree: args as never, sortie: { erreur: message },
             succes: false, duree_ms: Date.now() - debut,
@@ -60,7 +70,11 @@ function creerServeurMcp() {
 }
 
 const app = new Hono();
-app.get("/health", (c) => c.json({ ok: true, outils: Object.keys(tools) }));
+app.onError((err, c) => {
+  console.error("[kvalia] erreur serveur :", err);
+  return c.json({ erreur: messageErreur(err), stack: err.stack?.split("\n").slice(0, 4) }, 500);
+});
+app.get("/health", (c) => c.json({ ok: true, node: process.version, outils: Object.keys(tools) }));
 
 // Un transport par requête (stateless) : simple et suffisant pour un usage perso.
 app.all("/mcp", async (c) => {
