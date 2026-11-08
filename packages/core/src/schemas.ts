@@ -74,6 +74,17 @@ export type Ligne = z.infer<typeof Ligne>;
 export const ListeEtat = z.enum(["active", "faite", "archivee"]);
 
 // ---------- Vue Jour (sortie de la fonction SQL vue_jour) ----------
+const SeanceVue = z.object({
+  id: z.string().uuid(),
+  type: z.string(),
+  titre: z.string().nullable().optional(),
+  duree_min: z.number().nullable(),
+  etat: z.string(),
+  kcal: z.number().nullable().optional(),
+  nb_exercices: z.number(),
+  nb_faits: z.number().optional(),
+});
+
 export const VueJour = z.object({
   jour: z.string().date(),
   evenements: z.array(
@@ -103,18 +114,10 @@ export const VueJour = z.object({
       fait: z.boolean(),
     }),
   ),
-  seance: z
-    .object({
-      id: z.string().uuid(),
-      type: z.string(),
-      titre: z.string().nullable().optional(),
-      duree_min: z.number().nullable(),
-      etat: z.string(),
-      kcal: z.number().nullable().optional(),
-      nb_exercices: z.number(),
-      nb_faits: z.number().optional(),
-    })
-    .nullable(),
+  /** Séance principale du jour (la première pas encore faite) — compatibilité. */
+  seance: SeanceVue.nullable(),
+  /** Toutes les séances du jour (ex. muscu + boxe), salle d'abord. */
+  seances: z.array(SeanceVue).default([]),
   repas: z.array(
     z.object({
       repas: z.string(),

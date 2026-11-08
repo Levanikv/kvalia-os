@@ -11,6 +11,8 @@ export default async function Home() {
   const jour = aujourdhui();
   const { data, error } = await supabase.rpc("vue_jour", { p_jour: jour });
   const vue = (error ? null : (data as unknown as VueJour)) ?? null;
+  // `seances` arrive avec la migration vue_jour_seances ; repli sur `seance` si la fonction n'est pas encore à jour.
+  const seances = vue?.seances?.length ? vue.seances : vue?.seance ? [vue.seance] : [];
 
   const date = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   const tachesDues = vue?.taches ?? [];
@@ -77,27 +79,32 @@ export default async function Home() {
           )}
         </Carte>
 
-        <Carte titre="Séance du jour" icone="fitness_center" href={vue?.seance ? `/sport/seance/${vue.seance.id}` : "/sport"} module="sport">
-          {vue?.seance ? (
-            <div>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="truncate text-lg font-semibold tracking-tight">{vue.seance.titre ?? vue.seance.type}</p>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${vue.seance.etat === "faite" ? "bg-success/15 text-success" : vue.seance.etat === "en_cours" ? "bg-accent/15 text-accent" : "bg-surface-3 text-text-2"}`}
-                >
-                  {vue.seance.etat === "faite"
-                    ? `✓ ${vue.seance.kcal ?? 0} kcal`
-                    : vue.seance.etat === "en_cours"
-                      ? `${vue.seance.nb_faits ?? 0}/${vue.seance.nb_exercices}`
-                      : "Prévue"}
-                </span>
-              </div>
-              <p className="mt-0.5 text-sm text-text-2">
-                {vue.seance.nb_exercices > 0 ? `${vue.seance.nb_exercices} exercices` : "Séance libre"}
-                {vue.seance.duree_min ? ` · ${vue.seance.duree_min} min` : ""}
-                {vue.seance.etat !== "faite" && <span className="text-accent"> · Démarrer →</span>}
-              </p>
-            </div>
+        <Carte
+          titre={seances.length > 1 ? "Séances du jour" : "Séance du jour"}
+          icone="fitness_center"
+          href={seances.length === 1 ? `/sport/seance/${seances[0].id}` : "/sport"}
+          module="sport"
+        >
+          {seances.length > 0 ? (
+            <ul className="space-y-2">
+              {seances.map((s) => (
+                <li key={s.id}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className={`truncate font-semibold tracking-tight ${seances.length > 1 ? "text-base" : "text-lg"}`}>{s.titre ?? s.type}</p>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${s.etat === "faite" ? "bg-success/15 text-success" : s.etat === "en_cours" ? "bg-accent/15 text-accent" : "bg-surface-3 text-text-2"}`}
+                    >
+                      {s.etat === "faite" ? `✓ ${s.kcal ?? 0} kcal` : s.etat === "en_cours" ? `${s.nb_faits ?? 0}/${s.nb_exercices}` : "Prévue"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-text-2">
+                    {s.nb_exercices > 0 ? `${s.nb_exercices} exercices` : "Séance libre"}
+                    {s.duree_min ? ` · ${s.duree_min} min` : ""}
+                    {s.etat !== "faite" && seances.length === 1 && <span className="text-accent"> · Démarrer →</span>}
+                  </p>
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="text-sm text-text-3">Repos aujourd’hui — ou pas encore de programme.</p>
           )}

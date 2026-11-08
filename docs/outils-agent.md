@@ -68,6 +68,7 @@ Le condensé du jour : rendez-vous, séance, repas, tâches, habitudes, courses,
 - `taches` : liste de objet { id, titre, due, priorite, fait }
 - `habitudes` : liste de objet { id, nom, moment, non_negociable, fait }
 - `seance` : objet { id, type, titre, duree_min, etat, kcal, nb_exercices, nb_faits } | null
+- `seances` : liste de objet { id, type, titre, duree_min, etat, kcal, nb_exercices, nb_faits } — défaut `[]`
 - `repas` : liste de objet { repas, recette_id, recette, portions, pris }
 - `courses` : objet { liste_id, articles, manques } | null
 - `depenses_semaine` : nombre
