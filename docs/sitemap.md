@@ -58,13 +58,16 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 
 ## Navigation
 
-- **Tab bar (5)** : Home · Quotidien · Sport & Nutrition · Finances · Entreprise. Pas d'entrée « Plus » : Documents, Objectifs et Réglages sont dans le **menu du header** (avatar en haut à droite, présent sur tous les écrans), et les widgets Home y mènent directement. Ordre et contenu modifiables dans `/reglages/modules`.
-- **Sport & Nutrition** : un seul onglet, deux modules. L'onglet ouvre `/sport` ; un segmented control Sport / Nutrition bascule vers `/nutrition`. Chaque module garde son préfixe, son accent et son identité (Sport sombre, Nutrition clair) — seule la tab bar les réunit.
+> v1.1 (8 nov.) — la tab bar globale est remplacée par un **menu « Applications »** et une **barre inférieure par application**.
+
+- **Menu « Applications »** (icône burger en haut à gauche, sur tous les écrans) : feuille qui monte du bas et liste les apps — Home · Quotidien · Sport & Nutrition · Finances · Entreprise · Documents · Objectifs · Réglages — avec une ligne de description chacune, l'app courante surlignée, et le bouton Capture en bas. Registre : `packages/ui/src/index.ts` (`menuApps`).
+- **Barre inférieure par application** (`onglets` dans le registre, composant `ModuleBar`) : les entrées principales de l'app courante, à un tap. Sport & Nutrition : **Jour · Programme · Exercices · Nutrition**. Quotidien : Courses · Tâches · Habitudes. Finances : Vue · Transactions · Budgets · Comptes. Entreprise : Pilotage · Factures · Charges · Échéances · Simuler. Home : Aujourd'hui · Objectifs · Documents. Réglages : Réglages · Sport · Nutrition · Journal. L'onglet actif = le préfixe d'URL le plus long qui correspond (`/sport/seance/x` → Jour).
+- **Sport & Nutrition** : une seule application, deux modules (préfixes `/sport` et `/nutrition`), chacun avec son accent et son identité (Sport sombre, Nutrition clair). La **bande de jours** est partagée : scrollable, le jour sélectionné centré, `?jour=YYYY-MM-DD` conservé en passant de l'un à l'autre.
+- **Feuilles modales** (`BottomSheet`, façon iOS : voile, poignée, zone sûre, Échap) pour tout ce qui est contextuel : menu apps, Terminer la séance (ressenti), détail d'un exercice (charge, reps, remplacer), équivalents. Pas de modale centrée.
+- **Header de mini-app** : burger (ou flèche retour sur un écran de détail), titre + sous-titre (date, semaine), avatar à droite → Réglages, ou une action contextuelle.
 - **Finances vs Entreprise** : Finances = comptes perso ; Entreprise = tout ce qui touche la SASU (comptes pro, factures, charges, échéances, simulateur, conseils). Une transaction appartient à l'un ou à l'autre (`perimetre`), jamais aux deux.
-- **Bouton « + » flottant** sur tous les écrans → `/capture` en feuille (texte ou micro navigateur). Le texte part à l'agent, la réponse s'affiche dans la feuille.
-- **Header de mini-app** : titre du module, accent de couleur, action contextuelle à droite (ex. « Courses faites », « Démarrer »).
-- **Sous-onglets** dans Quotidien (Courses / Tâches / Habitudes) : segmented control sous le header, pas de tab bar imbriquée. Une seule mini-app : c'est ce qu'on ouvre dix fois par jour, tout doit être à un tap.
-- **Desktop (≥ 1024 px)** : la tab bar devient une sidebar à gauche, même ordre, même « + ».
+- **Bouton « + » flottant** sur tous les écrans → `/capture` (texte ou micro navigateur). Le texte part à l'agent, la réponse s'affiche.
+- **Desktop** : même shell, centré (max 32 rem) ; pas de sidebar pour l'instant.
 
 ## Conventions
 
