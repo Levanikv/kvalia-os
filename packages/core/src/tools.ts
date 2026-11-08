@@ -127,9 +127,10 @@ export const tools = {
   },
 
   seance_du_jour: {
-    description: "La séance prévue pour un jour (aujourd'hui par défaut) avec ses exercices, prescriptions, kcal prévues et cochées.",
+    description:
+      "Les séances prévues pour un jour (aujourd'hui par défaut) avec leurs exercices, prescriptions, kcal prévues et cochées. Un jour peut avoir deux séances (ex. muscu + boxe) : `seances` les liste toutes (salle d'abord) ; `seance` est la principale (la première pas encore faite).",
     input: z.object({ jour: z.string().date().optional() }),
-    output: z.object({ jour: z.string().date(), seance: SeanceSortie.nullable() }),
+    output: z.object({ jour: z.string().date(), seance: SeanceSortie.nullable(), seances: z.array(SeanceSortie) }),
   },
 
   cocher_exercice: {

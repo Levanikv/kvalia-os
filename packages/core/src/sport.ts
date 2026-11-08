@@ -342,15 +342,26 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
 }
 
 // ---------- Progression ----------
+/** Focus d'un bloc selon l'objectif (hors semaine de décharge). */
+export function focusBloc(objectif: ParametresSport["objectif"], bloc: number): string {
+  if (objectif === "force") return bloc === 1 ? "hypertrophie" : "force";
+  if (objectif === "endurance") return "mixte";
+  return bloc === 1 ? "hypertrophie" : bloc === 2 ? "force" : "mixte";
+}
+
+/** Les phases d'un programme, semaine par semaine : bloc, focus (la 4ᵉ semaine de chaque bloc = décharge). */
+export function phasesProgramme(params: Pick<ParametresSport, "objectif" | "semaines">): Array<{ semaine: number; bloc: number; focus: string }> {
+  return Array.from({ length: params.semaines }, (_, s) => {
+    const bloc = Math.floor(s / 4) + 1;
+    return { semaine: s + 1, bloc, focus: (s % 4) + 1 === 4 ? "deload" : focusBloc(params.objectif, bloc) };
+  });
+}
 type Prescription = { series: number; reps: string; repos_s: number; focus: string };
 
 function prescription(params: ParametresSport, bloc: number, semaineDansBloc: number, slot: Slot): Prescription {
   const deload = semaineDansBloc === 4;
   const iso = slot.isolation === true;
-  let focus: string;
-  if (params.objectif === "force") focus = bloc === 1 ? "hypertrophie" : "force";
-  else if (params.objectif === "endurance") focus = "mixte";
-  else focus = bloc === 1 ? "hypertrophie" : bloc === 2 ? "force" : "mixte";
+  const focus = focusBloc(params.objectif, bloc);
   if (deload) return { series: 2, reps: iso ? "12" : "8", repos_s: 60, focus: "deload" };
   const progression = semaineDansBloc === 3 ? 1 : 0; // semaine 3 : une série de plus
   if (params.objectif === "endurance") return { series: 3 + progression, reps: "15", repos_s: 45, focus };
@@ -359,6 +370,43 @@ function prescription(params: ParametresSport, bloc: number, semaineDansBloc: nu
   if (focus === "hypertrophie")
     return iso ? { series: 3 + progression, reps: "12-15", repos_s: 60, focus } : { series: 3 + progression, reps: "8-12", repos_s: 90, focus };
   return iso ? { series: 3, reps: "10-12", repos_s: 60, focus } : { series: 3 + progression, reps: "6-10", repos_s: 120, focus };
+}
+
+export type SeancePlanifiee = { genre: "salle"; modele: string; index: number; type: string; titre: string } | { genre: "boxe"; type: "boxe"; titre: string };
+export type PlanSemaine = {
+  /** Séances par jour de la semaine (0 = dimanche … 6 = samedi), dans l'ordre où les faire : salle puis boxe. */
+  jours: SeancePlanifiee[][];
+  nb_salle: number;
+  nb_boxe: number;
+  /** Jours où salle et boxe tombent ensemble (double séance). */
+  doubles: number[];
+  avertissements: string[];
+};
+
+export const TITRE_BOXE = "Boxe — sac, shadow, corde";
+
+/**
+ * Semaine type d'un programme, sans base : quel split salle tombe quel jour, où va la boxe.
+ * Un jour peut porter deux séances (salle + boxe) : c'est voulu, pas une erreur.
+ * Sert au générateur et à l'aperçu de l'écran de régénération.
+ */
+export function planSemaine(params: ParametresSport): PlanSemaine {
+  const avertissements: string[] = [];
+  const unique = (l: number[]) => [...new Set(l)].sort((a, b) => a - b);
+  const joursSalle = unique(params.jours_salle).slice(0, params.rythme.salle);
+  const joursBoxe = unique(params.jours_boxe).slice(0, params.rythme.boxe);
+  if (joursSalle.length < params.rythme.salle)
+    avertissements.push(`Seulement ${joursSalle.length} jour(s) de salle cochés pour ${params.rythme.salle} séances.`);
+  if (joursBoxe.length < params.rythme.boxe) avertissements.push(`Seulement ${joursBoxe.length} jour(s) de boxe cochés pour ${params.rythme.boxe} séances.`);
+  const split = splitPour(joursSalle.length);
+  const jours: SeancePlanifiee[][] = Array.from({ length: 7 }, () => []);
+  joursSalle.forEach((j, index) => {
+    const m = MODELES[split[index]];
+    jours[j].push({ genre: "salle", modele: split[index], index, type: m.type, titre: m.titre });
+  });
+  for (const j of joursBoxe) jours[j].push({ genre: "boxe", type: "boxe", titre: TITRE_BOXE });
+  const doubles = joursBoxe.filter((j) => joursSalle.includes(j));
+  return { jours, nb_salle: joursSalle.length, nb_boxe: joursBoxe.length, doubles, avertissements };
 }
 
 export type ProgrammeGenere = { programme_id: string; nb_seances: number; nb_exercices: number; debut: string; fin: string; avertissements: string[] };
@@ -417,14 +465,8 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     .single();
   if (errProg) throw errProg;
 
-  const joursSalle = params.jours_salle.slice(0, params.rythme.salle).sort();
-  const joursBoxe = params.jours_boxe
-    .slice(0, params.rythme.boxe)
-    .filter((j) => !joursSalle.includes(j))
-    .sort();
-  if (params.rythme.boxe > joursBoxe.length) avertissements.push("Un jour de boxe tombe sur un jour de salle : il a été ignoré.");
-  const split = splitPour(joursSalle.length);
-
+  const plan = planSemaine(params);
+  avertissements.push(...plan.avertissements);
   const seancesAInserer: Array<Record<string, unknown>> = [];
   const exosParSeance: Array<Array<Record<string, unknown>>> = [];
   const { poids } = await poidsActuel(db, userId, params);
@@ -437,67 +479,68 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     for (let j = 0; j < 7; j++) {
       const jourDate = new Date(lundi);
       jourDate.setDate(lundi.getDate() + j);
-      const jds = jourDate.getDay();
-      const idxSalle = joursSalle.indexOf(jds);
-      if (idxSalle >= 0) {
-        const modele = MODELES[split[idxSalle]];
-        const pris = new Set<string>();
-        const exos: Array<Record<string, unknown>> = [];
-        let dureeTotale = 0;
-        const slots = [...modele.slots];
-        if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
-        slots.forEach((slot, ordre) => {
-          const ref = choisir(refs, slot, params, pris, (bloc - 1) * 2 + idxSalle + (slot.isolation ? s % 2 : 0));
-          if (!ref) return;
-          pris.add(ref.id);
-          const p = prescription(params, bloc, semaineDansBloc, slot);
-          const reps = slot === S.cardioFin ? "8 min" : p.reps;
-          const series = slot === S.cardioFin ? 1 : p.series;
-          const repos = slot === S.cardioFin ? 0 : p.repos_s;
-          const dureeS = slot === S.cardioFin ? 480 : series * (params.effort_s_par_serie + repos);
-          dureeTotale += dureeS;
-          exos.push({ exercice_id: ref.id, ordre, series, reps, repos_s: repos, duree_s: dureeS, _met: Number(ref.met ?? 5), _iso: slot.isolation === true });
-        });
-        // Durée affichée = échauffement + exercices + transitions ; on coupe les isolations de la fin si on dépasse la cible (+10 %)
-        const dureeSeance = () => ECHAUFFEMENT_S + dureeTotale + exos.length * TRANSITION_S;
-        while (dureeSeance() > params.duree_min * 60 * 1.1 && exos.length > 4) {
-          const idx = [...exos].reverse().findIndex((e) => e._iso);
-          if (idx < 0) break;
-          const retire = exos.splice(exos.length - 1 - idx, 1)[0];
-          dureeTotale -= Number(retire.duree_s);
+      for (const prevue of plan.jours[jourDate.getDay()]) {
+        if (prevue.genre === "salle") {
+          const idxSalle = prevue.index;
+          const modele = MODELES[prevue.modele];
+          const pris = new Set<string>();
+          const exos: Array<Record<string, unknown>> = [];
+          let dureeTotale = 0;
+          const slots = [...modele.slots];
+          if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
+          slots.forEach((slot, ordre) => {
+            const ref = choisir(refs, slot, params, pris, (bloc - 1) * 2 + idxSalle + (slot.isolation ? s % 2 : 0));
+            if (!ref) return;
+            pris.add(ref.id);
+            const p = prescription(params, bloc, semaineDansBloc, slot);
+            const reps = slot === S.cardioFin ? "8 min" : p.reps;
+            const series = slot === S.cardioFin ? 1 : p.series;
+            const repos = slot === S.cardioFin ? 0 : p.repos_s;
+            const dureeS = slot === S.cardioFin ? 480 : series * (params.effort_s_par_serie + repos);
+            dureeTotale += dureeS;
+            exos.push({ exercice_id: ref.id, ordre, series, reps, repos_s: repos, duree_s: dureeS, _met: Number(ref.met ?? 5), _iso: slot.isolation === true });
+          });
+          // Durée affichée = échauffement + exercices + transitions ; on coupe les isolations de la fin si on dépasse la cible (+10 %)
+          const dureeSeance = () => ECHAUFFEMENT_S + dureeTotale + exos.length * TRANSITION_S;
+          while (dureeSeance() > params.duree_min * 60 * 1.1 && exos.length > 4) {
+            const idx = [...exos].reverse().findIndex((e) => e._iso);
+            if (idx < 0) break;
+            const retire = exos.splice(exos.length - 1 - idx, 1)[0];
+            dureeTotale -= Number(retire.duree_s);
+          }
+          const p0 = prescription(params, bloc, semaineDansBloc, S.pecsCompose);
+          seancesAInserer.push({
+            user_id: userId,
+            programme_id: prog.id,
+            jour: iso(jourDate),
+            type: modele.type,
+            titre: modele.titre,
+            duree_min: Math.round(dureeSeance() / 60),
+            etat: "prevue",
+            bloc,
+            semaine: s + 1,
+            focus: p0.focus,
+          });
+          exosParSeance.push(exos);
+        } else {
+          seancesAInserer.push({
+            user_id: userId,
+            programme_id: prog.id,
+            jour: iso(jourDate),
+            type: "boxe",
+            titre: TITRE_BOXE,
+            duree_min: params.duree_min,
+            etat: "prevue",
+            bloc,
+            semaine: s + 1,
+            focus: semaineDansBloc === 4 ? "deload" : "mixte",
+            notes:
+              semaineDansBloc === 4
+                ? "Décharge : technique et déplacements, rounds légers."
+                : "Échauffement corde 5 min · 8 rounds de 3 min (shadow puis sac) · 1 min de repos · gainage pour finir.",
+          });
+          exosParSeance.push([]);
         }
-        const p0 = prescription(params, bloc, semaineDansBloc, S.pecsCompose);
-        seancesAInserer.push({
-          user_id: userId,
-          programme_id: prog.id,
-          jour: iso(jourDate),
-          type: modele.type,
-          titre: modele.titre,
-          duree_min: Math.round(dureeSeance() / 60),
-          etat: "prevue",
-          bloc,
-          semaine: s + 1,
-          focus: p0.focus,
-        });
-        exosParSeance.push(exos);
-      } else if (joursBoxe.includes(jds)) {
-        seancesAInserer.push({
-          user_id: userId,
-          programme_id: prog.id,
-          jour: iso(jourDate),
-          type: "boxe",
-          titre: "Boxe — sac, shadow, corde",
-          duree_min: params.duree_min,
-          etat: "prevue",
-          bloc,
-          semaine: s + 1,
-          focus: semaineDansBloc === 4 ? "deload" : "mixte",
-          notes:
-            semaineDansBloc === 4
-              ? "Décharge : technique et déplacements, rounds légers."
-              : "Échauffement corde 5 min · 8 rounds de 3 min (shadow puis sac) · 1 min de repos · gainage pour finir.",
-        });
-        exosParSeance.push([]);
       }
     }
   }
@@ -522,19 +565,35 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 }
 
 // ---------- Suivi d'une séance ----------
-export async function seanceDuJour(db: KvaliaClient, userId: string, jour: string) {
-  const { data: seance, error } = await db
+/**
+ * Ordre d'affichage des séances d'un même jour : salle avant boxe, puis ordre de création.
+ * (Les séances d'un programme sont insérées dans le même lot : created_at ne suffit pas à les départager.)
+ */
+export function trierSeancesDuJour<T extends { type: string; created_at?: string | null }>(seances: T[]): T[] {
+  const rang = (t: string) => (t === "boxe" ? 1 : 0);
+  return [...seances].sort((a, b) => rang(a.type) - rang(b.type) || String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")));
+}
+
+/** Séance « principale » d'un jour : la première pas encore faite, sinon la première. */
+export function seancePrincipale<T extends { etat: string }>(seances: T[]): T | null {
+  return seances.find((s) => s.etat !== "faite") ?? seances[0] ?? null;
+}
+
+/** Toutes les séances d'un jour (souvent une, parfois deux : salle + boxe), exercices triés. */
+export async function seancesDuJour(db: KvaliaClient, userId: string, jour: string) {
+  const { data, error } = await db
     .from("seances")
     .select("*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, partie_corps, muscles, equipement, image_url, video_url, met))")
     .eq("user_id", userId)
     .eq("jour", jour)
-    .order("created_at")
-    .limit(1)
-    .maybeSingle();
+    .order("created_at");
   if (error) throw error;
-  if (!seance) return null;
-  const exos = (seance.exercices_seance ?? []).sort((a, b) => a.ordre - b.ordre);
-  return { ...seance, exercices_seance: exos };
+  return trierSeancesDuJour(data ?? []).map((s) => ({ ...s, exercices_seance: [...(s.exercices_seance ?? [])].sort((a, b) => a.ordre - b.ordre) }));
+}
+
+/** Compatibilité : la séance principale du jour. */
+export async function seanceDuJour(db: KvaliaClient, userId: string, jour: string) {
+  return seancePrincipale(await seancesDuJour(db, userId, jour));
 }
 
 async function recalculerSeance(db: KvaliaClient, seanceId: string) {

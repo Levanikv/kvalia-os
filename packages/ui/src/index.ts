@@ -125,3 +125,9 @@ export const menuHeader: readonly ModuleKey[] = ["documents", "objectifs", "regl
 export function ongletPour(key: ModuleKey): ModuleKey {
   return appPour(key);
 }
+
+/** Parcours plein écran (création de programme…) : ni barre inférieure ni bouton « + ». */
+export const ECRANS_PLEIN_ECRAN: readonly string[] = ["/sport/programme/nouveau"];
+export function estPleinEcran(chemin: string): boolean {
+  return ECRANS_PLEIN_ECRAN.some((p) => chemin === p || chemin.startsWith(p + "/"));
+}

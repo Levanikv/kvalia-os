@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { estPleinEcran } from "@kvalia/ui";
 import { Icon } from "./Icon";
 
-/** Bouton « + » flottant : capture rapide (texte, micro). Masqué sur la page de capture elle-même. */
+/** Bouton « + » flottant : capture rapide (texte, micro). Masqué sur la page de capture et les parcours plein écran. */
 export function Fab() {
   const pathname = usePathname();
-  if (pathname.startsWith("/capture")) return null;
+  if (pathname.startsWith("/capture") || estPleinEcran(pathname)) return null;
   return (
     <Link
       href="/capture"

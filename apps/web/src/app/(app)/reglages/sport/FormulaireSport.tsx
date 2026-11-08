@@ -34,7 +34,7 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
 
   const salleOk = p.jours_salle.length >= p.rythme.salle;
   const boxeOk = p.jours_boxe.length >= p.rythme.boxe;
-  const conflit = p.jours_salle.some((j) => p.jours_boxe.includes(j));
+  const doubles = p.jours_salle.filter((j) => p.jours_boxe.includes(j)).length;
 
   function maj<K extends keyof ParametresSport>(k: K, v: ParametresSport[K]) {
     setP((x) => ({ ...x, [k]: v }));
@@ -88,12 +88,14 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
         <Jours label="Jours de salle" selection={p.jours_salle} onToggle={(j) => toggleJour("jours_salle", j)} />
         <Compteur label="Boxe" valeur={p.rythme.boxe} min={0} max={3} onChange={(v) => maj("rythme", { ...p.rythme, boxe: v })} />
         <Jours label="Jours de boxe" selection={p.jours_boxe} onToggle={(j) => toggleJour("jours_boxe", j)} />
-        {(!salleOk || !boxeOk || conflit) && (
+        {(!salleOk || !boxeOk) && (
           <p className="text-xs text-danger">
             {!salleOk && `Coche au moins ${p.rythme.salle} jour(s) de salle. `}
             {!boxeOk && `Coche au moins ${p.rythme.boxe} jour(s) de boxe. `}
-            {conflit && "Un même jour est coché salle et boxe : la salle l’emporte."}
           </p>
+        )}
+        {doubles > 0 && (
+          <p className="text-xs text-text-2">{doubles === 1 ? "Un jour porte" : `${doubles} jours portent`} salle + boxe : deux séances ce jour-là.</p>
         )}
       </Section>
 

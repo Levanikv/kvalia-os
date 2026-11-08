@@ -1,4 +1,4 @@
-import { LIBELLES } from "@kvalia/core";
+import { LIBELLES, trierSeancesDuJour } from "@kvalia/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
 import type { MarqueJour } from "@/components/BandeJours";
@@ -17,10 +17,10 @@ export async function chargerSeance(db: Db, id: string) {
   return { ...data, exercices_seance: [...data.exercices_seance].sort((a, b) => a.ordre - b.ordre) };
 }
 
-export async function seancePourJour(db: Db, jour: string) {
-  const { data } = await db.from("seances").select(SELECT_SEANCE).eq("jour", jour).order("created_at").limit(1).maybeSingle();
-  if (!data) return null;
-  return { ...data, exercices_seance: [...data.exercices_seance].sort((a, b) => a.ordre - b.ordre) };
+/** Toutes les séances d'un jour (salle avant boxe), exercices triés. Lecture d'affichage pure. */
+export async function seancesPourJour(db: Db, jour: string) {
+  const { data } = await db.from("seances").select(SELECT_SEANCE).eq("jour", jour).order("created_at");
+  return trierSeancesDuJour(data ?? []).map((s) => ({ ...s, exercices_seance: [...s.exercices_seance].sort((a, b) => a.ordre - b.ordre) }));
 }
 
 export function decaler(jour: string, jours: number): string {
@@ -35,11 +35,33 @@ export function jourDepuis(param: string | undefined, auj: string): string {
 }
 
 /** Marques de la bande de jours autour d'un jour (séances prévues / faites). */
-export async function marquesAutour(db: Db, jour: string, rayon = 21): Promise<Record<string, MarqueJour>> {
-  const { data } = await db.from("seances").select("jour, type, etat").gte("jour", decaler(jour, -rayon)).lte("jour", decaler(jour, rayon));
-  const m: Record<string, MarqueJour> = {};
-  for (const s of data ?? []) if (!m[s.jour] || s.etat === "faite") m[s.jour] = { type: s.type, etat: s.etat };
+export async function marquesAutour(db: Db, jour: string, rayon = 21): Promise<Record<string, MarqueJour[]>> {
+  const { data } = await db
+    .from("seances")
+    .select("jour, type, etat, created_at")
+    .gte("jour", decaler(jour, -rayon))
+    .lte("jour", decaler(jour, rayon))
+    .order("created_at");
+  const m: Record<string, MarqueJour[]> = {};
+  for (const s of trierSeancesDuJour(data ?? [])) (m[s.jour] ??= []).push({ type: s.type, etat: s.etat });
   return m;
+}
+
+/** Séances de plusieurs jours : par jour, puis salle avant boxe (même règle que core). */
+export function trierParJour<T extends { jour: string; type: string; created_at?: string | null }>(seances: T[]): T[] {
+  const rang = (t: string) => (t === "boxe" ? 1 : 0);
+  return [...seances].sort(
+    (a, b) => a.jour.localeCompare(b.jour) || rang(a.type) - rang(b.type) || String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")),
+  );
+}
+
+/** « Aujourd'hui », « Demain », « Il y a 3 jours »… : l'indicateur du jour sélectionné dans l'en-tête. */
+export function jourRelatif(jour: string, auj: string): string {
+  const n = Math.round((new Date(jour + "T12:00:00Z").getTime() - new Date(auj + "T12:00:00Z").getTime()) / 86400000);
+  if (n === 0) return "Aujourd’hui";
+  if (n === 1) return "Demain";
+  if (n === -1) return "Hier";
+  return n > 0 ? `Dans ${n} jours` : `Il y a ${-n} jours`;
 }
 
 export type Programme = { id: string; nom: string; debut: string; fin: string | null; rythme: unknown };

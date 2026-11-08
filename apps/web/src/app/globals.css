@@ -100,7 +100,22 @@ body {
 .feuille-panneau {
   animation: feuille-panneau 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* Parcours en étapes (création de programme) : chaque écran glisse depuis la droite */
+@keyframes assistant-etape {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.assistant-etape {
+  animation: assistant-etape 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 @media (prefers-reduced-motion: reduce) {
+  .assistant-etape,
   .feuille-voile,
   .feuille-panneau {
     animation: none;

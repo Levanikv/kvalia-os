@@ -6,9 +6,14 @@ import {
   equivalents,
   genererProgramme,
   kcalPour,
+  phasesProgramme,
+  planSemaine,
+  seancesDuJour,
+  trierSeancesDuJour,
   remplacerExercice,
   terminerSeance,
 } from "../src/sport";
+import { executer } from "../src/actions";
 import { USER, exercicesRef, fausseDb } from "./fausse-db";
 
 const refs = exercicesRef();
@@ -128,5 +133,77 @@ describe("equivalents / remplacerExercice", () => {
     expect(premiere.exercice_id).toBe("0302");
     expect(premiere.substitut_de).toBe("0025");
     expect(premiere.kcal).toBe(kcalPour(4.5, 80, premiere.duree_s));
+  });
+});
+
+describe("plusieurs séances le même jour", () => {
+  const doubleLundi = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, jours_boxe: [1] }; // lundi : salle + boxe
+
+  it("planSemaine place salle et boxe le même jour, sans avertissement", () => {
+    const plan = planSemaine(doubleLundi);
+    expect(plan.jours[1].map((s) => s.genre)).toEqual(["salle", "boxe"]);
+    expect(plan.doubles).toEqual([1]);
+    expect(plan.nb_salle).toBe(4);
+    expect(plan.nb_boxe).toBe(1);
+    expect(plan.avertissements).toEqual([]);
+  });
+
+  it("planSemaine signale un rythme sans assez de jours cochés", () => {
+    const plan = planSemaine({ ...PARAMETRES_SPORT_DEFAUT, jours_salle: [1, 3] });
+    expect(plan.nb_salle).toBe(2);
+    expect(plan.avertissements[0]).toMatch(/2 jour/);
+  });
+
+  it("le générateur crée deux séances ce jour-là (la boxe n'est plus ignorée)", async () => {
+    const db = base();
+    const r = await genererProgramme(db, USER, doubleLundi, "2026-11-09");
+    expect(r.nb_seances).toBe(60);
+    expect(r.avertissements).toEqual([]);
+    const lundi = db.tables.seances.filter((s: any) => s.jour === "2026-11-09");
+    expect(lundi.map((s: any) => s.type).sort()).toEqual(["boxe", "upper"]);
+  });
+
+  it("seancesDuJour rend les deux, salle d'abord ; seance_du_jour aussi, sans erreur", async () => {
+    const db = base();
+    await genererProgramme(db, USER, doubleLundi, "2026-11-09");
+    const ss = await seancesDuJour(db, USER, "2026-11-09");
+    expect(ss.map((s) => s.type)).toEqual(["upper", "boxe"]);
+    const out = await executer("seance_du_jour", { jour: "2026-11-09" }, { db, userId: USER });
+    expect(out.seances).toHaveLength(2);
+    expect(out.seance?.type).toBe("upper");
+  });
+
+  it("trierSeancesDuJour met la boxe après la salle", () => {
+    const t = trierSeancesDuJour([
+      { type: "boxe", created_at: "2026-11-09T08:00:00Z" },
+      { type: "lower", created_at: "2026-11-09T09:00:00Z" },
+    ]);
+    expect(t.map((s) => s.type)).toEqual(["lower", "boxe"]);
+  });
+});
+
+describe("phasesProgramme", () => {
+  it("hypertrophie : bloc 1 hypertrophie, bloc 2 force, bloc 3 mixte, décharge toutes les 4 semaines", () => {
+    const ph = phasesProgramme({ objectif: "hypertrophie", semaines: 12 });
+    expect(ph.map((p) => p.focus)).toEqual([
+      "hypertrophie",
+      "hypertrophie",
+      "hypertrophie",
+      "deload",
+      "force",
+      "force",
+      "force",
+      "deload",
+      "mixte",
+      "mixte",
+      "mixte",
+      "deload",
+    ]);
+  });
+  it("concorde avec le focus des séances générées", async () => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, objectif: "force", semaines: 8 }, "2026-11-09");
+    const ph = phasesProgramme({ objectif: "force", semaines: 8 });
+    for (const s of db.tables.seances.filter((x: any) => x.type !== "boxe")) expect(s.focus).toBe(ph[s.semaine - 1].focus);
   });
 });

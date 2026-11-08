@@ -2,10 +2,18 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { libelleFocus, libelleType, nomAffiche, type SeanceComplete } from "./lib";
 
-type Props = { seance: SeanceComplete; kcalPrevues: number; estAujourdhui: boolean; semaineNo: number | null; totalSemaines: number | null };
+type Props = {
+  seance: SeanceComplete;
+  kcalPrevues: number;
+  estAujourdhui: boolean;
+  semaineNo: number | null;
+  totalSemaines: number | null;
+  /** « 1/2 » quand le jour porte plusieurs séances (muscu + boxe). */
+  rang?: string | null;
+};
 
 /** La carte principale de la vue Jour : ce qu'il y a à faire, en combien de temps, et le bouton pour y aller. */
-export function HeroSeance({ seance: s, kcalPrevues, estAujourdhui, semaineNo, totalSemaines }: Props) {
+export function HeroSeance({ seance: s, kcalPrevues, estAujourdhui, semaineNo, totalSemaines, rang }: Props) {
   const exos = s.exercices_seance;
   const faits = exos.filter((e) => e.fait).length;
   const faite = s.etat === "faite";
@@ -19,7 +27,11 @@ export function HeroSeance({ seance: s, kcalPrevues, estAujourdhui, semaineNo, t
         <div className="absolute inset-0 bg-gradient-to-br from-accent/25 via-transparent to-transparent" aria-hidden />
         <div className="relative">
           <div className="flex items-center gap-2 text-xs font-medium text-text-2">
-            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-accent">{libelleType(s.type)}</span>
+            {rang && <span className="rounded-full bg-surface-3 px-2 py-0.5 tabular-nums">{rang}</span>}
+            <span className="flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-accent">
+              <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={14} />
+              {libelleType(s.type)}
+            </span>
             {s.focus && <span>{libelleFocus(s.focus)}</span>}
             {semaineNo && totalSemaines && (
               <span className="ml-auto">

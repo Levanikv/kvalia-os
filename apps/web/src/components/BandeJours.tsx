@@ -10,8 +10,8 @@ type Props = {
   auj: string;
   /** Base de l'URL : `/sport` ou `/nutrition` → `?jour=`. */
   base: string;
-  /** Jours marqués (séance prévue / faite, type) par ISO. */
-  marques: Record<string, MarqueJour>;
+  /** Séances du jour (prévue / faite, type) par ISO — plusieurs possibles (ex. muscu + boxe). */
+  marques: Record<string, MarqueJour[]>;
   /** Nombre de jours affichés de chaque côté du jour sélectionné. */
   rayon?: number;
 };
@@ -24,7 +24,7 @@ function decaler(jour: string, n: number) {
 
 /**
  * Bande de jours continue et scrollable : le jour sélectionné est centré au chargement (et recentré au changement).
- * Un point sous le chiffre indique une séance (accent = salle, orange = boxe, vert = faite).
+ * Un point par séance sous le chiffre (accent = salle, orange = boxe, vert = faite) : deux points = double séance.
  */
 export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
   const ref = useRef<HTMLUListElement>(null);
@@ -51,6 +51,7 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
               <Link
                 href={`${base}?jour=${j}`}
                 aria-current={actif ? "date" : undefined}
+                aria-label={`${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}${m?.length ? ` · ${m.length} séance${m.length > 1 ? "s" : ""}` : ""}`}
                 scroll={false}
                 className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-accent text-white" : estAuj ? "bg-accent-soft" : ""}`}
               >
@@ -58,9 +59,14 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
                   {premierDuMois ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : d.toLocaleDateString("fr-FR", { weekday: "narrow" })}
                 </span>
                 <span className={`text-base font-semibold leading-tight ${!actif && estAuj ? "text-accent" : ""}`}>{d.getDate()}</span>
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${m ? (m.etat === "faite" ? (actif ? "bg-white" : "bg-success") : m.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-accent") : "bg-transparent"}`}
-                />
+                <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
+                  {(m ?? []).slice(0, 3).map((x, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-white" : "bg-success") : x.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-accent"}`}
+                    />
+                  ))}
+                </span>
               </Link>
             </li>
           );

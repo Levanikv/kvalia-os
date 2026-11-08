@@ -15,7 +15,8 @@ import {
   noterCharge,
   parametresSport,
   remplacerExercice,
-  seanceDuJour,
+  seancesDuJour,
+  seancePrincipale,
   terminerSeance,
 } from "./sport";
 
@@ -218,24 +219,22 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "seance_du_jour": {
       const e = entree as ToolInput<"seance_du_jour">;
       const jour = e.jour ?? aujourdhuiIso();
-      const s = await seanceDuJour(ctx.db, ctx.userId, jour);
-      if (!s) return { jour, seance: null } as ToolOutput<T>;
-      const exercices = s.exercices_seance.map((x) => ({
-        id: x.id,
-        ordre: x.ordre,
-        exercice: x.exercices_ref?.nom ?? "?",
-        exercice_id: x.exercice_id,
-        partie_corps: x.exercices_ref?.partie_corps ?? null,
-        series: x.series,
-        reps: x.reps,
-        repos_s: x.repos_s,
-        duree_s: x.duree_s,
-        kcal: x.kcal === null ? null : Number(x.kcal),
-        fait: x.fait,
-      }));
-      return {
-        jour,
-        seance: {
+      const brutes = await seancesDuJour(ctx.db, ctx.userId, jour);
+      const seances = brutes.map((s) => {
+        const exercices = s.exercices_seance.map((x) => ({
+          id: x.id,
+          ordre: x.ordre,
+          exercice: x.exercices_ref?.nom ?? "?",
+          exercice_id: x.exercice_id,
+          partie_corps: x.exercices_ref?.partie_corps ?? null,
+          series: x.series,
+          reps: x.reps,
+          repos_s: x.repos_s,
+          duree_s: x.duree_s,
+          kcal: x.kcal === null ? null : Number(x.kcal),
+          fait: x.fait,
+        }));
+        return {
           id: s.id,
           jour: s.jour,
           type: s.type,
@@ -249,8 +248,9 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
           kcal_prevues: exercices.reduce((a, x) => a + (x.kcal ?? 0), 0),
           notes: s.notes,
           exercices,
-        },
-      } as ToolOutput<T>;
+        };
+      });
+      return { jour, seance: seancePrincipale(seances), seances } as ToolOutput<T>;
     }
 
     case "cocher_exercice": {

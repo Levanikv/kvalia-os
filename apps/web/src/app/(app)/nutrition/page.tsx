@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { bilanJour } from "@kvalia/core";
-import { BandeJours } from "@/components/BandeJours";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { Placeholder } from "@/components/Placeholder";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
 import { EntreeCarte } from "../sport/EntreeCarte";
-import { dateLongue, jourDepuis, marquesAutour } from "../sport/lib";
+import { enteteJour } from "../sport/entete";
+import { jourDepuis } from "../sport/lib";
 
 type Props = { searchParams: Promise<{ jour?: string }> };
 
 /**
- * Nutrition v1 : le bilan énergétique du jour sélectionné (même bande de jours que Sport), relié au sport :
+ * Nutrition v1 : le bilan énergétique du jour sélectionné (même en-tête que Sport : pastille du jour, semaine,
+ * bande de jours), relié au sport :
  * les kcal des séances du jour (cochées / terminées) s'ajoutent à la cible. Journal et plan repas en phase 2.
  */
 export default async function Page({ searchParams }: Props) {
@@ -20,23 +21,11 @@ export default async function Page({ searchParams }: Props) {
   const sp = await searchParams;
   const auj = aujourdhui();
   const jour = jourDepuis(sp.jour, auj);
-  const [b, marques] = await Promise.all([bilanJour(supabase, user.id, jour), marquesAutour(supabase, jour)]);
+  const [b, entete] = await Promise.all([bilanJour(supabase, user.id, jour), enteteJour(supabase, jour, auj, "/nutrition")]);
   const pct = b.cible > 0 ? Math.min(100, Math.round((b.consomme / b.cible) * 100)) : 0;
 
   return (
-    <ModuleFrame
-      module="nutrition"
-      titre="Nutrition"
-      sousTitre={dateLongue(jour)}
-      action={
-        jour !== auj ? (
-          <Link href="/nutrition" className="tap flex items-center rounded-full bg-surface-2 px-3 text-sm font-medium">
-            Aujourd’hui
-          </Link>
-        ) : undefined
-      }
-      barre={<BandeJours jour={jour} auj={auj} base="/nutrition" marques={marques} />}
-    >
+    <ModuleFrame module="nutrition" titre="Nutrition" sousTitre={entete.sousTitre} action={entete.action} barre={entete.barre}>
       <RealtimeRefresh tables={["seances", "journal_repas"]} />
 
       {/* Anneau / bilan */}
@@ -87,7 +76,7 @@ export default async function Page({ searchParams }: Props) {
             {b.seances.map((s) => (
               <li key={s.id} className="flex items-center justify-between">
                 <Link href={`/sport/seance/${s.id}`} className="flex items-center gap-1.5">
-                  <Icon name="fitness_center" size={16} /> {s.titre ?? s.type} ·{" "}
+                  <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={16} /> {s.titre ?? s.type} ·{" "}
                   {s.etat === "faite" ? "terminée" : s.etat === "en_cours" ? "en cours" : "prévue"}
                 </Link>
                 <span>{s.kcal > 0 ? `+${s.kcal} kcal` : "— (à l’issue de la séance)"}</span>

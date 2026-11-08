@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { appPour, barrePour, moduleDepuisChemin, ongletActif } from "@kvalia/ui";
+import { appPour, barrePour, estPleinEcran, moduleDepuisChemin, ongletActif } from "@kvalia/ui";
 import { Icon } from "./Icon";
 
 /** Barre inférieure contextuelle : les entrées de l'application courante (Sport & Nutri : Jour · Programme · Exercices · Nutrition). */
@@ -10,7 +10,7 @@ export function ModuleBar() {
   const mod = moduleDepuisChemin(pathname);
   const app = appPour(mod);
   const barre = barrePour(mod);
-  if (barre.length === 0) return null;
+  if (barre.length === 0 || estPleinEcran(pathname)) return null;
   const actif = ongletActif(barre, pathname);
 
   return (

@@ -12,13 +12,17 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /quotidien/taches             Tâches (dues, à venir, faites)
 │   └── /quotidien/habitudes          Habitudes du jour + séries
 ├── /sport                Mini-app Sport (sombre)
-│   ├── /sport                        Vue Jour (défaut) : bande semaine, hero « séance du jour », cartes d'entrée
+│   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), programme suivi,
+│   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
 │   ├── /sport/seance/[id]            Séance : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
 │   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
-│   ├── /sport/programme              Programme actif : avancement, blocs / semaines dépliables
+│   ├── /sport/programme              Programme actif : hero (anneau, semaine n / N, chiffres), frise des phases,
+│   │                                 séances de la semaine en carrousel, semaine type, toutes les semaines
+│   ├── /sport/programme/nouveau      Créer / régénérer, plein écran en étapes : objectif → niveau → semaine
+│   │                                 → séance → matériel → aperçu → génération (sans barre ni « + »)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition (clair)
 │   ├── /nutrition                    Journal du jour (anneau, 3 barres, repas) · ?jour=YYYY-MM-DD
@@ -62,7 +66,9 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 
 - **Menu « Applications »** (icône burger en haut à gauche, sur tous les écrans) : feuille qui monte du bas et liste les apps — Home · Quotidien · Sport & Nutrition · Finances · Entreprise · Documents · Objectifs · Réglages — avec une ligne de description chacune, l'app courante surlignée, et le bouton Capture en bas. Registre : `packages/ui/src/index.ts` (`menuApps`).
 - **Barre inférieure par application** (`onglets` dans le registre, composant `ModuleBar`) : les entrées principales de l'app courante, à un tap. Sport & Nutrition : **Jour · Programme · Exercices · Nutrition**. Quotidien : Courses · Tâches · Habitudes. Finances : Vue · Transactions · Budgets · Comptes. Entreprise : Pilotage · Factures · Charges · Échéances · Simuler. Home : Aujourd'hui · Objectifs · Documents. Réglages : Réglages · Sport · Nutrition · Journal. L'onglet actif = le préfixe d'URL le plus long qui correspond (`/sport/seance/x` → Jour).
-- **Sport & Nutrition** : une seule application, deux modules (préfixes `/sport` et `/nutrition`), chacun avec son accent et son identité (Sport sombre, Nutrition clair). La **bande de jours** est partagée : scrollable, le jour sélectionné centré, `?jour=YYYY-MM-DD` conservé en passant de l'un à l'autre.
+- **Sport & Nutrition** : une seule application, deux modules (préfixes `/sport` et `/nutrition`), chacun avec son accent et son identité (Sport sombre, Nutrition clair). **L'en-tête est le même** sur les deux (`sport/entete.tsx`) : pastille du jour (Aujourd'hui / Demain / Il y a n jours), date courte, « Semaine n / N » du programme (sinon semaine ISO), bouton « Auj. » quand on s'est déplacé. La **bande de jours** est partagée : scrollable, le jour sélectionné centré, un point par séance (deux = double séance), `?jour=YYYY-MM-DD` conservé en passant de l'un à l'autre.
+- **Plusieurs séances par jour** : un jour peut porter muscu + boxe (cocher le même jour dans les deux). Ordre d'affichage : salle puis boxe.
+- **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche.
 - **Feuilles modales** (`BottomSheet`, façon iOS : voile, poignée, zone sûre, Échap) pour tout ce qui est contextuel : menu apps, Terminer la séance (ressenti), détail d'un exercice (charge, reps, remplacer), équivalents. Pas de modale centrée.
 - **Header de mini-app** : burger (ou flèche retour sur un écran de détail), titre + sous-titre (date, semaine), avatar à droite → Réglages, ou une action contextuelle.
 - **Finances vs Entreprise** : Finances = comptes perso ; Entreprise = tout ce qui touche la SASU (comptes pro, factures, charges, échéances, simulateur, conseils). Une transaction appartient à l'un ou à l'autre (`perimetre`), jamais aux deux.

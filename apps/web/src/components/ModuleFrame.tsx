@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 type Props = {
   module: ModuleKey;
   titre?: string;
-  /** Petit texte sous le titre (date, sous-titre). */
-  sousTitre?: string;
+  /** Petit texte sous le titre (date, sous-titre) — peut porter un indicateur (pastille). */
+  sousTitre?: ReactNode;
   /** Action contextuelle à droite du header (bouton). Remplace l'avatar. */
   action?: ReactNode;
   /** Remplace le burger à gauche (ex. bouton retour sur un écran de détail). */
@@ -32,7 +32,7 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
           {gauche ?? <MenuApps />}
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold tracking-tight">{titre ?? m.titre}</h1>
-            {sousTitre && <p className="truncate text-xs text-text-2">{sousTitre}</p>}
+            {sousTitre && <div className="truncate text-xs text-text-2">{sousTitre}</div>}
           </div>
           {action ?? (
             <Link

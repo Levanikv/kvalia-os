@@ -139,7 +139,7 @@ Génère un programme complet (N semaines, blocs de 4 : progression puis déchar
 
 ## `seance_du_jour`
 
-La séance prévue pour un jour (aujourd'hui par défaut) avec ses exercices, prescriptions, kcal prévues et cochées.
+Les séances prévues pour un jour (aujourd'hui par défaut) avec leurs exercices, prescriptions, kcal prévues et cochées. Un jour peut avoir deux séances (ex. muscu + boxe) : `seances` les liste toutes (salle d'abord) ; `seance` est la principale (la première pas encore faite).
 
 **Entrée**
 - `jour` : string (date) (optionnel)
@@ -147,6 +147,7 @@ La séance prévue pour un jour (aujourd'hui par défaut) avec ses exercices, pr
 **Sortie**
 - `jour` : string (date)
 - `seance` : objet { id, jour, type, titre, etat, focus, bloc, semaine, duree_min, kcal, kcal_prevues, notes, exercices } | null
+- `seances` : liste de objet { id, jour, type, titre, etat, focus, bloc, semaine, duree_min, kcal, kcal_prevues, notes, exercices }
 
 ## `cocher_exercice`
 
