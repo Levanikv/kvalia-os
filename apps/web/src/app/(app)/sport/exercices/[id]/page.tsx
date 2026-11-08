@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { historiqueCharge } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { session } from "@/lib/session";
 import { libelleMateriel, libellePartie, nomAffiche } from "../../lib";
 import { Video } from "./Video";
 import { BoutonFait } from "./BoutonFait";
+import { CourbeCharge } from "./CourbeCharge";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ seance?: string }> };
 const DIFF: Record<string, string> = { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" };
@@ -14,9 +16,10 @@ const DIFF: Record<string, string> = { beginner: "Débutant", intermediate: "Int
 export default async function Page({ params, searchParams }: Props) {
   const { id } = await params;
   const { seance: seanceId } = await searchParams;
-  const { supabase } = await session();
+  const { supabase, user } = await session();
   const { data: e } = await supabase.from("exercices_ref").select("*").eq("id", id).maybeSingle();
   if (!e) notFound();
+  const historique = await historiqueCharge(supabase, user.id, id, 12);
 
   // Contexte séance (prescription + exercice suivant) si on vient d'une séance
   let ctx: { ligne: { id: string; series: number; reps: string; repos_s: number; kcal: number | null; fait: boolean }; suivant: string | null; seanceFaite: boolean } | null = null;
@@ -33,7 +36,7 @@ export default async function Page({ params, searchParams }: Props) {
   const retour = seanceId ? `/sport/seance/${seanceId}` : "/sport/exercices";
   return (
     <ModuleFrame module="sport" titre={nomAffiche(e)} sousTitre={e.nom !== nomAffiche(e) ? e.nom : undefined}
-      action={<Link href={retour} className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>}>
+      gauche={<Link href={retour} className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
       <Video src={e.video_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
@@ -51,6 +54,24 @@ export default async function Page({ params, searchParams }: Props) {
           <p className="text-sm text-text-2">{ctx.ligne.repos_s ? `Repos ${ctx.ligne.repos_s} s · ` : ""}{ctx.ligne.kcal ?? 0} kcal</p>
           <BoutonFait ligneId={ctx.ligne.id} fait={ctx.ligne.fait} desactive={ctx.seanceFaite} suivant={ctx.suivant ? `/sport/exercices/${ctx.suivant}?seance=${seanceId}` : retour} />
         </div>
+      )}
+
+      {historique.length > 0 && (
+        <section className="mt-5 rounded-lg border border-border bg-surface-2 p-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-3">Charge</h2>
+            <p className="text-sm"><span className="text-2xl font-semibold tracking-tight">{historique[0].charge_kg}</span> <span className="text-text-2">kg · {new Date(historique[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span></p>
+          </div>
+          <CourbeCharge points={[...historique].reverse().map((h) => ({ jour: h.jour, kg: h.charge_kg }))} />
+          <ul className="mt-2 space-y-1 text-xs text-text-2">
+            {historique.slice(0, 5).map((h) => (
+              <li key={h.id} className="flex justify-between">
+                <Link href={`/sport/seance/${h.seance_id}`} className="truncate">{new Date(h.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · {h.titre ?? ""}</Link>
+                <span className="shrink-0 tabular-nums">{h.series} × {h.reps_faites ?? h.reps} · <strong className="text-text">{h.charge_kg} kg</strong></span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {e.description && <p className="mt-5 text-sm leading-relaxed text-text-2">{e.description}</p>}

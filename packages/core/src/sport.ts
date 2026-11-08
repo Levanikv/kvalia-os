@@ -362,3 +362,118 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
   if (errMaj) throw errMaj;
   return { seance_id: seanceId, kcal, duree_min: dureeReelleMin, poids_utilise: poids };
 }
+
+// ---------- Charges (kg) et historique par exercice ----------
+export type Realise = { reps_faites?: number; note?: string };
+
+/** Note la charge soulevée (et éventuellement les reps réalisées) sur un exercice d'une séance. */
+export async function noterCharge(db: KvaliaClient, userId: string, exerciceSeanceId: string, maj: { charge_kg?: number | null; reps_faites?: number | null; note?: string | null }) {
+  const { data: ligne, error } = await db.from("exercices_seance").select("id, realise, exercice_id, seance_id").eq("id", exerciceSeanceId).eq("user_id", userId).single();
+  if (error) throw error;
+  const realise: Realise = { ...((ligne.realise as Realise | null) ?? {}) };
+  if (maj.reps_faites !== undefined) { if (maj.reps_faites === null) delete realise.reps_faites; else realise.reps_faites = maj.reps_faites; }
+  if (maj.note !== undefined) { if (maj.note === null || maj.note === "") delete realise.note; else realise.note = maj.note; }
+  const patch: { realise: Realise; charge_kg?: number | null } = { realise };
+  if (maj.charge_kg !== undefined) patch.charge_kg = maj.charge_kg;
+  const { error: errMaj } = await db.from("exercices_seance").update(patch).eq("id", exerciceSeanceId);
+  if (errMaj) throw errMaj;
+  return { id: ligne.id, exercice_id: ligne.exercice_id, seance_id: ligne.seance_id, charge_kg: maj.charge_kg ?? null, realise };
+}
+
+/** Les charges notées sur un exercice, de la plus récente à la plus ancienne (pour la fiche et les graphes). */
+export async function historiqueCharge(db: KvaliaClient, userId: string, exerciceId: string, limite = 12) {
+  const { data, error } = await db.from("exercices_seance")
+    .select("id, charge_kg, series, reps, fait, realise, seance_id, seances!inner(jour, etat, titre)")
+    .eq("user_id", userId).eq("exercice_id", exerciceId).not("charge_kg", "is", null);
+  if (error) throw error;
+  type L = { jour: string; etat: string; titre: string | null };
+  return (data ?? [])
+    .map((x) => ({ id: x.id, seance_id: x.seance_id, charge_kg: Number(x.charge_kg), series: x.series, reps: x.reps, fait: x.fait, reps_faites: (x.realise as Realise | null)?.reps_faites ?? null, jour: (x.seances as unknown as L).jour, titre: (x.seances as unknown as L).titre }))
+    .sort((a, b) => (a.jour < b.jour ? 1 : -1))
+    .slice(0, limite);
+}
+
+/** Dernière charge notée pour chaque exercice d'une liste (pré-remplissage de la séance). */
+export async function dernieresCharges(db: KvaliaClient, userId: string, exerciceIds: string[], avantSeanceId?: string) {
+  if (exerciceIds.length === 0) return {} as Record<string, { charge_kg: number; jour: string }>;
+  const { data } = await db.from("exercices_seance").select("exercice_id, charge_kg, seance_id, seances!inner(jour)")
+    .eq("user_id", userId).in("exercice_id", exerciceIds).not("charge_kg", "is", null);
+  const res: Record<string, { charge_kg: number; jour: string }> = {};
+  for (const x of data ?? []) {
+    if (avantSeanceId && x.seance_id === avantSeanceId) continue;
+    const jour = (x.seances as unknown as { jour: string }).jour;
+    if (!res[x.exercice_id] || res[x.exercice_id].jour < jour) res[x.exercice_id] = { charge_kg: Number(x.charge_kg), jour };
+  }
+  return res;
+}
+
+// ---------- Remplacer un exercice ----------
+export type Equivalent = Pick<Ref, "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url"> & { score: number; raison: string };
+
+/**
+ * Propose des exercices équivalents : même partie du corps et muscles proches, matériel disponible,
+ * en privilégiant même nature (polyarticulaire ou non) et niveau. `exclure` = déjà dans la séance.
+ */
+export async function equivalents(db: KvaliaClient, exerciceId: string, materiel: string[], exclure: string[] = [], limite = 8): Promise<Equivalent[]> {
+  const { data: orig, error } = await db.from("exercices_ref").select("*").eq("id", exerciceId).single();
+  if (error) throw error;
+  const cible = (orig.muscles[0] ?? "").toLowerCase();
+  const famille = new Set([...orig.muscles, ...orig.muscles_secondaires].map((m) => m.toLowerCase()));
+  const { data: cands } = await db.from("exercices_ref").select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url")
+    .neq("id", exerciceId).in("equipement", materiel.length ? materiel : MATERIEL_CONNU as unknown as string[]);
+  const interdits = new Set(exclure);
+  const out: Equivalent[] = [];
+  for (const c of cands ?? []) {
+    if (interdits.has(c.id) || STRETCH.test(c.nom)) continue;
+    const m = c.muscles.map((x) => x.toLowerCase());
+    const s = c.muscles_secondaires.map((x) => x.toLowerCase());
+    let score = 0; const raisons: string[] = [];
+    if (cible && m.some((x) => x.includes(cible) || cible.includes(x))) { score += 6; raisons.push("même muscle cible"); }
+    else if (cible && s.some((x) => x.includes(cible))) { score += 3; raisons.push("muscle cible en secondaire"); }
+    else continue; // sans muscle commun, ce n'est pas un équivalent
+    if (c.partie_corps !== orig.partie_corps && score < 6) continue;
+    score += Math.min([...m, ...s].filter((x) => famille.has(x)).length, 3);
+    if (c.partie_corps === orig.partie_corps) score += 1;
+    if (c.compose === orig.compose) { score += 2; raisons.push(orig.compose ? "polyarticulaire" : "isolation"); } else score -= 1;
+    if (c.equipement === orig.equipement) score += 1; else raisons.push(LIBELLES.materiel[c.equipement ?? ""] ?? c.equipement ?? "");
+    score -= Math.abs((RANG_NIVEAU[c.difficulte ?? "beginner"] ?? 0) - (RANG_NIVEAU[orig.difficulte ?? "beginner"] ?? 0));
+    if (score >= 5) out.push({ ...c, score, raison: raisons.filter(Boolean).join(" · ") });
+  }
+  out.sort((a, b) => b.score - a.score || a.nom.localeCompare(b.nom));
+  return out.slice(0, limite);
+}
+
+export type PorteeRemplacement = "seance" | "programme";
+
+/**
+ * Remplace un exercice par un autre : dans cette séance seulement, ou dans toutes les séances à venir du
+ * programme qui contiennent le même exercice (non faites). Les kcal sont recalculées avec le MET du nouvel exercice.
+ */
+export async function remplacerExercice(db: KvaliaClient, userId: string, exerciceSeanceId: string, nouvelExerciceId: string, portee: PorteeRemplacement) {
+  const { data: ligne, error } = await db.from("exercices_seance").select("id, exercice_id, substitut_de, seance_id, duree_s, seances!inner(jour, programme_id)")
+    .eq("id", exerciceSeanceId).eq("user_id", userId).single();
+  if (error) throw error;
+  const { data: nouveau, error: errRef } = await db.from("exercices_ref").select("id, nom, met").eq("id", nouvelExerciceId).single();
+  if (errRef) throw errRef;
+  const params = await parametresSport(db, userId);
+  const { poids } = await poidsActuel(db, userId, params);
+  const ancien = ligne.exercice_id;
+  const origine = ligne.substitut_de ?? ancien;
+  const se = ligne.seances as unknown as { jour: string; programme_id: string | null };
+
+  let ids: Array<{ id: string; duree_s: number | null }> = [{ id: ligne.id, duree_s: ligne.duree_s }];
+  if (portee === "programme" && se.programme_id) {
+    const { data: autres } = await db.from("exercices_seance").select("id, duree_s, fait, seances!inner(jour, programme_id, etat)")
+      .eq("user_id", userId).eq("exercice_id", ancien).eq("fait", false).eq("seances.programme_id", se.programme_id).gte("seances.jour", se.jour);
+    ids = (autres ?? []).map((a) => ({ id: a.id, duree_s: a.duree_s }));
+    if (!ids.some((x) => x.id === ligne.id)) ids.push({ id: ligne.id, duree_s: ligne.duree_s });
+  }
+  for (const x of ids) {
+    const { error: errMaj } = await db.from("exercices_seance").update({
+      exercice_id: nouveau.id, substitut_de: origine === nouveau.id ? null : origine,
+      kcal: kcalPour(Number(nouveau.met ?? 5), poids, Number(x.duree_s ?? 0)), charge_kg: null,
+    }).eq("id", x.id);
+    if (errMaj) throw errMaj;
+  }
+  return { remplaces: ids.length, ancien, nouveau: nouveau.id, nom: nouveau.nom, portee };
+}

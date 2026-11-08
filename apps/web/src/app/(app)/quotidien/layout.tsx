@@ -1,21 +1,6 @@
 import { ModuleFrame } from "@/components/ModuleFrame";
-import { Segmented } from "@/components/Segmented";
 
+/** Cadre du Quotidien ; la barre inférieure (Courses · Tâches · Habitudes) vient du layout (app). */
 export default function QuotidienLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ModuleFrame
-      module="quotidien"
-      barre={
-        <Segmented
-          items={[
-            { href: "/quotidien/courses", label: "Courses" },
-            { href: "/quotidien/taches", label: "Tâches" },
-            { href: "/quotidien/habitudes", label: "Habitudes" },
-          ]}
-        />
-      }
-    >
-      {children}
-    </ModuleFrame>
-  );
+  return <ModuleFrame module="quotidien">{children}</ModuleFrame>;
 }

@@ -6,7 +6,8 @@ import type { KvaliaClient } from "./supabase";
 import type { VueJour } from "./schemas";
 import type { ToolInput, ToolName, ToolOutput } from "./tools";
 import {
-  ParametresSport, cocherExercice, enregistrerParametresSport, genererProgramme, parametresSport, seanceDuJour, terminerSeance,
+  ParametresSport, cocherExercice, enregistrerParametresSport, equivalents, genererProgramme, historiqueCharge, noterCharge,
+  parametresSport, remplacerExercice, seanceDuJour, terminerSeance,
 } from "./sport";
 
 export type ContexteOutil = { db: KvaliaClient; userId: string };
@@ -183,6 +184,31 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "terminer_seance": {
       const e = entree as ToolInput<"terminer_seance">;
       return (await terminerSeance(ctx.db, ctx.userId, e.seance_id, e.ressenti, e.notes)) as ToolOutput<T>;
+    }
+
+    case "noter_charge": {
+      const e = entree as ToolInput<"noter_charge">;
+      return (await noterCharge(ctx.db, ctx.userId, e.exercice_seance_id, { charge_kg: e.charge_kg, reps_faites: e.reps_faites, note: e.note })) as ToolOutput<T>;
+    }
+
+    case "historique_exercice": {
+      const e = entree as ToolInput<"historique_exercice">;
+      return (await historiqueCharge(ctx.db, ctx.userId, e.exercice_id, e.limite)) as ToolOutput<T>;
+    }
+
+    case "equivalents_exercice": {
+      const e = entree as ToolInput<"equivalents_exercice">;
+      const { data: ligne, error } = await ctx.db.from("exercices_seance").select("exercice_id, seance_id").eq("id", e.exercice_seance_id).eq("user_id", ctx.userId).single();
+      if (error) throw error;
+      const { data: autres } = await ctx.db.from("exercices_seance").select("exercice_id").eq("seance_id", ligne.seance_id);
+      const params = await parametresSport(ctx.db, ctx.userId);
+      const liste = await equivalents(ctx.db, ligne.exercice_id, params.materiel, (autres ?? []).map((a) => a.exercice_id), e.limite);
+      return liste.map((x) => ({ id: x.id, nom: x.nom, nom_fr: x.nom_fr, partie_corps: x.partie_corps, equipement: x.equipement, compose: x.compose, raison: x.raison, score: x.score })) as ToolOutput<T>;
+    }
+
+    case "remplacer_exercice": {
+      const e = entree as ToolInput<"remplacer_exercice">;
+      return (await remplacerExercice(ctx.db, ctx.userId, e.exercice_seance_id, e.nouvel_exercice_id, e.portee)) as ToolOutput<T>;
     }
   }
   throw new Error(`Outil inconnu : ${String(nom)}`);

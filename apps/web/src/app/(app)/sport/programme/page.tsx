@@ -14,10 +14,10 @@ export default async function Page() {
     ? await supabase.from("seances").select("id, jour, type, titre, etat, bloc, semaine, focus, duree_min, kcal").eq("programme_id", prog.id).order("jour")
     : { data: [] };
 
-  const retour = <Link href="/sport" className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>;
+  const retour = <Link href="/sport" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>;
   if (!prog) {
     return (
-      <ModuleFrame module="sport" titre="Programme" action={retour}>
+      <ModuleFrame module="sport" titre="Programme" gauche={retour}>
         <div className="mt-4 rounded-lg border border-dashed border-border p-5">
           <p className="text-xl font-semibold">Aucun programme actif</p>
           <p className="mt-1 text-sm text-text-2">Génère-le depuis les réglages : rythme, matériel, objectif, durée.</p>
@@ -36,7 +36,7 @@ export default async function Page() {
   const total = seances?.length ?? 0;
 
   return (
-    <ModuleFrame module="sport" titre="Programme" sousTitre={prog.nom} action={retour}>
+    <ModuleFrame module="sport" titre="Programme" sousTitre={prog.nom} gauche={retour}>
       <div className="mt-2 rounded-lg border border-border bg-surface-2 p-4">
         <div className="flex items-end justify-between">
           <div>

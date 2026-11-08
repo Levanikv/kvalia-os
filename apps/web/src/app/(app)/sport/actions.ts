@@ -44,3 +44,24 @@ export async function genererProgramme(brut: unknown, debut?: string) {
   revalidatePath("/");
   return r;
 }
+
+export async function noterChargeAction(exerciceSeanceId: string, maj: { charge_kg?: number | null; reps_faites?: number | null; note?: string | null }) {
+  const { supabase, user } = await session();
+  const r = await executer("noter_charge", { exercice_seance_id: exerciceSeanceId, ...maj }, { db: supabase, userId: user.id });
+  revalidatePath(`/sport/seance/${r.seance_id}`);
+  revalidatePath(`/sport/exercices/${r.exercice_id}`);
+  return r;
+}
+
+export async function equivalentsAction(exerciceSeanceId: string) {
+  const { supabase, user } = await session();
+  return executer("equivalents_exercice", { exercice_seance_id: exerciceSeanceId, limite: 8 }, { db: supabase, userId: user.id });
+}
+
+export async function remplacerAction(exerciceSeanceId: string, nouvelExerciceId: string, portee: "seance" | "programme") {
+  const { supabase, user } = await session();
+  const r = await executer("remplacer_exercice", { exercice_seance_id: exerciceSeanceId, nouvel_exercice_id: nouvelExerciceId, portee }, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+  revalidatePath("/sport/programme");
+  return r;
+}

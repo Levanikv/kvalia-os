@@ -10,7 +10,7 @@ export default async function Page() {
   const params = await parametresNutrition(supabase, user.id);
   return (
     <ModuleFrame module="reglages" titre="Nutrition" sousTitre="Cible du jour = base + kcal brûlées en séance"
-      action={<Link href="/reglages" className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>}>
+      gauche={<Link href="/reglages" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
       <FormulaireNutrition initial={params} />
     </ModuleFrame>
   );

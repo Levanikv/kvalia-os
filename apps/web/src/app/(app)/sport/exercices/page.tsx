@@ -12,7 +12,7 @@ export default async function Page() {
   const exercices = (data ?? []).map((e) => ({ ...e, affiche: nomAffiche(e) }));
   return (
     <ModuleFrame module="sport" titre="Exercices" sousTitre={`${exercices.length} mouvements en vidéo`}
-      action={<Link href="/sport" className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>}>
+      gauche={<Link href="/sport" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
       <Bibliotheque exercices={exercices} />
     </ModuleFrame>
   );

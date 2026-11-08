@@ -140,6 +140,35 @@ export const tools = {
     }),
     output: z.object({ seance_id: z.string().uuid(), kcal: z.number(), duree_min: z.number(), poids_utilise: z.number() }),
   },
+
+  noter_charge: {
+    description: "Note la charge soulevée (kg) et/ou les reps réalisées sur un exercice d'une séance. Sert aux graphes de progression et au pré-remplissage des séances suivantes.",
+    input: z.object({
+      exercice_seance_id: z.string().uuid(),
+      charge_kg: z.number().min(0).max(500).nullable().optional(),
+      reps_faites: z.number().int().min(0).max(200).nullable().optional(),
+      note: z.string().max(200).nullable().optional(),
+    }),
+    output: z.object({ id: z.string().uuid(), exercice_id: z.string(), seance_id: z.string().uuid(), charge_kg: z.number().nullable(), realise: z.object({ reps_faites: z.number().optional(), note: z.string().optional() }) }),
+  },
+
+  historique_exercice: {
+    description: "Les charges notées sur un exercice (référentiel), de la plus récente à la plus ancienne.",
+    input: z.object({ exercice_id: z.string(), limite: z.number().int().min(1).max(50).default(12) }),
+    output: z.array(z.object({ id: z.string().uuid(), seance_id: z.string().uuid(), jour: z.string(), titre: z.string().nullable(), charge_kg: z.number(), series: z.number(), reps: z.string(), reps_faites: z.number().nullable(), fait: z.boolean() })),
+  },
+
+  equivalents_exercice: {
+    description: "Propose des exercices équivalents (même muscle cible, matériel disponible, même nature) pour remplacer un exercice d'une séance — machine prise, douleur, envie de varier.",
+    input: z.object({ exercice_seance_id: z.string().uuid(), limite: z.number().int().min(1).max(20).default(8) }),
+    output: z.array(z.object({ id: z.string(), nom: z.string(), nom_fr: z.string().nullable(), partie_corps: z.string().nullable(), equipement: z.string().nullable(), compose: z.boolean(), raison: z.string(), score: z.number() })),
+  },
+
+  remplacer_exercice: {
+    description: "Remplace un exercice d'une séance par un autre (id du référentiel, voir equivalents_exercice). portee = « seance » (cette séance seulement) ou « programme » (toutes les séances à venir du programme qui contiennent cet exercice). Demander la portée à l'utilisateur si elle n'est pas dite.",
+    input: z.object({ exercice_seance_id: z.string().uuid(), nouvel_exercice_id: z.string(), portee: z.enum(["seance", "programme"]).default("seance") }),
+    output: z.object({ remplaces: z.number(), ancien: z.string(), nouveau: z.string(), nom: z.string(), portee: z.enum(["seance", "programme"]) }),
+  },
 } as const;
 
 export type ToolName = keyof typeof tools;

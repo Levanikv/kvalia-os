@@ -1,11 +1,12 @@
 import { LIBELLES } from "@kvalia/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
+import type { MarqueJour } from "@/components/BandeJours";
 
 type Db = SupabaseClient<Database>;
 
 export const SELECT_SEANCE =
-  "*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, partie_corps, muscles, equipement, image_url, video_url, difficulte))";
+  "*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, nom_fr, partie_corps, muscles, equipement, image_url, video_url, difficulte))";
 
 export type SeanceComplete = NonNullable<Awaited<ReturnType<typeof chargerSeance>>>;
 export type ExoSeance = SeanceComplete["exercices_seance"][number];
@@ -22,20 +23,35 @@ export async function seancePourJour(db: Db, jour: string) {
   return { ...data, exercices_seance: [...data.exercices_seance].sort((a, b) => a.ordre - b.ordre) };
 }
 
-/** Lundi → dimanche de la semaine contenant `jour` (ISO). */
-export function semaineDe(jour: string): string[] {
-  const d = new Date(jour + "T12:00:00Z");
-  const dow = (d.getUTCDay() + 6) % 7; // lundi = 0
-  d.setUTCDate(d.getUTCDate() - dow);
-  return Array.from({ length: 7 }, (_, i) => {
-    const x = new Date(d); x.setUTCDate(d.getUTCDate() + i);
-    return x.toISOString().slice(0, 10);
-  });
-}
-
 export function decaler(jour: string, jours: number): string {
   const d = new Date(jour + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + jours);
   return d.toISOString().slice(0, 10);
+}
+
+/** Jour valide depuis `?jour=` sinon aujourd'hui. */
+export function jourDepuis(param: string | undefined, auj: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(param ?? "") ? param! : auj;
+}
+
+/** Marques de la bande de jours autour d'un jour (séances prévues / faites). */
+export async function marquesAutour(db: Db, jour: string, rayon = 21): Promise<Record<string, MarqueJour>> {
+  const { data } = await db.from("seances").select("jour, type, etat").gte("jour", decaler(jour, -rayon)).lte("jour", decaler(jour, rayon));
+  const m: Record<string, MarqueJour> = {};
+  for (const s of data ?? []) if (!m[s.jour] || s.etat === "faite") m[s.jour] = { type: s.type, etat: s.etat };
+  return m;
+}
+
+export type Programme = { id: string; nom: string; debut: string; fin: string | null; rythme: unknown };
+
+/** Position d'un jour dans le programme : semaine n / total, bloc. */
+export function positionProgramme(prog: Programme | null, jour: string) {
+  if (!prog) return null;
+  const ms = 86400000;
+  const total = prog.fin ? Math.round((new Date(prog.fin).getTime() - new Date(prog.debut).getTime() + ms) / (7 * ms)) : null;
+  const delta = Math.floor((new Date(jour).getTime() - new Date(prog.debut).getTime()) / (7 * ms)) + 1;
+  if (delta < 1) return { avant: true, semaine: 0, total, bloc: 0, debut: prog.debut };
+  if (total && delta > total) return { apres: true, semaine: total, total, bloc: Math.ceil(total / 4), debut: prog.debut };
+  return { semaine: delta, total, bloc: Math.ceil(delta / 4), debut: prog.debut };
 }
 
 export function libelleType(type: string) { return LIBELLES.type[type] ?? type; }

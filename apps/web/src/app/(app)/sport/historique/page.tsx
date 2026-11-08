@@ -16,7 +16,7 @@ export default async function Page() {
 
   return (
     <ModuleFrame module="sport" titre="Historique" sousTitre={`${seances.length} séance${seances.length > 1 ? "s" : ""} terminée${seances.length > 1 ? "s" : ""}`}
-      action={<Link href="/sport" className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>}>
+      gauche={<Link href="/sport" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
       {seances.length === 0 ? (
         <p className="mt-10 text-center text-sm text-text-3">Rien pour l’instant. Ta première séance terminée apparaîtra ici.</p>
       ) : (

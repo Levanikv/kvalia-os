@@ -19,7 +19,7 @@ export default async function Page() {
 
   return (
     <ModuleFrame module="reglages" titre="Programme sportif" sousTitre="Ce que l’agent utilise pour générer tes séances"
-      action={<Link href="/reglages" className="tap flex w-11 items-center justify-center rounded-full bg-surface-2" aria-label="Retour"><Icon name="arrow_back" size={22} /></Link>}>
+      gauche={<Link href="/reglages" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
       <FormulaireSport
         initial={params}
         poids={{ valeur: poids, source }}
