@@ -60,7 +60,11 @@ export async function equivalentsAction(exerciceSeanceId: string) {
 
 export async function remplacerAction(exerciceSeanceId: string, nouvelExerciceId: string, portee: "seance" | "programme") {
   const { supabase, user } = await session();
-  const r = await executer("remplacer_exercice", { exercice_seance_id: exerciceSeanceId, nouvel_exercice_id: nouvelExerciceId, portee }, { db: supabase, userId: user.id });
+  const r = await executer(
+    "remplacer_exercice",
+    { exercice_seance_id: exerciceSeanceId, nouvel_exercice_id: nouvelExerciceId, portee },
+    { db: supabase, userId: user.id },
+  );
   revalidatePath("/sport");
   revalidatePath("/sport/programme");
   return r;

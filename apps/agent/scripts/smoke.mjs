@@ -29,7 +29,13 @@ async function appeler(nom, args, id) {
   // Réponse JSON directe ou flux SSE (lignes `data: {...}`)
   const data = texte.trimStart().startsWith("{")
     ? JSON.parse(texte)
-    : JSON.parse(texte.split("\n").filter((l) => l.startsWith("data:")).pop().slice(5));
+    : JSON.parse(
+        texte
+          .split("\n")
+          .filter((l) => l.startsWith("data:"))
+          .pop()
+          .slice(5),
+      );
   if (data.error) throw new Error(`JSON-RPC ${data.error.code} — ${data.error.message}`);
   const contenu = data.result?.content?.[0]?.text ?? "";
   return { erreur: data.result?.isError === true, contenu };
@@ -41,10 +47,14 @@ for (const [i, [nom, args]] of appels.entries()) {
   try {
     const { erreur, contenu } = await appeler(nom, args, i + 1);
     const ms = Date.now() - t0;
-    if (erreur) { echecs++; console.log(`✗ ${nom} (${ms} ms)\n   ${contenu}`); }
-    else {
+    if (erreur) {
+      echecs++;
+      console.log(`✗ ${nom} (${ms} ms)\n   ${contenu}`);
+    } else {
       let apercu = contenu;
-      try { apercu = JSON.stringify(JSON.parse(contenu), null, 1).replace(/\n\s*/g, " "); } catch {}
+      try {
+        apercu = JSON.stringify(JSON.parse(contenu), null, 1).replace(/\n\s*/g, " ");
+      } catch {}
       console.log(`✓ ${nom} (${ms} ms)\n   ${apercu.slice(0, 400)}${apercu.length > 400 ? " …" : ""}`);
     }
   } catch (err) {

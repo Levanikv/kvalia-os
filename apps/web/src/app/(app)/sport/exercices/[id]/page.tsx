@@ -22,21 +22,40 @@ export default async function Page({ params, searchParams }: Props) {
   const historique = await historiqueCharge(supabase, user.id, id, 12);
 
   // Contexte séance (prescription + exercice suivant) si on vient d'une séance
-  let ctx: { ligne: { id: string; series: number; reps: string; repos_s: number; kcal: number | null; fait: boolean }; suivant: string | null; seanceFaite: boolean } | null = null;
+  let ctx: {
+    ligne: { id: string; series: number; reps: string; repos_s: number; kcal: number | null; fait: boolean };
+    suivant: string | null;
+    seanceFaite: boolean;
+  } | null = null;
   if (seanceId) {
-    const { data: lignes } = await supabase.from("exercices_seance").select("id, exercice_id, ordre, series, reps, repos_s, kcal, fait, seances!inner(etat)")
-      .eq("seance_id", seanceId).order("ordre");
+    const { data: lignes } = await supabase
+      .from("exercices_seance")
+      .select("id, exercice_id, ordre, series, reps, repos_s, kcal, fait, seances!inner(etat)")
+      .eq("seance_id", seanceId)
+      .order("ordre");
     const idx = (lignes ?? []).findIndex((l) => l.exercice_id === id);
     if (idx >= 0) {
       const l = lignes![idx];
-      ctx = { ligne: { id: l.id, series: l.series, reps: l.reps, repos_s: l.repos_s, kcal: l.kcal === null ? null : Number(l.kcal), fait: l.fait }, suivant: lignes![idx + 1]?.exercice_id ?? null, seanceFaite: (l.seances as unknown as { etat: string }).etat === "faite" };
+      ctx = {
+        ligne: { id: l.id, series: l.series, reps: l.reps, repos_s: l.repos_s, kcal: l.kcal === null ? null : Number(l.kcal), fait: l.fait },
+        suivant: lignes![idx + 1]?.exercice_id ?? null,
+        seanceFaite: (l.seances as unknown as { etat: string }).etat === "faite",
+      };
     }
   }
 
   const retour = seanceId ? `/sport/seance/${seanceId}` : "/sport/exercices";
   return (
-    <ModuleFrame module="sport" titre={nomAffiche(e)} sousTitre={e.nom !== nomAffiche(e) ? e.nom : undefined}
-      gauche={<Link href={retour} className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
+    <ModuleFrame
+      module="sport"
+      titre={nomAffiche(e)}
+      sousTitre={e.nom !== nomAffiche(e) ? e.nom : undefined}
+      gauche={
+        <Link href={retour} className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour">
+          <Icon name="arrow_back" size={24} />
+        </Link>
+      }
+    >
       <Video src={e.video_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
@@ -50,9 +69,19 @@ export default async function Page({ params, searchParams }: Props) {
       {ctx && (
         <div className="mt-4 rounded-lg border border-border bg-surface-2 p-4">
           <p className="text-[11px] uppercase tracking-wide text-text-3">Dans ta séance</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">{ctx.ligne.series} × {ctx.ligne.reps}</p>
-          <p className="text-sm text-text-2">{ctx.ligne.repos_s ? `Repos ${ctx.ligne.repos_s} s · ` : ""}{ctx.ligne.kcal ?? 0} kcal</p>
-          <BoutonFait ligneId={ctx.ligne.id} fait={ctx.ligne.fait} desactive={ctx.seanceFaite} suivant={ctx.suivant ? `/sport/exercices/${ctx.suivant}?seance=${seanceId}` : retour} />
+          <p className="mt-1 text-2xl font-semibold tracking-tight">
+            {ctx.ligne.series} × {ctx.ligne.reps}
+          </p>
+          <p className="text-sm text-text-2">
+            {ctx.ligne.repos_s ? `Repos ${ctx.ligne.repos_s} s · ` : ""}
+            {ctx.ligne.kcal ?? 0} kcal
+          </p>
+          <BoutonFait
+            ligneId={ctx.ligne.id}
+            fait={ctx.ligne.fait}
+            desactive={ctx.seanceFaite}
+            suivant={ctx.suivant ? `/sport/exercices/${ctx.suivant}?seance=${seanceId}` : retour}
+          />
         </div>
       )}
 
@@ -60,14 +89,23 @@ export default async function Page({ params, searchParams }: Props) {
         <section className="mt-5 rounded-lg border border-border bg-surface-2 p-4">
           <div className="flex items-baseline justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-text-3">Charge</h2>
-            <p className="text-sm"><span className="text-2xl font-semibold tracking-tight">{historique[0].charge_kg}</span> <span className="text-text-2">kg · {new Date(historique[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span></p>
+            <p className="text-sm">
+              <span className="text-2xl font-semibold tracking-tight">{historique[0].charge_kg}</span>{" "}
+              <span className="text-text-2">
+                kg · {new Date(historique[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+              </span>
+            </p>
           </div>
           <CourbeCharge points={[...historique].reverse().map((h) => ({ jour: h.jour, kg: h.charge_kg }))} />
           <ul className="mt-2 space-y-1 text-xs text-text-2">
             {historique.slice(0, 5).map((h) => (
               <li key={h.id} className="flex justify-between">
-                <Link href={`/sport/seance/${h.seance_id}`} className="truncate">{new Date(h.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · {h.titre ?? ""}</Link>
-                <span className="shrink-0 tabular-nums">{h.series} × {h.reps_faites ?? h.reps} · <strong className="text-text">{h.charge_kg} kg</strong></span>
+                <Link href={`/sport/seance/${h.seance_id}`} className="truncate">
+                  {new Date(h.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · {h.titre ?? ""}
+                </Link>
+                <span className="shrink-0 tabular-nums">
+                  {h.series} × {h.reps_faites ?? h.reps} · <strong className="text-text">{h.charge_kg} kg</strong>
+                </span>
               </li>
             ))}
           </ul>
@@ -78,7 +116,10 @@ export default async function Page({ params, searchParams }: Props) {
 
       <section className="mt-5">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-text-3">Muscles</h2>
-        <p className="mt-1 text-sm"><span className="font-medium">{e.muscles.join(", ")}</span>{e.muscles_secondaires.length > 0 && <span className="text-text-2"> · {e.muscles_secondaires.join(", ")}</span>}</p>
+        <p className="mt-1 text-sm">
+          <span className="font-medium">{e.muscles.join(", ")}</span>
+          {e.muscles_secondaires.length > 0 && <span className="text-text-2"> · {e.muscles_secondaires.join(", ")}</span>}
+        </p>
       </section>
 
       {e.consignes.length > 0 && (
@@ -98,20 +139,36 @@ export default async function Page({ params, searchParams }: Props) {
       {e.reperes.length > 0 && (
         <section className="mt-5">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-3">Repères</h2>
-          <ul className="mt-2 space-y-1.5 text-sm">{e.reperes.map((r, i) => <li key={i} className="flex gap-2"><Icon name="check" size={18} className="shrink-0 text-success" /><span>{r}</span></li>)}</ul>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {e.reperes.map((r, i) => (
+              <li key={i} className="flex gap-2">
+                <Icon name="check" size={18} className="shrink-0 text-success" />
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
       {e.erreurs.length > 0 && (
         <section className="mt-5">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-3">Erreurs fréquentes</h2>
-          <ul className="mt-2 space-y-1.5 text-sm">{e.erreurs.map((r, i) => <li key={i} className="flex gap-2"><Icon name="close" size={18} className="shrink-0 text-danger" /><span>{r}</span></li>)}</ul>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {e.erreurs.map((r, i) => (
+              <li key={i} className="flex gap-2">
+                <Icon name="close" size={18} className="shrink-0 text-danger" />
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
       {e.respiration && (
         <section className="mt-5 rounded-lg bg-surface-2 p-4">
-          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-3"><Icon name="air" size={18} /> Respiration</h2>
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-3">
+            <Icon name="air" size={18} /> Respiration
+          </h2>
           <p className="mt-1 text-sm">{e.respiration}</p>
         </section>
       )}

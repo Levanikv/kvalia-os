@@ -8,8 +8,12 @@ export const metadata: Metadata = { title: "Courses" };
 export default async function Courses() {
   const { supabase } = await session();
   const { data: liste } = await supabase
-    .from("listes").select("id, creee_le").eq("etat", "active")
-    .order("creee_le", { ascending: false }).limit(1).maybeSingle();
+    .from("listes")
+    .select("id, creee_le")
+    .eq("etat", "active")
+    .order("creee_le", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   let lignes: LigneAffichee[] = [];
   if (liste) {

@@ -22,7 +22,9 @@ export async function majSession(request: NextRequest) {
   });
 
   // Ne rien mettre entre createServerClient et getUser : c'est ce qui rafraîchit le token.
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
   const estPublique = PUBLIC.some((p) => pathname.startsWith(p));
 

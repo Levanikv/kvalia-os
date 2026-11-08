@@ -14,8 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 const ENV_RACINE = fileURLToPath(new URL("../../../.env", import.meta.url));
 if (existsSync(ENV_RACINE)) process.loadEnvFile(ENV_RACINE);
 
-const URL_SOURCE = process.env.EXERCICES_SOURCE_URL
-  ?? "https://raw.githubusercontent.com/imjosiel/free-exercise-db-api/main/data/exercises.json";
+const URL_SOURCE = process.env.EXERCICES_SOURCE_URL ?? "https://raw.githubusercontent.com/imjosiel/free-exercise-db-api/main/data/exercises.json";
 const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !serviceKey) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants");

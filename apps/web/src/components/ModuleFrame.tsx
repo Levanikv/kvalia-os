@@ -35,8 +35,11 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
             {sousTitre && <p className="truncate text-xs text-text-2">{sousTitre}</p>}
           </div>
           {action ?? (
-            <Link href="/reglages" aria-label="Réglages et compte"
-              className="tap flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
+            <Link
+              href="/reglages"
+              aria-label="Réglages et compte"
+              className="tap flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent"
+            >
               {initiale}
             </Link>
           )}
@@ -51,7 +54,9 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
 /** Initiale affichée dans l'avatar : prénom du profil, sinon email. */
 async function initialeUtilisateur(): Promise<string> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return "?";
   const { data: profil } = await supabase.from("profils").select("prenom").eq("id", user.id).maybeSingle();
   const source = profil?.prenom || user.email || "?";

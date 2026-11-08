@@ -24,7 +24,8 @@ export async function seancePourJour(db: Db, jour: string) {
 }
 
 export function decaler(jour: string, jours: number): string {
-  const d = new Date(jour + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + jours);
+  const d = new Date(jour + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + jours);
   return d.toISOString().slice(0, 10);
 }
 
@@ -54,10 +55,18 @@ export function positionProgramme(prog: Programme | null, jour: string) {
   return { semaine: delta, total, bloc: Math.ceil(delta / 4), debut: prog.debut };
 }
 
-export function libelleType(type: string) { return LIBELLES.type[type] ?? type; }
-export function libelleFocus(focus: string | null) { return focus ? (LIBELLES.focus[focus] ?? focus) : null; }
-export function libellePartie(p: string | null) { return p ? (LIBELLES.partie[p] ?? p) : ""; }
-export function libelleMateriel(m: string | null) { return m ? (LIBELLES.materiel[m] ?? m) : ""; }
+export function libelleType(type: string) {
+  return LIBELLES.type[type] ?? type;
+}
+export function libelleFocus(focus: string | null) {
+  return focus ? (LIBELLES.focus[focus] ?? focus) : null;
+}
+export function libellePartie(p: string | null) {
+  return p ? (LIBELLES.partie[p] ?? p) : "";
+}
+export function libelleMateriel(m: string | null) {
+  return m ? (LIBELLES.materiel[m] ?? m) : "";
+}
 
 export function dateCourte(jour: string) {
   return new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
@@ -85,43 +94,131 @@ export function nomAffiche(e: { nom: string; nom_fr?: string | null }): string {
   // Cas particuliers avant la découpe
   n = n.replace(/\bRear (Lateral Raise|Delt Fly|Fly)\b/i, " Oiseau ").replace(/\bReverse Fly\b/i, " Oiseau ");
   const modifs: Array<[RegExp, string]> = [
-    [/\bStiff[- ]Leg(ged)?\b/i, "jambes tendues"], [/\bStraight Leg\b/i, "jambes tendues"], [/\bRomanian\b/i, "roumain"], [/\bSumo\b/i, "sumo"],
-    [/\bClose[- ]Grip\b/i, "prise serrée"], [/\bWide[- ]Grip\b/i, "prise large"], [/\bHammer Grip\b/i, "prise marteau"], [/\bUnderhand\b/i, "supination"],
-    [/\bOverhand\b/i, "pronation"], [/\bNeutral Grip\b/i, "prise neutre"], [/\bReverse Grip\b/i, "prise inversée"],
-    [/\bOne[- ]Arm\b/i, "un bras"], [/\bSingle[- ]Arm\b/i, "un bras"], [/\bSingle[- ]Leg\b/i, "une jambe"], [/\bOne[- ]Leg\b/i, "une jambe"], [/\bAlternating\b/i, "alterné"],
-    [/\bSeated\b/i, "assis"], [/\bStanding\b/i, "debout"], [/\bLying\b/i, "allongé"], [/\bKneeling\b/i, "à genoux"], [/\bProne\b/i, "sur banc"], [/\bBent[- ]Over\b/i, "buste penché"],
-    [/\bIncline\b/i, "incliné"], [/\bDecline\b/i, "décliné"], [/\b45[- ]Degree\b/i, "à 45°"], [/\bOn (Exercise|Stability|Swiss) Ball\b/i, "sur swiss ball"],
-    [/\bOverhead\b/i, "au-dessus de la tête"], [/\bBehind The Neck\b/i, "nuque"], [/\bRear\b/i, "arrière"], [/\bFront\b/i, "avant"], [/\bSide\b/i, "latéral"], [/\bReverse\b/i, "inversé"],
-    [/\bWeighted\b/i, "lesté"], [/\bAssisted\b/i, "assisté"], [/\bJump(ing)?\b/i, "sauté"], [/\bTwisting\b/i, "croisé"],
+    [/\bStiff[- ]Leg(ged)?\b/i, "jambes tendues"],
+    [/\bStraight Leg\b/i, "jambes tendues"],
+    [/\bRomanian\b/i, "roumain"],
+    [/\bSumo\b/i, "sumo"],
+    [/\bClose[- ]Grip\b/i, "prise serrée"],
+    [/\bWide[- ]Grip\b/i, "prise large"],
+    [/\bHammer Grip\b/i, "prise marteau"],
+    [/\bUnderhand\b/i, "supination"],
+    [/\bOverhand\b/i, "pronation"],
+    [/\bNeutral Grip\b/i, "prise neutre"],
+    [/\bReverse Grip\b/i, "prise inversée"],
+    [/\bOne[- ]Arm\b/i, "un bras"],
+    [/\bSingle[- ]Arm\b/i, "un bras"],
+    [/\bSingle[- ]Leg\b/i, "une jambe"],
+    [/\bOne[- ]Leg\b/i, "une jambe"],
+    [/\bAlternating\b/i, "alterné"],
+    [/\bSeated\b/i, "assis"],
+    [/\bStanding\b/i, "debout"],
+    [/\bLying\b/i, "allongé"],
+    [/\bKneeling\b/i, "à genoux"],
+    [/\bProne\b/i, "sur banc"],
+    [/\bBent[- ]Over\b/i, "buste penché"],
+    [/\bIncline\b/i, "incliné"],
+    [/\bDecline\b/i, "décliné"],
+    [/\b45[- ]Degree\b/i, "à 45°"],
+    [/\bOn (Exercise|Stability|Swiss) Ball\b/i, "sur swiss ball"],
+    [/\bOverhead\b/i, "au-dessus de la tête"],
+    [/\bBehind The Neck\b/i, "nuque"],
+    [/\bRear\b/i, "arrière"],
+    [/\bFront\b/i, "avant"],
+    [/\bSide\b/i, "latéral"],
+    [/\bReverse\b/i, "inversé"],
+    [/\bWeighted\b/i, "lesté"],
+    [/\bAssisted\b/i, "assisté"],
+    [/\bJump(ing)?\b/i, "sauté"],
+    [/\bTwisting\b/i, "croisé"],
   ];
   const suffixes: string[] = [];
-  for (const [re, fr] of modifs) if (re.test(n)) { n = n.replace(re, " "); suffixes.push(fr); }
+  for (const [re, fr] of modifs)
+    if (re.test(n)) {
+      n = n.replace(re, " ");
+      suffixes.push(fr);
+    }
   const dico: Array<[RegExp, string]> = [
-    [/\bBench Press\b/i, "Développé couché"], [/\bChest Press\b/i, "Développé poitrine"], [/\bArnold Press\b/i, "Développé Arnold"], [/\bShoulder Press\b/i, "Développé épaules"],
-    [/\bMilitary Press\b/i, "Développé militaire"], [/\bPush Press\b/i, "Push press"], [/\bFloor Press\b/i, "Développé au sol"], [/\bHammer Press\b/i, "Développé prise marteau"],
-    [/\bSquat\b/i, "Squat"], [/\bGoblet\b/i, "goblet"], [/\bSplit\b/i, "bulgare"], [/\bHack\b/i, "hack"],
+    [/\bBench Press\b/i, "Développé couché"],
+    [/\bChest Press\b/i, "Développé poitrine"],
+    [/\bArnold Press\b/i, "Développé Arnold"],
+    [/\bShoulder Press\b/i, "Développé épaules"],
+    [/\bMilitary Press\b/i, "Développé militaire"],
+    [/\bPush Press\b/i, "Push press"],
+    [/\bFloor Press\b/i, "Développé au sol"],
+    [/\bHammer Press\b/i, "Développé prise marteau"],
+    [/\bSquat\b/i, "Squat"],
+    [/\bGoblet\b/i, "goblet"],
+    [/\bSplit\b/i, "bulgare"],
+    [/\bHack\b/i, "hack"],
     [/\bDeadlift\b/i, "Soulevé de terre"],
-    [/\bUpright Row\b/i, "Rowing menton"], [/\bBench Row\b/i, "Rowing sur banc"], [/\bRow\b/i, "Rowing"],
-    [/\bStraight Arm Pulldown\b/i, "Tirage bras tendus"], [/\bLat Pulldown\b/i, "Tirage vertical"], [/\bLateral Pulldown\b/i, "Tirage vertical"], [/\bPulldown\b/i, "Tirage vertical"],
-    [/\bPull[- ]?ups?\b/i, "Tractions"], [/\bChin[- ]?ups?\b/i, "Tractions supination"], [/\bPullover\b/i, "Pullover"],
-    [/\bLateral Raise\b/i, "Élévations latérales"], [/\bFly\b/i, "Écarté"], [/\bCrossover\b/i, "Crossover"], [/\bFace Pull\b/i, "Face pull"], [/\bShrugs?\b/i, "Haussements d’épaules"],
-    [/\bHammer Curl\b/i, "Curl marteau"], [/\bPreacher Curl\b/i, "Curl pupitre"], [/\bConcentration Curl\b/i, "Curl concentré"], [/\bDrag Curl\b/i, "Drag curl"], [/\bZottman\b/i, "Zottman"],
-    [/\bBiceps Curl\b/i, "Curl biceps"], [/\bLeg Curl\b/i, "Leg curl"], [/\bWrist Curl\b/i, "Curl poignets"],
-    [/\bTriceps Extension\b/i, "Extension triceps"], [/\bTriceps Pushdown\b/i, "Extension triceps poulie"], [/\bPushdown\b/i, "Extension poulie"], [/\bPress ?down\b/i, "Extension poulie"],
-    [/\bSkull ?Crushers?\b/i, "Barre au front"], [/\bKickback\b/i, "Kickback"], [/\bDips?\b/i, "Dips"],
-    [/\bLeg Extension Crunch\b/i, "Crunch jambes tendues"], [/\bLeg Extension\b/i, "Leg extension"], [/\bLeg Press\b/i, "Presse à cuisses"], [/\bCalf Raise\b/i, "Mollets"],
-    [/\bHip Thrust\b/i, "Hip thrust"], [/\bGlute Bridge\b/i, "Pont fessier"], [/\bLunges?\b/i, "Fentes"], [/\bStep[- ]?ups?\b/i, "Step-up"],
-    [/\bHyperextension\b/i, "Extensions lombaires"], [/\bGood Morning\b/i, "Good morning"], [/\bPull Through\b/i, "Pull through"],
-    [/\bBicycle\b/i, "bicyclette"], [/\bCrunch\b/i, "Crunch"], [/\bSit[- ]?ups?\b/i, "Relevés de buste"], [/\bLeg Raise\b/i, "Relevé de jambes"], [/\bKnee Raise\b/i, "Relevé de genoux"],
-    [/\bBend\b/i, "Flexion"], [/\bRussian Twist\b/i, "Rotation russe"], [/\bTwist\b/i, "Rotation"], [/\bPlank\b/i, "Gainage"], [/\bRollout\b/i, "Roulette abdos"], [/\bWoodchop\b/i, "Bûcheron"],
-    [/\bPush[- ]?ups?\b/i, "Pompes"], [/\bBurpees?\b/i, "Burpees"], [/\bJump Rope\b/i, "Corde à sauter"], [/\bMountain Climbers?\b/i, "Mountain climbers"], [/\bHigh Knees?\b/i, "Montées de genoux"],
-    [/\bPress\b/, "Développé"], [/\bRaise\b/, "Élévation"],
+    [/\bUpright Row\b/i, "Rowing menton"],
+    [/\bBench Row\b/i, "Rowing sur banc"],
+    [/\bRow\b/i, "Rowing"],
+    [/\bStraight Arm Pulldown\b/i, "Tirage bras tendus"],
+    [/\bLat Pulldown\b/i, "Tirage vertical"],
+    [/\bLateral Pulldown\b/i, "Tirage vertical"],
+    [/\bPulldown\b/i, "Tirage vertical"],
+    [/\bPull[- ]?ups?\b/i, "Tractions"],
+    [/\bChin[- ]?ups?\b/i, "Tractions supination"],
+    [/\bPullover\b/i, "Pullover"],
+    [/\bLateral Raise\b/i, "Élévations latérales"],
+    [/\bFly\b/i, "Écarté"],
+    [/\bCrossover\b/i, "Crossover"],
+    [/\bFace Pull\b/i, "Face pull"],
+    [/\bShrugs?\b/i, "Haussements d’épaules"],
+    [/\bHammer Curl\b/i, "Curl marteau"],
+    [/\bPreacher Curl\b/i, "Curl pupitre"],
+    [/\bConcentration Curl\b/i, "Curl concentré"],
+    [/\bDrag Curl\b/i, "Drag curl"],
+    [/\bZottman\b/i, "Zottman"],
+    [/\bBiceps Curl\b/i, "Curl biceps"],
+    [/\bLeg Curl\b/i, "Leg curl"],
+    [/\bWrist Curl\b/i, "Curl poignets"],
+    [/\bTriceps Extension\b/i, "Extension triceps"],
+    [/\bTriceps Pushdown\b/i, "Extension triceps poulie"],
+    [/\bPushdown\b/i, "Extension poulie"],
+    [/\bPress ?down\b/i, "Extension poulie"],
+    [/\bSkull ?Crushers?\b/i, "Barre au front"],
+    [/\bKickback\b/i, "Kickback"],
+    [/\bDips?\b/i, "Dips"],
+    [/\bLeg Extension Crunch\b/i, "Crunch jambes tendues"],
+    [/\bLeg Extension\b/i, "Leg extension"],
+    [/\bLeg Press\b/i, "Presse à cuisses"],
+    [/\bCalf Raise\b/i, "Mollets"],
+    [/\bHip Thrust\b/i, "Hip thrust"],
+    [/\bGlute Bridge\b/i, "Pont fessier"],
+    [/\bLunges?\b/i, "Fentes"],
+    [/\bStep[- ]?ups?\b/i, "Step-up"],
+    [/\bHyperextension\b/i, "Extensions lombaires"],
+    [/\bGood Morning\b/i, "Good morning"],
+    [/\bPull Through\b/i, "Pull through"],
+    [/\bBicycle\b/i, "bicyclette"],
+    [/\bCrunch\b/i, "Crunch"],
+    [/\bSit[- ]?ups?\b/i, "Relevés de buste"],
+    [/\bLeg Raise\b/i, "Relevé de jambes"],
+    [/\bKnee Raise\b/i, "Relevé de genoux"],
+    [/\bBend\b/i, "Flexion"],
+    [/\bRussian Twist\b/i, "Rotation russe"],
+    [/\bTwist\b/i, "Rotation"],
+    [/\bPlank\b/i, "Gainage"],
+    [/\bRollout\b/i, "Roulette abdos"],
+    [/\bWoodchop\b/i, "Bûcheron"],
+    [/\bPush[- ]?ups?\b/i, "Pompes"],
+    [/\bBurpees?\b/i, "Burpees"],
+    [/\bJump Rope\b/i, "Corde à sauter"],
+    [/\bMountain Climbers?\b/i, "Mountain climbers"],
+    [/\bHigh Knees?\b/i, "Montées de genoux"],
+    [/\bPress\b/, "Développé"],
+    [/\bRaise\b/, "Élévation"],
   ];
   for (const [re, fr] of dico) n = n.replace(re, fr);
   n = n.replace(/\s+/g, " ").trim();
   // Réordonne « bicyclette Crunch » → « Crunch bicyclette » quand un mot-clé minuscule précède le mouvement capitalisé
   const mots = n.split(" ");
-  if (mots.length >= 2 && /^[a-zà-ÿ]/.test(mots[0]) && /^[A-ZÀ-Ý]/.test(mots[1])) { const [m0, ...reste] = mots; n = [...reste, m0].join(" "); }
+  if (mots.length >= 2 && /^[a-zà-ÿ]/.test(mots[0]) && /^[A-ZÀ-Ý]/.test(mots[1])) {
+    const [m0, ...reste] = mots;
+    n = [...reste, m0].join(" ");
+  }
   const total = [n, ...suffixes].filter(Boolean).join(" ").trim();
   return total.charAt(0).toUpperCase() + total.slice(1);
 }

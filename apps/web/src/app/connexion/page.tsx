@@ -52,11 +52,7 @@ function Formulaire() {
         />
       </label>
       {erreur && <p className="text-sm text-danger">{erreur}</p>}
-      <button
-        type="submit"
-        disabled={enCours}
-        className="tap mt-2 rounded-md bg-accent font-medium text-white transition-opacity disabled:opacity-60"
-      >
+      <button type="submit" disabled={enCours} className="tap mt-2 rounded-md bg-accent font-medium text-white transition-opacity disabled:opacity-60">
         {enCours ? "Connexion…" : "Se connecter"}
       </button>
       <p className="mt-2 text-center text-xs text-text-3">Passkeys et lien magique arrivent en phase 0.7.</p>

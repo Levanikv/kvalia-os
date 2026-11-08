@@ -27,8 +27,16 @@
   --accent-capture: #4f6bff;
   --accent-alexa: #7c4dff;
 
-  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
-  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   /* hauteurs du shell */
@@ -61,15 +69,33 @@
   }
 }
 
-[data-module="home"]       { --module-accent: var(--accent-home); }
-[data-module="quotidien"]  { --module-accent: var(--accent-quotidien); }
-[data-module="nutrition"]  { --module-accent: var(--accent-nutrition); }
-[data-module="finances"]   { --module-accent: var(--accent-finances); }
-[data-module="entreprise"] { --module-accent: var(--accent-entreprise); }
-[data-module="documents"]  { --module-accent: var(--accent-documents); }
-[data-module="objectifs"]  { --module-accent: var(--accent-objectifs); }
-[data-module="reglages"]   { --module-accent: var(--accent-reglages); }
-[data-module="capture"]    { --module-accent: var(--accent-capture); }
+[data-module="home"] {
+  --module-accent: var(--accent-home);
+}
+[data-module="quotidien"] {
+  --module-accent: var(--accent-quotidien);
+}
+[data-module="nutrition"] {
+  --module-accent: var(--accent-nutrition);
+}
+[data-module="finances"] {
+  --module-accent: var(--accent-finances);
+}
+[data-module="entreprise"] {
+  --module-accent: var(--accent-entreprise);
+}
+[data-module="documents"] {
+  --module-accent: var(--accent-documents);
+}
+[data-module="objectifs"] {
+  --module-accent: var(--accent-objectifs);
+}
+[data-module="reglages"] {
+  --module-accent: var(--accent-reglages);
+}
+[data-module="capture"] {
+  --module-accent: var(--accent-capture);
+}
 
 /* Sport : identité sombre quel que soit le thème système */
 [data-module="sport"] {

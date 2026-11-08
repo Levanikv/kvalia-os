@@ -21,5 +21,11 @@ export function Carte({ titre, icone, href, module: mod, children, vide }: Props
       {children ?? <p className="text-sm text-text-3">{vide}</p>}
     </div>
   );
-  return href ? <Link href={href} className="block active:opacity-80">{corps}</Link> : corps;
+  return href ? (
+    <Link href={href} className="block active:opacity-80">
+      {corps}
+    </Link>
+  ) : (
+    corps
+  );
 }

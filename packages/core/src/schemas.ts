@@ -33,9 +33,7 @@ export const Objectif = z.object({
 });
 export type Objectif = z.infer<typeof Objectif>;
 
-export const DocumentType = z.enum([
-  "identite", "logement", "voiture", "sante", "sasu", "banque", "contrat", "voyage", "facture", "autre",
-]);
+export const DocumentType = z.enum(["identite", "logement", "voiture", "sante", "sasu", "banque", "contrat", "voyage", "facture", "autre"]);
 
 // ---------- Quotidien ----------
 export const Priorite = z.enum(["basse", "normale", "haute"]);
@@ -78,27 +76,66 @@ export const ListeEtat = z.enum(["active", "faite", "archivee"]);
 // ---------- Vue Jour (sortie de la fonction SQL vue_jour) ----------
 export const VueJour = z.object({
   jour: z.string().date(),
-  evenements: z.array(z.object({
-    id: z.string(), titre: z.string(), debut: z.string(), fin: z.string().nullable(), lieu: z.string().nullable(),
-  })),
-  taches: z.array(z.object({
-    id: z.string().uuid(), titre: z.string(), due: z.string().nullable(), priorite: Priorite, fait: z.boolean(),
-  })),
-  habitudes: z.array(z.object({
-    id: z.string().uuid(), nom: z.string(), moment: MomentJournee, non_negociable: z.boolean(), fait: z.boolean(),
-  })),
-  seance: z.object({
-    id: z.string().uuid(), type: z.string(), titre: z.string().nullable().optional(), duree_min: z.number().nullable(), etat: z.string(),
-    kcal: z.number().nullable().optional(), nb_exercices: z.number(), nb_faits: z.number().optional(),
-  }).nullable(),
-  repas: z.array(z.object({
-    repas: z.string(), recette_id: z.string().uuid(), recette: z.string(), portions: z.number(), pris: z.boolean(),
-  })),
+  evenements: z.array(
+    z.object({
+      id: z.string(),
+      titre: z.string(),
+      debut: z.string(),
+      fin: z.string().nullable(),
+      lieu: z.string().nullable(),
+    }),
+  ),
+  taches: z.array(
+    z.object({
+      id: z.string().uuid(),
+      titre: z.string(),
+      due: z.string().nullable(),
+      priorite: Priorite,
+      fait: z.boolean(),
+    }),
+  ),
+  habitudes: z.array(
+    z.object({
+      id: z.string().uuid(),
+      nom: z.string(),
+      moment: MomentJournee,
+      non_negociable: z.boolean(),
+      fait: z.boolean(),
+    }),
+  ),
+  seance: z
+    .object({
+      id: z.string().uuid(),
+      type: z.string(),
+      titre: z.string().nullable().optional(),
+      duree_min: z.number().nullable(),
+      etat: z.string(),
+      kcal: z.number().nullable().optional(),
+      nb_exercices: z.number(),
+      nb_faits: z.number().optional(),
+    })
+    .nullable(),
+  repas: z.array(
+    z.object({
+      repas: z.string(),
+      recette_id: z.string().uuid(),
+      recette: z.string(),
+      portions: z.number(),
+      pris: z.boolean(),
+    }),
+  ),
   courses: z.object({ liste_id: z.string().uuid(), articles: z.number(), manques: z.number() }).nullable(),
   depenses_semaine: z.number(),
-  objectifs: z.array(z.object({
-    id: z.string().uuid(), titre: z.string(), type: ObjectifType, valeur: z.number(), cible: z.number().nullable(), echeance: z.string().nullable(),
-  })),
+  objectifs: z.array(
+    z.object({
+      id: z.string().uuid(),
+      titre: z.string(),
+      type: ObjectifType,
+      valeur: z.number(),
+      cible: z.number().nullable(),
+      echeance: z.string().nullable(),
+    }),
+  ),
   alertes: z.array(z.object({ document_id: z.string().uuid(), titre: z.string(), expiration: z.string() })),
 });
 export type VueJour = z.infer<typeof VueJour>;

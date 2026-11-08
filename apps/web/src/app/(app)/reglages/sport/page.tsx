@@ -18,8 +18,16 @@ export default async function Page() {
   for (const m of materiels ?? []) compteMateriel.set(m.equipement!, (compteMateriel.get(m.equipement!) ?? 0) + 1);
 
   return (
-    <ModuleFrame module="reglages" titre="Programme sportif" sousTitre="Ce que l’agent utilise pour générer tes séances"
-      gauche={<Link href="/reglages" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour"><Icon name="arrow_back" size={24} /></Link>}>
+    <ModuleFrame
+      module="reglages"
+      titre="Programme sportif"
+      sousTitre="Ce que l’agent utilise pour générer tes séances"
+      gauche={
+        <Link href="/reglages" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour">
+          <Icon name="arrow_back" size={24} />
+        </Link>
+      }
+    >
       <FormulaireSport
         initial={params}
         poids={{ valeur: poids, source }}

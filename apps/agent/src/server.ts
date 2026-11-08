@@ -27,9 +27,11 @@ const PORT = Number(process.env.PORT ?? 8787);
 const MCP_TOKEN = process.env.MCP_TOKEN?.trim() || null;
 
 /** v0 : un seul utilisateur, identifié par KVALIA_USER_ID. Remplacé par OAuth en fin de phase 0. */
-const USER_ID: string = process.env.KVALIA_USER_ID ?? (() => {
-  throw new Error("KVALIA_USER_ID manquant (uuid de ton utilisateur Supabase)");
-})();
+const USER_ID: string =
+  process.env.KVALIA_USER_ID ??
+  (() => {
+    throw new Error("KVALIA_USER_ID manquant (uuid de ton utilisateur Supabase)");
+  })();
 
 /** Supabase renvoie des PostgrestError (objets simples) : on extrait un message lisible. */
 function messageErreur(err: unknown): string {
@@ -52,9 +54,7 @@ function creerServeurMcp() {
       {
         description: def.description,
         inputSchema: def.input.shape,
-        annotations: toolsAvecConfirmation.has(nom)
-          ? { destructiveHint: true, title: `${nom} (à confirmer)` }
-          : { destructiveHint: false },
+        annotations: toolsAvecConfirmation.has(nom) ? { destructiveHint: true, title: `${nom} (à confirmer)` } : { destructiveHint: false },
       },
       async (args: unknown) => {
         const debut = Date.now();
@@ -62,15 +62,25 @@ function creerServeurMcp() {
           const entree = def.input.parse(args ?? {});
           const sortie = await executer(nom, entree as never, { db, userId: USER_ID });
           await db.from("appels_outils").insert({
-            user_id: USER_ID, outil: nom, canal: "claude", entree: entree as never, sortie: sortie as never,
-            succes: true, duree_ms: Date.now() - debut,
+            user_id: USER_ID,
+            outil: nom,
+            canal: "claude",
+            entree: entree as never,
+            sortie: sortie as never,
+            succes: true,
+            duree_ms: Date.now() - debut,
           });
           return { content: [{ type: "text" as const, text: JSON.stringify(sortie) }] };
         } catch (err) {
           const message = messageErreur(err);
           await db.from("appels_outils").insert({
-            user_id: USER_ID, outil: nom, canal: "claude", entree: args as never, sortie: { erreur: message },
-            succes: false, duree_ms: Date.now() - debut,
+            user_id: USER_ID,
+            outil: nom,
+            canal: "claude",
+            entree: args as never,
+            sortie: { erreur: message },
+            succes: false,
+            duree_ms: Date.now() - debut,
           });
           return { content: [{ type: "text" as const, text: `Erreur ${nom} : ${message}` }], isError: true };
         }

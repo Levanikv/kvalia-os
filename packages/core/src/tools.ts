@@ -39,14 +39,17 @@ const SeanceSortie = z.object({
 
 export const tools = {
   ajouter_produit: {
-    description:
-      "Ajoute un ou plusieurs articles à la liste de courses active. Crée le produit s'il n'existe pas. Fusionne les doublons (quantité cumulée).",
+    description: "Ajoute un ou plusieurs articles à la liste de courses active. Crée le produit s'il n'existe pas. Fusionne les doublons (quantité cumulée).",
     input: z.object({
-      articles: z.array(z.object({
-        nom: z.string().min(1).describe("Nom du produit, ex. « skyr »"),
-        quantite: z.number().positive().default(1),
-        unite: z.string().optional(),
-      })).min(1),
+      articles: z
+        .array(
+          z.object({
+            nom: z.string().min(1).describe("Nom du produit, ex. « skyr »"),
+            quantite: z.number().positive().default(1),
+            unite: z.string().optional(),
+          }),
+        )
+        .min(1),
       origine: z.enum(["agent", "siri", "alexa", "telegram", "manuel"]).default("agent"),
     }),
     output: z.object({ liste_id: z.string().uuid(), lignes: z.array(Ligne) }),
@@ -57,10 +60,12 @@ export const tools = {
     input: z.object({}),
     output: z.object({
       liste_id: z.string().uuid().nullable(),
-      rayons: z.array(z.object({
-        rayon: z.string().nullable(),
-        lignes: z.array(Ligne.extend({ produit: z.string() })),
-      })),
+      rayons: z.array(
+        z.object({
+          rayon: z.string().nullable(),
+          lignes: z.array(Ligne.extend({ produit: z.string() })),
+        }),
+      ),
     }),
   },
 
@@ -84,8 +89,7 @@ export const tools = {
   },
 
   brief: {
-    description:
-      "Le condensé du jour : rendez-vous, séance, repas, tâches, habitudes, courses, dépenses de la semaine, alertes. Même données que la Home.",
+    description: "Le condensé du jour : rendez-vous, séance, repas, tâches, habitudes, courses, dépenses de la semaine, alertes. Même données que la Home.",
     input: z.object({ jour: z.string().date().optional() }),
     output: VueJour,
   },
@@ -113,7 +117,11 @@ export const tools = {
       parametres: ParametresSport.partial().optional().describe("Surcharges ponctuelles ; sinon les réglages enregistrés."),
     }),
     output: z.object({
-      programme_id: z.string().uuid(), nb_seances: z.number(), nb_exercices: z.number(), debut: z.string(), fin: z.string(),
+      programme_id: z.string().uuid(),
+      nb_seances: z.number(),
+      nb_exercices: z.number(),
+      debut: z.string(),
+      fin: z.string(),
       avertissements: z.array(z.string()),
     }),
   },
@@ -142,30 +150,62 @@ export const tools = {
   },
 
   noter_charge: {
-    description: "Note la charge soulevée (kg) et/ou les reps réalisées sur un exercice d'une séance. Sert aux graphes de progression et au pré-remplissage des séances suivantes.",
+    description:
+      "Note la charge soulevée (kg) et/ou les reps réalisées sur un exercice d'une séance. Sert aux graphes de progression et au pré-remplissage des séances suivantes.",
     input: z.object({
       exercice_seance_id: z.string().uuid(),
       charge_kg: z.number().min(0).max(500).nullable().optional(),
       reps_faites: z.number().int().min(0).max(200).nullable().optional(),
       note: z.string().max(200).nullable().optional(),
     }),
-    output: z.object({ id: z.string().uuid(), exercice_id: z.string(), seance_id: z.string().uuid(), charge_kg: z.number().nullable(), realise: z.object({ reps_faites: z.number().optional(), note: z.string().optional() }) }),
+    output: z.object({
+      id: z.string().uuid(),
+      exercice_id: z.string(),
+      seance_id: z.string().uuid(),
+      charge_kg: z.number().nullable(),
+      realise: z.object({ reps_faites: z.number().optional(), note: z.string().optional() }),
+    }),
   },
 
   historique_exercice: {
     description: "Les charges notées sur un exercice (référentiel), de la plus récente à la plus ancienne.",
     input: z.object({ exercice_id: z.string(), limite: z.number().int().min(1).max(50).default(12) }),
-    output: z.array(z.object({ id: z.string().uuid(), seance_id: z.string().uuid(), jour: z.string(), titre: z.string().nullable(), charge_kg: z.number(), series: z.number(), reps: z.string(), reps_faites: z.number().nullable(), fait: z.boolean() })),
+    output: z.array(
+      z.object({
+        id: z.string().uuid(),
+        seance_id: z.string().uuid(),
+        jour: z.string(),
+        titre: z.string().nullable(),
+        charge_kg: z.number(),
+        series: z.number(),
+        reps: z.string(),
+        reps_faites: z.number().nullable(),
+        fait: z.boolean(),
+      }),
+    ),
   },
 
   equivalents_exercice: {
-    description: "Propose des exercices équivalents (même muscle cible, matériel disponible, même nature) pour remplacer un exercice d'une séance — machine prise, douleur, envie de varier.",
+    description:
+      "Propose des exercices équivalents (même muscle cible, matériel disponible, même nature) pour remplacer un exercice d'une séance — machine prise, douleur, envie de varier.",
     input: z.object({ exercice_seance_id: z.string().uuid(), limite: z.number().int().min(1).max(20).default(8) }),
-    output: z.array(z.object({ id: z.string(), nom: z.string(), nom_fr: z.string().nullable(), partie_corps: z.string().nullable(), equipement: z.string().nullable(), compose: z.boolean(), raison: z.string(), score: z.number() })),
+    output: z.array(
+      z.object({
+        id: z.string(),
+        nom: z.string(),
+        nom_fr: z.string().nullable(),
+        partie_corps: z.string().nullable(),
+        equipement: z.string().nullable(),
+        compose: z.boolean(),
+        raison: z.string(),
+        score: z.number(),
+      }),
+    ),
   },
 
   remplacer_exercice: {
-    description: "Remplace un exercice d'une séance par un autre (id du référentiel, voir equivalents_exercice). portee = « seance » (cette séance seulement) ou « programme » (toutes les séances à venir du programme qui contiennent cet exercice). Demander la portée à l'utilisateur si elle n'est pas dite.",
+    description:
+      "Remplace un exercice d'une séance par un autre (id du référentiel, voir equivalents_exercice). portee = « seance » (cette séance seulement) ou « programme » (toutes les séances à venir du programme qui contiennent cet exercice). Demander la portée à l'utilisateur si elle n'est pas dite.",
     input: z.object({ exercice_seance_id: z.string().uuid(), nouvel_exercice_id: z.string(), portee: z.enum(["seance", "programme"]).default("seance") }),
     output: z.object({ remplaces: z.number(), ancien: z.string(), nouveau: z.string(), nom: z.string(), portee: z.enum(["seance", "programme"]) }),
   },

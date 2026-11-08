@@ -17,7 +17,8 @@ type Props = {
 };
 
 function decaler(jour: string, n: number) {
-  const d = new Date(jour + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n);
+  const d = new Date(jour + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
@@ -47,13 +48,19 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
           const premierDuMois = d.getDate() === 1;
           return (
             <li key={j} className="shrink-0">
-              <Link href={`${base}?jour=${j}`} aria-current={actif ? "date" : undefined} scroll={false}
-                className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-accent text-white" : estAuj ? "bg-accent-soft" : ""}`}>
+              <Link
+                href={`${base}?jour=${j}`}
+                aria-current={actif ? "date" : undefined}
+                scroll={false}
+                className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-accent text-white" : estAuj ? "bg-accent-soft" : ""}`}
+              >
                 <span className={`text-[10px] uppercase ${actif ? "text-white/80" : "text-text-3"}`}>
                   {premierDuMois ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : d.toLocaleDateString("fr-FR", { weekday: "narrow" })}
                 </span>
                 <span className={`text-base font-semibold leading-tight ${!actif && estAuj ? "text-accent" : ""}`}>{d.getDate()}</span>
-                <span className={`h-1.5 w-1.5 rounded-full ${m ? (m.etat === "faite" ? (actif ? "bg-white" : "bg-success") : m.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-accent") : "bg-transparent"}`} />
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${m ? (m.etat === "faite" ? (actif ? "bg-white" : "bg-success") : m.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-accent") : "bg-transparent"}`}
+                />
               </Link>
             </li>
           );

@@ -39,7 +39,9 @@ export default async function Reglages() {
           ))}
         </ul>
         <form action={deconnexion}>
-          <button type="submit" className="tap w-full rounded-md border border-border text-sm font-medium text-danger">Se déconnecter</button>
+          <button type="submit" className="tap w-full rounded-md border border-border text-sm font-medium text-danger">
+            Se déconnecter
+          </button>
         </form>
         <p className="text-center text-xs text-text-3">KVALIA OS · v0 · phase 0</p>
       </div>

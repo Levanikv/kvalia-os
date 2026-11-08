@@ -6,8 +6,17 @@ import type { KvaliaClient } from "./supabase";
 import type { VueJour } from "./schemas";
 import type { ToolInput, ToolName, ToolOutput } from "./tools";
 import {
-  ParametresSport, cocherExercice, enregistrerParametresSport, equivalents, genererProgramme, historiqueCharge, noterCharge,
-  parametresSport, remplacerExercice, seanceDuJour, terminerSeance,
+  ParametresSport,
+  cocherExercice,
+  enregistrerParametresSport,
+  equivalents,
+  genererProgramme,
+  historiqueCharge,
+  noterCharge,
+  parametresSport,
+  remplacerExercice,
+  seanceDuJour,
+  terminerSeance,
 } from "./sport";
 
 export type ContexteOutil = { db: KvaliaClient; userId: string };
@@ -15,8 +24,13 @@ type Ctx = ContexteOutil;
 
 async function listeActiveId(ctx: Ctx): Promise<string> {
   const { data } = await ctx.db
-    .from("listes").select("id").eq("user_id", ctx.userId).eq("etat", "active")
-    .order("creee_le", { ascending: false }).limit(1).maybeSingle();
+    .from("listes")
+    .select("id")
+    .eq("user_id", ctx.userId)
+    .eq("etat", "active")
+    .order("creee_le", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (data) return data.id;
   const { data: creee, error } = await ctx.db.from("listes").insert({ user_id: ctx.userId }).select("id").single();
   if (error) throw error;
@@ -28,7 +42,10 @@ async function produitId(ctx: Ctx, nom: string, unite?: string): Promise<string>
   const { data } = await ctx.db.from("produits").select("id").eq("user_id", ctx.userId).ilike("nom", nomNorm).maybeSingle();
   if (data) return data.id;
   const { data: cree, error } = await ctx.db
-    .from("produits").insert({ user_id: ctx.userId, nom: nomNorm, unite: unite ?? "pièce" }).select("id").single();
+    .from("produits")
+    .insert({ user_id: ctx.userId, nom: nomNorm, unite: unite ?? "pièce" })
+    .select("id")
+    .single();
   if (error) throw error;
   return cree.id;
 }
@@ -45,15 +62,26 @@ export function aujourdhuiIso(maintenant = new Date()): string {
 export function resoudreDate(texte: string | undefined, base = new Date()): string | null {
   if (!texte) return null;
   const t = texte.trim().toLowerCase();
-  const d = new Date(base); d.setHours(12, 0, 0, 0);
+  const d = new Date(base);
+  d.setHours(12, 0, 0, 0);
   const iso = (x: Date) => x.toISOString().slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
   if (t === "aujourd'hui" || t === "aujourd’hui") return iso(d);
-  if (t === "demain") { d.setDate(d.getDate() + 1); return iso(d); }
-  if (t === "après-demain" || t === "apres-demain") { d.setDate(d.getDate() + 2); return iso(d); }
+  if (t === "demain") {
+    d.setDate(d.getDate() + 1);
+    return iso(d);
+  }
+  if (t === "après-demain" || t === "apres-demain") {
+    d.setDate(d.getDate() + 2);
+    return iso(d);
+  }
   const jours = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
   const j = jours.indexOf(t);
-  if (j >= 0) { const delta = (j - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + delta); return iso(d); }
+  if (j >= 0) {
+    const delta = (j - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + delta);
+    return iso(d);
+  }
   const m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
   if (m) {
     const annee = m[3] ? (m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3])) : d.getFullYear();
@@ -74,22 +102,43 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
         const pid = await produitId(ctx, a.nom, a.unite);
         const { data: existante } = await ctx.db.from("lignes").select("*").eq("liste_id", liste_id).eq("produit_id", pid).maybeSingle();
         if (existante) {
-          const { data, error } = await ctx.db.from("lignes")
-            .update({ quantite: Number(existante.quantite) + a.quantite, coche: false }).eq("id", existante.id).select().single();
-          if (error) throw error; lignes.push(data);
+          const { data, error } = await ctx.db
+            .from("lignes")
+            .update({ quantite: Number(existante.quantite) + a.quantite, coche: false })
+            .eq("id", existante.id)
+            .select()
+            .single();
+          if (error) throw error;
+          lignes.push(data);
         } else {
-          const { data, error } = await ctx.db.from("lignes").insert({
-            user_id: ctx.userId, liste_id, produit_id: pid, quantite: a.quantite, unite: a.unite ?? null, origine: e.origine,
-          }).select().single();
-          if (error) throw error; lignes.push(data);
+          const { data, error } = await ctx.db
+            .from("lignes")
+            .insert({
+              user_id: ctx.userId,
+              liste_id,
+              produit_id: pid,
+              quantite: a.quantite,
+              unite: a.unite ?? null,
+              origine: e.origine,
+            })
+            .select()
+            .single();
+          if (error) throw error;
+          lignes.push(data);
         }
       }
       return { liste_id, lignes } as ToolOutput<T>;
     }
 
     case "liste_actuelle": {
-      const { data: liste, error: errListe } = await ctx.db.from("listes").select("id").eq("user_id", ctx.userId).eq("etat", "active")
-        .order("creee_le", { ascending: false }).limit(1).maybeSingle();
+      const { data: liste, error: errListe } = await ctx.db
+        .from("listes")
+        .select("id")
+        .eq("user_id", ctx.userId)
+        .eq("etat", "active")
+        .order("creee_le", { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (errListe) throw errListe;
       if (!liste) return { liste_id: null, rayons: [] } as ToolOutput<T>;
       const { data: lignes, error } = await ctx.db.from("lignes").select("*, produits(nom, rayon)").eq("liste_id", liste.id);
@@ -107,9 +156,16 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "ajouter_tache": {
       const e = entree as ToolInput<"ajouter_tache">;
-      const { data, error } = await ctx.db.from("taches").insert({
-        user_id: ctx.userId, titre: e.titre, due: resoudreDate(e.due), priorite: e.priorite,
-      }).select("id, titre, due, priorite, fait").single();
+      const { data, error } = await ctx.db
+        .from("taches")
+        .insert({
+          user_id: ctx.userId,
+          titre: e.titre,
+          due: resoudreDate(e.due),
+          priorite: e.priorite,
+        })
+        .select("id, titre, due, priorite, fait")
+        .single();
       if (error) throw error;
       return data as ToolOutput<T>;
     }
@@ -117,8 +173,13 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "agenda_du_jour": {
       const e = entree as ToolInput<"agenda_du_jour">;
       const jour = e.jour ?? aujourdhuiIso();
-      const { data, error } = await ctx.db.from("evenements_cache").select("id, titre, debut, fin, lieu")
-        .eq("user_id", ctx.userId).gte("debut", `${jour}T00:00:00Z`).lt("debut", `${jour}T23:59:59Z`).order("debut");
+      const { data, error } = await ctx.db
+        .from("evenements_cache")
+        .select("id, titre, debut, fin, lieu")
+        .eq("user_id", ctx.userId)
+        .gte("debut", `${jour}T00:00:00Z`)
+        .lt("debut", `${jour}T23:59:59Z`)
+        .order("debut");
       if (error) throw error;
       return { jour, evenements: data ?? [] } as ToolOutput<T>;
     }
@@ -149,9 +210,7 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "generer_programme": {
       const e = entree as ToolInput<"generer_programme">;
       const base = await parametresSport(ctx.db, ctx.userId);
-      const params = e.parametres
-        ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } })
-        : base;
+      const params = e.parametres ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } }) : base;
       if (e.parametres) await enregistrerParametresSport(ctx.db, ctx.userId, params);
       return (await genererProgramme(ctx.db, ctx.userId, params, e.debut)) as ToolOutput<T>;
     }
@@ -162,16 +221,34 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
       const s = await seanceDuJour(ctx.db, ctx.userId, jour);
       if (!s) return { jour, seance: null } as ToolOutput<T>;
       const exercices = s.exercices_seance.map((x) => ({
-        id: x.id, ordre: x.ordre, exercice: x.exercices_ref?.nom ?? "?", exercice_id: x.exercice_id,
-        partie_corps: x.exercices_ref?.partie_corps ?? null, series: x.series, reps: x.reps, repos_s: x.repos_s,
-        duree_s: x.duree_s, kcal: x.kcal === null ? null : Number(x.kcal), fait: x.fait,
+        id: x.id,
+        ordre: x.ordre,
+        exercice: x.exercices_ref?.nom ?? "?",
+        exercice_id: x.exercice_id,
+        partie_corps: x.exercices_ref?.partie_corps ?? null,
+        series: x.series,
+        reps: x.reps,
+        repos_s: x.repos_s,
+        duree_s: x.duree_s,
+        kcal: x.kcal === null ? null : Number(x.kcal),
+        fait: x.fait,
       }));
       return {
         jour,
         seance: {
-          id: s.id, jour: s.jour, type: s.type, titre: s.titre, etat: s.etat, focus: s.focus, bloc: s.bloc, semaine: s.semaine,
-          duree_min: s.duree_min, kcal: s.kcal === null ? null : Number(s.kcal),
-          kcal_prevues: exercices.reduce((a, x) => a + (x.kcal ?? 0), 0), notes: s.notes, exercices,
+          id: s.id,
+          jour: s.jour,
+          type: s.type,
+          titre: s.titre,
+          etat: s.etat,
+          focus: s.focus,
+          bloc: s.bloc,
+          semaine: s.semaine,
+          duree_min: s.duree_min,
+          kcal: s.kcal === null ? null : Number(s.kcal),
+          kcal_prevues: exercices.reduce((a, x) => a + (x.kcal ?? 0), 0),
+          notes: s.notes,
+          exercices,
         },
       } as ToolOutput<T>;
     }
@@ -188,7 +265,11 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "noter_charge": {
       const e = entree as ToolInput<"noter_charge">;
-      return (await noterCharge(ctx.db, ctx.userId, e.exercice_seance_id, { charge_kg: e.charge_kg, reps_faites: e.reps_faites, note: e.note })) as ToolOutput<T>;
+      return (await noterCharge(ctx.db, ctx.userId, e.exercice_seance_id, {
+        charge_kg: e.charge_kg,
+        reps_faites: e.reps_faites,
+        note: e.note,
+      })) as ToolOutput<T>;
     }
 
     case "historique_exercice": {
@@ -198,12 +279,32 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "equivalents_exercice": {
       const e = entree as ToolInput<"equivalents_exercice">;
-      const { data: ligne, error } = await ctx.db.from("exercices_seance").select("exercice_id, seance_id").eq("id", e.exercice_seance_id).eq("user_id", ctx.userId).single();
+      const { data: ligne, error } = await ctx.db
+        .from("exercices_seance")
+        .select("exercice_id, seance_id")
+        .eq("id", e.exercice_seance_id)
+        .eq("user_id", ctx.userId)
+        .single();
       if (error) throw error;
       const { data: autres } = await ctx.db.from("exercices_seance").select("exercice_id").eq("seance_id", ligne.seance_id);
       const params = await parametresSport(ctx.db, ctx.userId);
-      const liste = await equivalents(ctx.db, ligne.exercice_id, params.materiel, (autres ?? []).map((a) => a.exercice_id), e.limite);
-      return liste.map((x) => ({ id: x.id, nom: x.nom, nom_fr: x.nom_fr, partie_corps: x.partie_corps, equipement: x.equipement, compose: x.compose, raison: x.raison, score: x.score })) as ToolOutput<T>;
+      const liste = await equivalents(
+        ctx.db,
+        ligne.exercice_id,
+        params.materiel,
+        (autres ?? []).map((a) => a.exercice_id),
+        e.limite,
+      );
+      return liste.map((x) => ({
+        id: x.id,
+        nom: x.nom,
+        nom_fr: x.nom_fr,
+        partie_corps: x.partie_corps,
+        equipement: x.equipement,
+        compose: x.compose,
+        raison: x.raison,
+        score: x.score,
+      })) as ToolOutput<T>;
     }
 
     case "remplacer_exercice": {

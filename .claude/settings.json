@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm check)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm doc:outils*)",
+      "Bash(pnpm env:verifier)",
+      "Bash(pnpm --filter * typecheck*)",
+      "Bash(pnpm --filter * test*)",
+      "Bash(pnpm --filter * lint*)",
+      "Bash(pnpm --filter * build*)",
+      "Bash(pnpm --filter * exec tsx scripts/*)",
+      "Bash(pnpm --filter * smoke)",
+      "Bash(pnpm install*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(node scripts/*)"
+    ],
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Bash(git push --force*)", "Bash(rm -rf *)", "Bash(supabase db reset*)"]
+  },
+  "env": {
+    "TZ": "Europe/Paris"
+  }
+}

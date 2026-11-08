@@ -33,7 +33,10 @@ export async function ajouterArticles(texte: string) {
 
 export async function faireTache(id: string, fait: boolean) {
   const { supabase } = await session();
-  const { error } = await supabase.from("taches").update({ fait, fait_le: fait ? new Date().toISOString() : null }).eq("id", id);
+  const { error } = await supabase
+    .from("taches")
+    .update({ fait, fait_le: fait ? new Date().toISOString() : null })
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/quotidien/taches");
   revalidatePath("/");
@@ -48,9 +51,7 @@ export async function ajouterTache(titre: string, due: string | null) {
 
 export async function cocherHabitude(habitudeId: string, jour: string, fait: boolean) {
   const { supabase, user } = await session();
-  const { error } = await supabase
-    .from("habitudes_log")
-    .upsert({ user_id: user.id, habitude_id: habitudeId, jour, fait }, { onConflict: "habitude_id,jour" });
+  const { error } = await supabase.from("habitudes_log").upsert({ user_id: user.id, habitude_id: habitudeId, jour, fait }, { onConflict: "habitude_id,jour" });
   if (error) throw new Error(error.message);
   revalidatePath("/quotidien/habitudes");
   revalidatePath("/");

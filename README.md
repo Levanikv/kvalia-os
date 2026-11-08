@@ -30,6 +30,16 @@ pnpm dev                        # web sur :3000, agent sur :8787
 
 Base : projet Supabase `kvalia-os` (eu-west-3). Migrations dans `supabase/migrations/`, appliquées avec `supabase db push` (ou via le MCP Supabase). Types : `pnpm db:types`.
 
+## Travailler avec des agents
+
+Le dépôt est pensé pour être codé avec des agents : **[`CLAUDE.md`](./CLAUDE.md)** (règles, carte, boucle de travail, commandes), `CLAUDE.md` par dossier, et `docs/` :
+[architecture](docs/architecture.md) · [conventions](docs/conventions.md) · [runbook](docs/runbook.md) · [glossaire](docs/glossaire.md) · [décisions (ADR)](docs/decisions/) · [recettes](docs/recettes/) · [outils de l'agent](docs/outils-agent.md) (généré) · [sitemap](docs/sitemap.md).
+Skills et commandes Claude Code dans `.claude/` (`/verifier`, `/outil`, `/ecran`, `/migration`, `/deployer`, sous-agent `verificateur`).
+
+```bash
+pnpm check   # typecheck + lint + tests + doc des outils à jour — à passer avant tout push
+```
+
 ## Règles du repo
 
 - Les règles métier vivent dans `packages/core` et nulle part ailleurs : l'UI et les outils MCP appellent les mêmes fonctions.

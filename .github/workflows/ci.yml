@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Types · lint · tests · doc · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Europe/Paris
+      NEXT_PUBLIC_SUPABASE_URL: https://gspidvxtnmtgifnlgcsu.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_GYFhG5yEJyU5zE1pPIEXyg_43urNC8G
+      NEXT_TELEMETRY_DISABLED: "1"
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Types
+        run: pnpm typecheck
+      - name: Lint (Biome + ESLint Next)
+        run: pnpm lint
+      - name: Format (Biome)
+        run: pnpm format:check
+      - name: Tests du noyau
+        run: pnpm test
+      - name: Doc des outils à jour
+        run: pnpm doc:outils:check
+      - name: Build web
+        run: pnpm --filter @kvalia/web build

@@ -4,8 +4,14 @@ import { Icon } from "@/components/Icon";
 import { ajouterArticles, cocherLigne, supprimerLigne } from "../actions";
 
 export type LigneAffichee = {
-  id: string; quantite: number; unite: string | null; coche: boolean; manque: boolean; origine: string;
-  produit: string; rayon: string | null;
+  id: string;
+  quantite: number;
+  unite: string | null;
+  coche: boolean;
+  manque: boolean;
+  origine: string;
+  produit: string;
+  rayon: string | null;
 };
 
 const ORIGINES: Record<string, string> = { agent: "agent", siri: "Siri", alexa: "Alexa", telegram: "Telegram", plan: "plan repas" };
@@ -88,11 +94,7 @@ export function ListeCourses({ listeId, lignes }: { listeId: string | null; lign
         </section>
       )}
 
-      {optimistes.length > 0 && (
-        <p className="text-center text-xs text-text-3">
-          {restantes.length} à prendre · « Courses faites » arrive en phase 1
-        </p>
-      )}
+      {optimistes.length > 0 && <p className="text-center text-xs text-text-3">{restantes.length} à prendre · « Courses faites » arrive en phase 1</p>}
     </div>
   );
 }
@@ -114,16 +116,12 @@ function LigneItem({ ligne: l, onBasculer }: { ligne: LigneAffichee; onBasculer:
           {l.manque && <span className="ml-2 rounded-full bg-danger/15 px-2 py-0.5 text-[11px] font-medium text-danger">manque</span>}
         </span>
         <span className="shrink-0 text-sm text-text-2">
-          {l.quantite}{l.unite ? ` ${l.unite}` : ""}
+          {l.quantite}
+          {l.unite ? ` ${l.unite}` : ""}
         </span>
         {ORIGINES[l.origine] && <span className="shrink-0 text-[10px] text-text-3">{ORIGINES[l.origine]}</span>}
       </button>
-      <button
-        type="button"
-        aria-label="Retirer"
-        onClick={() => startTransition(() => supprimerLigne(l.id))}
-        className="tap px-3 text-text-3"
-      >
+      <button type="button" aria-label="Retirer" onClick={() => startTransition(() => supprimerLigne(l.id))} className="tap px-3 text-text-3">
         <Icon name="close" size={18} />
       </button>
     </li>

@@ -41,7 +41,14 @@ export async function bilanJour(db: KvaliaClient, userId: string, jour: string) 
   const proteines = (repas ?? []).reduce((a, r) => a + Number(r.prot ?? 0), 0);
   const cible = params.cible_kcal + (params.ajuster_avec_sport ? brule : 0);
   return {
-    jour, base: params.cible_kcal, brule, cible, consomme, reste: cible - consomme, proteines, proteines_cible: params.proteines_g,
+    jour,
+    base: params.cible_kcal,
+    brule,
+    cible,
+    consomme,
+    reste: cible - consomme,
+    proteines,
+    proteines_cible: params.proteines_g,
     seances: (seances ?? []).map((s) => ({ id: s.id, titre: s.titre, type: s.type, etat: s.etat, kcal: Number(s.kcal ?? 0) })),
   };
 }

@@ -15,9 +15,18 @@ export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
   if (desactive) return null;
   return (
     <div className="mt-3 flex gap-2">
-      <button type="button" disabled={local}
-        onClick={() => start(async () => { setLocal(true); await cocher(ligneId, true); router.push(suivant); })}
-        className={`tap flex flex-1 items-center justify-center gap-2 rounded-full font-semibold ${local ? "bg-success/20 text-success" : "bg-accent text-white"}`}>
+      <button
+        type="button"
+        disabled={local}
+        onClick={() =>
+          start(async () => {
+            setLocal(true);
+            await cocher(ligneId, true);
+            router.push(suivant);
+          })
+        }
+        className={`tap flex flex-1 items-center justify-center gap-2 rounded-full font-semibold ${local ? "bg-success/20 text-success" : "bg-accent text-white"}`}
+      >
         <Icon name={local ? "check_circle" : "check"} size={20} filled={local} /> {local ? "Fait" : "Fait → suivant"}
       </button>
       {local && (

@@ -13,10 +13,12 @@ export const ObjectifSport = z.enum(["hypertrophie", "force", "perte_de_gras", "
 export const Niveau = z.enum(["beginner", "intermediate", "advanced"]);
 
 export const ParametresSport = z.object({
-  rythme: z.object({
-    salle: z.number().int().min(0).max(6).default(4),
-    boxe: z.number().int().min(0).max(3).default(1),
-  }).default({ salle: 4, boxe: 1 }),
+  rythme: z
+    .object({
+      salle: z.number().int().min(0).max(6).default(4),
+      boxe: z.number().int().min(0).max(3).default(1),
+    })
+    .default({ salle: 4, boxe: 1 }),
   /** Jours de la semaine (0 = dimanche … 6 = samedi). */
   jours_salle: z.array(z.number().int().min(0).max(6)).default([1, 2, 4, 5]),
   jours_boxe: z.array(z.number().int().min(0).max(6)).default([3]),
@@ -34,23 +36,62 @@ export type ParametresSport = z.infer<typeof ParametresSport>;
 export const PARAMETRES_SPORT_DEFAUT: ParametresSport = ParametresSport.parse({});
 
 export const MATERIEL_CONNU = [
-  "barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "weighted", "band", "kettlebell", "stability ball", "rope", "sled machine",
+  "barbell",
+  "dumbbell",
+  "cable",
+  "leverage machine",
+  "body weight",
+  "ez barbell",
+  "smith machine",
+  "weighted",
+  "band",
+  "kettlebell",
+  "stability ball",
+  "rope",
+  "sled machine",
 ] as const;
 
 /** Libellés FR pour l'UI. */
 export const LIBELLES = {
   materiel: {
-    barbell: "Barre", dumbbell: "Haltères", cable: "Poulie", "leverage machine": "Machines guidées", "body weight": "Poids du corps",
-    "ez barbell": "Barre EZ", "smith machine": "Smith machine", weighted: "Lesté", band: "Élastiques", kettlebell: "Kettlebell",
-    "stability ball": "Swiss ball", rope: "Corde", "sled machine": "Presse / sled",
+    barbell: "Barre",
+    dumbbell: "Haltères",
+    cable: "Poulie",
+    "leverage machine": "Machines guidées",
+    "body weight": "Poids du corps",
+    "ez barbell": "Barre EZ",
+    "smith machine": "Smith machine",
+    weighted: "Lesté",
+    band: "Élastiques",
+    kettlebell: "Kettlebell",
+    "stability ball": "Swiss ball",
+    rope: "Corde",
+    "sled machine": "Presse / sled",
   } as Record<string, string>,
   partie: {
-    chest: "Pectoraux", back: "Dos", shoulders: "Épaules", "upper arms": "Bras", "lower arms": "Avant-bras", "upper legs": "Cuisses",
-    "lower legs": "Mollets", waist: "Abdos", hips: "Hanches", cardio: "Cardio",
+    chest: "Pectoraux",
+    back: "Dos",
+    shoulders: "Épaules",
+    "upper arms": "Bras",
+    "lower arms": "Avant-bras",
+    "upper legs": "Cuisses",
+    "lower legs": "Mollets",
+    waist: "Abdos",
+    hips: "Hanches",
+    cardio: "Cardio",
   } as Record<string, string>,
   type: {
-    upper: "Haut du corps", lower: "Bas du corps", push: "Push", pull: "Pull", legs: "Jambes", full: "Full body", boxe: "Boxe",
-    hiit: "HIIT", maison: "Maison", cardio: "Cardio", repos: "Repos",
+    upper: "Haut du corps",
+    lower: "Bas du corps",
+    push: "Push",
+    pull: "Pull",
+    legs: "Jambes",
+    full: "Full body",
+    boxe: "Boxe",
+    hiit: "HIIT",
+    maison: "Maison",
+    cardio: "Cardio",
+    repos: "Repos",
   } as Record<string, string>,
   objectif: { hypertrophie: "Prise de muscle", force: "Force", perte_de_gras: "Perte de gras", endurance: "Endurance" } as Record<string, string>,
   niveau: { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" } as Record<string, string>,
@@ -58,14 +99,29 @@ export const LIBELLES = {
 };
 
 // ---------- Calories ----------
-export const MET_SEANCE: Record<string, number> = { boxe: 7.8, hiit: 8.0, cardio: 7.0, maison: 5.0, full: 5.5, upper: 5.0, lower: 5.5, push: 5.0, pull: 5.0, legs: 5.5 };
+export const MET_SEANCE: Record<string, number> = {
+  boxe: 7.8,
+  hiit: 8.0,
+  cardio: 7.0,
+  maison: 5.0,
+  full: 5.5,
+  upper: 5.0,
+  lower: 5.5,
+  push: 5.0,
+  pull: 5.0,
+  legs: 5.5,
+};
 
 /** kcal = MET × poids (kg) × durée (h). */
 export function kcalPour(met: number, poidsKg: number, dureeS: number): number {
   return Math.round(met * poidsKg * (dureeS / 3600));
 }
 
-export async function poidsActuel(db: KvaliaClient, userId: string, params: ParametresSport): Promise<{ poids: number; source: "pesee" | "reglages" | "defaut" }> {
+export async function poidsActuel(
+  db: KvaliaClient,
+  userId: string,
+  params: ParametresSport,
+): Promise<{ poids: number; source: "pesee" | "reglages" | "defaut" }> {
   const { data } = await db.from("pesees").select("poids_kg").eq("user_id", userId).order("jour", { ascending: false }).limit(1).maybeSingle();
   if (data) return { poids: Number(data.poids_kg), source: "pesee" };
   if (params.poids_kg) return { poids: params.poids_kg, source: "reglages" };
@@ -91,12 +147,12 @@ type Ref = Tables<"exercices_ref">;
 type Slot = {
   nom: string;
   parties: string[];
-  cibles: string[];          // sous-chaînes cherchées dans muscles (minuscule)
+  cibles: string[]; // sous-chaînes cherchées dans muscles (minuscule)
   compose?: boolean;
-  prefere?: RegExp;          // motif de nom à privilégier
-  requis?: RegExp;           // motif de nom obligatoire (évite les hors-sujet dans un créneau précis)
+  prefere?: RegExp; // motif de nom à privilégier
+  requis?: RegExp; // motif de nom obligatoire (évite les hors-sujet dans un créneau précis)
   exclure?: RegExp;
-  isolation?: boolean;       // pour le repos et l'ordre de coupe
+  isolation?: boolean; // pour le repos et l'ordre de coupe
 };
 
 const STRETCH = /stretch|pose|yoga|rotation|mobility|warm-up/i;
@@ -104,21 +160,107 @@ const STRETCH = /stretch|pose|yoga|rotation|mobility|warm-up/i;
 const S = {
   pecsCompose: { nom: "Pecs — composé", parties: ["chest"], cibles: ["pectorals"], compose: true, prefere: /bench press|press|dips|push-up/i } as Slot,
   pecsIncline: { nom: "Pecs — incliné", parties: ["chest"], cibles: ["pectorals"], compose: true, prefere: /incline/i } as Slot,
-  pecsIso: { nom: "Pecs — isolation", parties: ["chest"], cibles: ["pectorals"], compose: false, requis: /fly|crossover|pec|pullover/i, prefere: /fly|crossover/i, isolation: true } as Slot,
-  dosHorizontal: { nom: "Dos — tirage horizontal", parties: ["back"], cibles: ["lats", "upper back", "rhomboids", "middle back"], compose: true, prefere: /row/i } as Slot,
-  dosVertical: { nom: "Dos — tirage vertical", parties: ["back"], cibles: ["lats"], compose: true, requis: /pulldown|pull-up|pull up|chin|pullover/i, prefere: /pulldown|pull-up/i } as Slot,
+  pecsIso: {
+    nom: "Pecs — isolation",
+    parties: ["chest"],
+    cibles: ["pectorals"],
+    compose: false,
+    requis: /fly|crossover|pec|pullover/i,
+    prefere: /fly|crossover/i,
+    isolation: true,
+  } as Slot,
+  dosHorizontal: {
+    nom: "Dos — tirage horizontal",
+    parties: ["back"],
+    cibles: ["lats", "upper back", "rhomboids", "middle back"],
+    compose: true,
+    prefere: /row/i,
+  } as Slot,
+  dosVertical: {
+    nom: "Dos — tirage vertical",
+    parties: ["back"],
+    cibles: ["lats"],
+    compose: true,
+    requis: /pulldown|pull-up|pull up|chin|pullover/i,
+    prefere: /pulldown|pull-up/i,
+  } as Slot,
   epaulesCompose: { nom: "Épaules — développé", parties: ["shoulders"], cibles: ["delts", "deltoid"], compose: true, prefere: /press/i } as Slot,
-  epaulesLateral: { nom: "Épaules — élévations", parties: ["shoulders"], cibles: ["delts", "deltoid"], compose: false, requis: /lateral|upright/i, prefere: /lateral raise/i, isolation: true } as Slot,
-  arriereEpaules: { nom: "Arrière d'épaules", parties: ["shoulders", "back"], cibles: ["rear delt", "posterior deltoid", "delts", "upper back"], compose: false, requis: /rear|reverse|face pull|bent.?over lateral/i, prefere: /rear|reverse fly|face pull/i, isolation: true } as Slot,
-  biceps: { nom: "Biceps", parties: ["upper arms"], cibles: ["biceps"], requis: /curl/i, prefere: /barbell curl|dumbbell curl|hammer|incline/i, isolation: true } as Slot,
-  triceps: { nom: "Triceps", parties: ["upper arms"], cibles: ["triceps"], requis: /tricep|pushdown|extension|dip|close|skull|kickback|press.?down/i, prefere: /pushdown|extension|dip|close/i, isolation: true } as Slot,
+  epaulesLateral: {
+    nom: "Épaules — élévations",
+    parties: ["shoulders"],
+    cibles: ["delts", "deltoid"],
+    compose: false,
+    requis: /lateral|upright/i,
+    prefere: /lateral raise/i,
+    isolation: true,
+  } as Slot,
+  arriereEpaules: {
+    nom: "Arrière d'épaules",
+    parties: ["shoulders", "back"],
+    cibles: ["rear delt", "posterior deltoid", "delts", "upper back"],
+    compose: false,
+    requis: /rear|reverse|face pull|bent.?over lateral/i,
+    prefere: /rear|reverse fly|face pull/i,
+    isolation: true,
+  } as Slot,
+  biceps: {
+    nom: "Biceps",
+    parties: ["upper arms"],
+    cibles: ["biceps"],
+    requis: /curl/i,
+    prefere: /barbell curl|dumbbell curl|hammer|incline/i,
+    isolation: true,
+  } as Slot,
+  triceps: {
+    nom: "Triceps",
+    parties: ["upper arms"],
+    cibles: ["triceps"],
+    requis: /tricep|pushdown|extension|dip|close|skull|kickback|press.?down/i,
+    prefere: /pushdown|extension|dip|close/i,
+    isolation: true,
+  } as Slot,
   quadsCompose: { nom: "Quadriceps — composé", parties: ["upper legs"], cibles: ["quad", "glutes"], compose: true, prefere: /squat|leg press|lunge/i } as Slot,
-  quadsIso: { nom: "Quadriceps — isolation", parties: ["upper legs"], cibles: ["quad"], compose: false, requis: /extension|sissy|step/i, prefere: /leg extension/i, isolation: true } as Slot,
-  ischiosCompose: { nom: "Ischios / chaîne postérieure", parties: ["upper legs", "back", "hips"], cibles: ["hamstrings", "glutes", "erector"], compose: true, prefere: /deadlift|hip thrust|pull through|good morning|hyperextension/i } as Slot,
-  ischiosIso: { nom: "Ischios — isolation", parties: ["upper legs"], cibles: ["hamstrings"], compose: false, requis: /curl|nordic|glute.?ham/i, prefere: /leg curl/i, isolation: true } as Slot,
+  quadsIso: {
+    nom: "Quadriceps — isolation",
+    parties: ["upper legs"],
+    cibles: ["quad"],
+    compose: false,
+    requis: /extension|sissy|step/i,
+    prefere: /leg extension/i,
+    isolation: true,
+  } as Slot,
+  ischiosCompose: {
+    nom: "Ischios / chaîne postérieure",
+    parties: ["upper legs", "back", "hips"],
+    cibles: ["hamstrings", "glutes", "erector"],
+    compose: true,
+    prefere: /deadlift|hip thrust|pull through|good morning|hyperextension/i,
+  } as Slot,
+  ischiosIso: {
+    nom: "Ischios — isolation",
+    parties: ["upper legs"],
+    cibles: ["hamstrings"],
+    compose: false,
+    requis: /curl|nordic|glute.?ham/i,
+    prefere: /leg curl/i,
+    isolation: true,
+  } as Slot,
   fessiers: { nom: "Fessiers", parties: ["upper legs", "hips", "back"], cibles: ["glute"], prefere: /hip thrust|glute bridge|kickback|lunge/i } as Slot,
-  mollets: { nom: "Mollets", parties: ["lower legs"], cibles: ["calves", "gastrocnemius"], requis: /calf/i, prefere: /standing|seated|calf raise/i, isolation: true } as Slot,
-  abdos: { nom: "Abdos", parties: ["waist"], cibles: ["abs", "rectus abdominis", "abdominals"], prefere: /crunch|leg raise|plank|rollout/i, isolation: true } as Slot,
+  mollets: {
+    nom: "Mollets",
+    parties: ["lower legs"],
+    cibles: ["calves", "gastrocnemius"],
+    requis: /calf/i,
+    prefere: /standing|seated|calf raise/i,
+    isolation: true,
+  } as Slot,
+  abdos: {
+    nom: "Abdos",
+    parties: ["waist"],
+    cibles: ["abs", "rectus abdominis", "abdominals"],
+    prefere: /crunch|leg raise|plank|rollout/i,
+    isolation: true,
+  } as Slot,
   obliques: { nom: "Obliques / gainage", parties: ["waist"], cibles: ["obliques"], prefere: /twist|side|plank|woodchop/i, isolation: true } as Slot,
   trapezes: { nom: "Trapèzes", parties: ["back", "shoulders"], cibles: ["traps"], requis: /shrug|upright/i, prefere: /shrug/i, isolation: true } as Slot,
   cardioFin: { nom: "Finisher cardio", parties: ["cardio"], cibles: ["cardiovascular"], prefere: /burpee|jump rope|rope/i } as Slot,
@@ -128,7 +270,11 @@ type Modele = { type: string; titre: string; slots: Slot[] };
 const MODELES: Record<string, Modele> = {
   upperA: { type: "upper", titre: "Haut du corps A", slots: [S.pecsCompose, S.dosHorizontal, S.epaulesCompose, S.dosVertical, S.pecsIso, S.triceps, S.biceps] },
   lowerA: { type: "lower", titre: "Bas du corps A", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.mollets, S.abdos] },
-  upperB: { type: "upper", titre: "Haut du corps B", slots: [S.dosVertical, S.pecsIncline, S.dosHorizontal, S.epaulesLateral, S.arriereEpaules, S.biceps, S.triceps] },
+  upperB: {
+    type: "upper",
+    titre: "Haut du corps B",
+    slots: [S.dosVertical, S.pecsIncline, S.dosHorizontal, S.epaulesLateral, S.arriereEpaules, S.biceps, S.triceps],
+  },
   lowerB: { type: "lower", titre: "Bas du corps B", slots: [S.ischiosCompose, S.quadsCompose, S.fessiers, S.ischiosIso, S.mollets, S.obliques] },
   push: { type: "push", titre: "Push", slots: [S.pecsCompose, S.epaulesCompose, S.pecsIncline, S.pecsIso, S.epaulesLateral, S.triceps, S.triceps] },
   pull: { type: "pull", titre: "Pull", slots: [S.dosVertical, S.dosHorizontal, S.dosHorizontal, S.arriereEpaules, S.trapezes, S.biceps, S.biceps] },
@@ -169,9 +315,26 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
   });
   if (cands.length === 0) return null;
   // score : motif préféré, matériel « sérieux » d'abord, difficulté proche du niveau
-  const poidsMateriel: Record<string, number> = { barbell: 3, dumbbell: 3, cable: 2, "leverage machine": 2, "smith machine": 2, "ez barbell": 2, weighted: 2, "body weight": 1, band: 0, kettlebell: 1, "stability ball": 0, rope: 1, "sled machine": 2 };
-  const score = (r: Ref) => (slot.prefere?.test(r.nom) ? 10 : 0) + (poidsMateriel[r.equipement ?? ""] ?? 0)
-    + (3 - Math.abs((RANG_NIVEAU[r.difficulte ?? "beginner"] ?? 0) - niveauMax)) - (r.unilateral && slot.compose ? 2 : 0);
+  const poidsMateriel: Record<string, number> = {
+    barbell: 3,
+    dumbbell: 3,
+    cable: 2,
+    "leverage machine": 2,
+    "smith machine": 2,
+    "ez barbell": 2,
+    weighted: 2,
+    "body weight": 1,
+    band: 0,
+    kettlebell: 1,
+    "stability ball": 0,
+    rope: 1,
+    "sled machine": 2,
+  };
+  const score = (r: Ref) =>
+    (slot.prefere?.test(r.nom) ? 10 : 0) +
+    (poidsMateriel[r.equipement ?? ""] ?? 0) +
+    (3 - Math.abs((RANG_NIVEAU[r.difficulte ?? "beginner"] ?? 0) - niveauMax)) -
+    (r.unilateral && slot.compose ? 2 : 0);
   cands.sort((a, b) => score(b) - score(a) || a.nom.localeCompare(b.nom));
   // on tourne parmi les meilleurs pour varier d'un bloc à l'autre, sans tomber sur du médiocre
   const top = cands.slice(0, Math.min(4, cands.length));
@@ -191,8 +354,10 @@ function prescription(params: ParametresSport, bloc: number, semaineDansBloc: nu
   if (deload) return { series: 2, reps: iso ? "12" : "8", repos_s: 60, focus: "deload" };
   const progression = semaineDansBloc === 3 ? 1 : 0; // semaine 3 : une série de plus
   if (params.objectif === "endurance") return { series: 3 + progression, reps: "15", repos_s: 45, focus };
-  if (focus === "force") return iso ? { series: 3 + progression, reps: "8-10", repos_s: 60, focus } : { series: 4 + progression, reps: "5-6", repos_s: 120, focus };
-  if (focus === "hypertrophie") return iso ? { series: 3 + progression, reps: "12-15", repos_s: 60, focus } : { series: 3 + progression, reps: "8-12", repos_s: 90, focus };
+  if (focus === "force")
+    return iso ? { series: 3 + progression, reps: "8-10", repos_s: 60, focus } : { series: 4 + progression, reps: "5-6", repos_s: 120, focus };
+  if (focus === "hypertrophie")
+    return iso ? { series: 3 + progression, reps: "12-15", repos_s: 60, focus } : { series: 3 + progression, reps: "8-12", repos_s: 90, focus };
   return iso ? { series: 3, reps: "10-12", repos_s: 60, focus } : { series: 3 + progression, reps: "6-10", repos_s: 120, focus };
 }
 
@@ -212,8 +377,13 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
   // Début : lundi prochain par défaut (ou aujourd'hui si lundi)
   const debut = debutIso ? new Date(debutIso + "T12:00:00") : new Date();
   debut.setHours(12, 0, 0, 0);
-  if (!debutIso) { const d = debut.getDay(); const delta = d === 1 ? 0 : (8 - d) % 7; debut.setDate(debut.getDate() + delta); }
-  const fin = new Date(debut); fin.setDate(fin.getDate() + params.semaines * 7 - 1);
+  if (!debutIso) {
+    const d = debut.getDay();
+    const delta = d === 1 ? 0 : (8 - d) % 7;
+    debut.setDate(debut.getDate() + delta);
+  }
+  const fin = new Date(debut);
+  fin.setDate(fin.getDate() + params.semaines * 7 - 1);
   const iso = (x: Date) => x.toISOString().slice(0, 10);
 
   // Ancien programme actif
@@ -223,15 +393,35 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     await db.from("programmes").update({ actif: false }).eq("id", a.id);
   }
 
-  const { data: prog, error: errProg } = await db.from("programmes").insert({
-    user_id: userId, nom: `${LIBELLES.objectif[params.objectif]} — ${params.semaines} semaines`, debut: iso(debut), fin: iso(fin),
-    rythme: { ...params.rythme, bloc_semaines: 4, jours_salle: params.jours_salle, jours_boxe: params.jours_boxe, objectif: params.objectif, niveau: params.niveau, duree_min: params.duree_min },
-    materiel: params.materiel, actif: true, genere_par: "kvalia-core",
-  }).select("id").single();
+  const { data: prog, error: errProg } = await db
+    .from("programmes")
+    .insert({
+      user_id: userId,
+      nom: `${LIBELLES.objectif[params.objectif]} — ${params.semaines} semaines`,
+      debut: iso(debut),
+      fin: iso(fin),
+      rythme: {
+        ...params.rythme,
+        bloc_semaines: 4,
+        jours_salle: params.jours_salle,
+        jours_boxe: params.jours_boxe,
+        objectif: params.objectif,
+        niveau: params.niveau,
+        duree_min: params.duree_min,
+      },
+      materiel: params.materiel,
+      actif: true,
+      genere_par: "kvalia-core",
+    })
+    .select("id")
+    .single();
   if (errProg) throw errProg;
 
   const joursSalle = params.jours_salle.slice(0, params.rythme.salle).sort();
-  const joursBoxe = params.jours_boxe.slice(0, params.rythme.boxe).filter((j) => !joursSalle.includes(j)).sort();
+  const joursBoxe = params.jours_boxe
+    .slice(0, params.rythme.boxe)
+    .filter((j) => !joursSalle.includes(j))
+    .sort();
   if (params.rythme.boxe > joursBoxe.length) avertissements.push("Un jour de boxe tombe sur un jour de salle : il a été ignoré.");
   const split = splitPour(joursSalle.length);
 
@@ -242,9 +432,11 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
   for (let s = 0; s < params.semaines; s++) {
     const bloc = Math.floor(s / 4) + 1;
     const semaineDansBloc = (s % 4) + 1;
-    const lundi = new Date(debut); lundi.setDate(debut.getDate() + s * 7);
+    const lundi = new Date(debut);
+    lundi.setDate(debut.getDate() + s * 7);
     for (let j = 0; j < 7; j++) {
-      const jourDate = new Date(lundi); jourDate.setDate(lundi.getDate() + j);
+      const jourDate = new Date(lundi);
+      jourDate.setDate(lundi.getDate() + j);
       const jds = jourDate.getDay();
       const idxSalle = joursSalle.indexOf(jds);
       if (idxSalle >= 0) {
@@ -276,22 +468,44 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
         }
         const p0 = prescription(params, bloc, semaineDansBloc, S.pecsCompose);
         seancesAInserer.push({
-          user_id: userId, programme_id: prog.id, jour: iso(jourDate), type: modele.type, titre: modele.titre,
-          duree_min: Math.round(dureeSeance() / 60), etat: "prevue", bloc, semaine: s + 1, focus: p0.focus,
+          user_id: userId,
+          programme_id: prog.id,
+          jour: iso(jourDate),
+          type: modele.type,
+          titre: modele.titre,
+          duree_min: Math.round(dureeSeance() / 60),
+          etat: "prevue",
+          bloc,
+          semaine: s + 1,
+          focus: p0.focus,
         });
         exosParSeance.push(exos);
       } else if (joursBoxe.includes(jds)) {
         seancesAInserer.push({
-          user_id: userId, programme_id: prog.id, jour: iso(jourDate), type: "boxe", titre: "Boxe — sac, shadow, corde",
-          duree_min: params.duree_min, etat: "prevue", bloc, semaine: s + 1, focus: semaineDansBloc === 4 ? "deload" : "mixte",
-          notes: semaineDansBloc === 4 ? "Décharge : technique et déplacements, rounds légers." : "Échauffement corde 5 min · 8 rounds de 3 min (shadow puis sac) · 1 min de repos · gainage pour finir.",
+          user_id: userId,
+          programme_id: prog.id,
+          jour: iso(jourDate),
+          type: "boxe",
+          titre: "Boxe — sac, shadow, corde",
+          duree_min: params.duree_min,
+          etat: "prevue",
+          bloc,
+          semaine: s + 1,
+          focus: semaineDansBloc === 4 ? "deload" : "mixte",
+          notes:
+            semaineDansBloc === 4
+              ? "Décharge : technique et déplacements, rounds légers."
+              : "Échauffement corde 5 min · 8 rounds de 3 min (shadow puis sac) · 1 min de repos · gainage pour finir.",
         });
         exosParSeance.push([]);
       }
     }
   }
 
-  const { data: seances, error: errSeances } = await db.from("seances").insert(seancesAInserer as never).select("id, jour, type");
+  const { data: seances, error: errSeances } = await db
+    .from("seances")
+    .insert(seancesAInserer as never)
+    .select("id, jour, type");
   if (errSeances) throw errSeances;
   const lignes: Array<Record<string, unknown>> = [];
   (seances ?? []).forEach((se, i) => {
@@ -309,9 +523,14 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 
 // ---------- Suivi d'une séance ----------
 export async function seanceDuJour(db: KvaliaClient, userId: string, jour: string) {
-  const { data: seance, error } = await db.from("seances")
+  const { data: seance, error } = await db
+    .from("seances")
     .select("*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, partie_corps, muscles, equipement, image_url, video_url, met))")
-    .eq("user_id", userId).eq("jour", jour).order("created_at").limit(1).maybeSingle();
+    .eq("user_id", userId)
+    .eq("jour", jour)
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
   if (error) throw error;
   if (!seance) return null;
   const exos = (seance.exercices_seance ?? []).sort((a, b) => a.ordre - b.ordre);
@@ -326,8 +545,13 @@ async function recalculerSeance(db: KvaliaClient, seanceId: string) {
 }
 
 export async function cocherExercice(db: KvaliaClient, userId: string, exerciceSeanceId: string, fait: boolean) {
-  const { data: exo, error } = await db.from("exercices_seance").update({ fait, fait_le: fait ? new Date().toISOString() : null })
-    .eq("id", exerciceSeanceId).eq("user_id", userId).select("seance_id").single();
+  const { data: exo, error } = await db
+    .from("exercices_seance")
+    .update({ fait, fait_le: fait ? new Date().toISOString() : null })
+    .eq("id", exerciceSeanceId)
+    .eq("user_id", userId)
+    .select("seance_id")
+    .single();
   if (error) throw error;
   // premier exercice coché = début de séance ; plus rien de coché = retour à « prévue »
   const { data: se } = await db.from("seances").select("debut_le, etat").eq("id", exo.seance_id).single();
@@ -361,10 +585,17 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
     if (nonFaits.length) await db.from("exercices_seance").update({ fait: true, fait_le: maintenant.toISOString() }).in("id", nonFaits);
     kcal = exos.reduce((a, e) => a + Number(e.kcal ?? 0), 0);
   }
-  const { error: errMaj } = await db.from("seances").update({
-    etat: "faite", faite_le: maintenant.toISOString(), kcal, duree_min: dureeReelleMin,
-    ressenti: ressenti ?? null, notes: notes ?? se.notes,
-  }).eq("id", seanceId);
+  const { error: errMaj } = await db
+    .from("seances")
+    .update({
+      etat: "faite",
+      faite_le: maintenant.toISOString(),
+      kcal,
+      duree_min: dureeReelleMin,
+      ressenti: ressenti ?? null,
+      notes: notes ?? se.notes,
+    })
+    .eq("id", seanceId);
   if (errMaj) throw errMaj;
   return { seance_id: seanceId, kcal, duree_min: dureeReelleMin, poids_utilise: poids };
 }
@@ -373,12 +604,28 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
 export type Realise = { reps_faites?: number; note?: string };
 
 /** Note la charge soulevée (et éventuellement les reps réalisées) sur un exercice d'une séance. */
-export async function noterCharge(db: KvaliaClient, userId: string, exerciceSeanceId: string, maj: { charge_kg?: number | null; reps_faites?: number | null; note?: string | null }) {
-  const { data: ligne, error } = await db.from("exercices_seance").select("id, realise, exercice_id, seance_id").eq("id", exerciceSeanceId).eq("user_id", userId).single();
+export async function noterCharge(
+  db: KvaliaClient,
+  userId: string,
+  exerciceSeanceId: string,
+  maj: { charge_kg?: number | null; reps_faites?: number | null; note?: string | null },
+) {
+  const { data: ligne, error } = await db
+    .from("exercices_seance")
+    .select("id, realise, exercice_id, seance_id")
+    .eq("id", exerciceSeanceId)
+    .eq("user_id", userId)
+    .single();
   if (error) throw error;
   const realise: Realise = { ...((ligne.realise as Realise | null) ?? {}) };
-  if (maj.reps_faites !== undefined) { if (maj.reps_faites === null) delete realise.reps_faites; else realise.reps_faites = maj.reps_faites; }
-  if (maj.note !== undefined) { if (maj.note === null || maj.note === "") delete realise.note; else realise.note = maj.note; }
+  if (maj.reps_faites !== undefined) {
+    if (maj.reps_faites === null) delete realise.reps_faites;
+    else realise.reps_faites = maj.reps_faites;
+  }
+  if (maj.note !== undefined) {
+    if (maj.note === null || maj.note === "") delete realise.note;
+    else realise.note = maj.note;
+  }
   const patch: { realise: Realise; charge_kg?: number | null } = { realise };
   if (maj.charge_kg !== undefined) patch.charge_kg = maj.charge_kg;
   const { error: errMaj } = await db.from("exercices_seance").update(patch).eq("id", exerciceSeanceId);
@@ -388,13 +635,26 @@ export async function noterCharge(db: KvaliaClient, userId: string, exerciceSean
 
 /** Les charges notées sur un exercice, de la plus récente à la plus ancienne (pour la fiche et les graphes). */
 export async function historiqueCharge(db: KvaliaClient, userId: string, exerciceId: string, limite = 12) {
-  const { data, error } = await db.from("exercices_seance")
+  const { data, error } = await db
+    .from("exercices_seance")
     .select("id, charge_kg, series, reps, fait, realise, seance_id, seances!inner(jour, etat, titre)")
-    .eq("user_id", userId).eq("exercice_id", exerciceId).not("charge_kg", "is", null);
+    .eq("user_id", userId)
+    .eq("exercice_id", exerciceId)
+    .not("charge_kg", "is", null);
   if (error) throw error;
   type L = { jour: string; etat: string; titre: string | null };
   return (data ?? [])
-    .map((x) => ({ id: x.id, seance_id: x.seance_id, charge_kg: Number(x.charge_kg), series: x.series, reps: x.reps, fait: x.fait, reps_faites: (x.realise as Realise | null)?.reps_faites ?? null, jour: (x.seances as unknown as L).jour, titre: (x.seances as unknown as L).titre }))
+    .map((x) => ({
+      id: x.id,
+      seance_id: x.seance_id,
+      charge_kg: Number(x.charge_kg),
+      series: x.series,
+      reps: x.reps,
+      fait: x.fait,
+      reps_faites: (x.realise as Realise | null)?.reps_faites ?? null,
+      jour: (x.seances as unknown as L).jour,
+      titre: (x.seances as unknown as L).titre,
+    }))
     .sort((a, b) => (a.jour < b.jour ? 1 : -1))
     .slice(0, limite);
 }
@@ -402,8 +662,12 @@ export async function historiqueCharge(db: KvaliaClient, userId: string, exercic
 /** Dernière charge notée pour chaque exercice d'une liste (pré-remplissage de la séance). */
 export async function dernieresCharges(db: KvaliaClient, userId: string, exerciceIds: string[], avantSeanceId?: string) {
   if (exerciceIds.length === 0) return {} as Record<string, { charge_kg: number; jour: string }>;
-  const { data } = await db.from("exercices_seance").select("exercice_id, charge_kg, seance_id, seances!inner(jour)")
-    .eq("user_id", userId).in("exercice_id", exerciceIds).not("charge_kg", "is", null);
+  const { data } = await db
+    .from("exercices_seance")
+    .select("exercice_id, charge_kg, seance_id, seances!inner(jour)")
+    .eq("user_id", userId)
+    .in("exercice_id", exerciceIds)
+    .not("charge_kg", "is", null);
   const res: Record<string, { charge_kg: number; jour: string }> = {};
   for (const x of data ?? []) {
     if (avantSeanceId && x.seance_id === avantSeanceId) continue;
@@ -414,7 +678,10 @@ export async function dernieresCharges(db: KvaliaClient, userId: string, exercic
 }
 
 // ---------- Remplacer un exercice ----------
-export type Equivalent = Pick<Ref, "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url"> & { score: number; raison: string };
+export type Equivalent = Pick<
+  Ref,
+  "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url"
+> & { score: number; raison: string };
 
 /**
  * Propose des exercices équivalents : même partie du corps et muscles proches, matériel disponible,
@@ -425,23 +692,35 @@ export async function equivalents(db: KvaliaClient, exerciceId: string, materiel
   if (error) throw error;
   const cible = (orig.muscles[0] ?? "").toLowerCase();
   const famille = new Set([...orig.muscles, ...orig.muscles_secondaires].map((m) => m.toLowerCase()));
-  const { data: cands } = await db.from("exercices_ref").select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url")
-    .neq("id", exerciceId).in("equipement", materiel.length ? materiel : MATERIEL_CONNU as unknown as string[]);
+  const { data: cands } = await db
+    .from("exercices_ref")
+    .select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url")
+    .neq("id", exerciceId)
+    .in("equipement", materiel.length ? materiel : (MATERIEL_CONNU as unknown as string[]));
   const interdits = new Set(exclure);
   const out: Equivalent[] = [];
   for (const c of cands ?? []) {
     if (interdits.has(c.id) || STRETCH.test(c.nom)) continue;
     const m = c.muscles.map((x) => x.toLowerCase());
     const s = c.muscles_secondaires.map((x) => x.toLowerCase());
-    let score = 0; const raisons: string[] = [];
-    if (cible && m.some((x) => x.includes(cible) || cible.includes(x))) { score += 6; raisons.push("même muscle cible"); }
-    else if (cible && s.some((x) => x.includes(cible))) { score += 3; raisons.push("muscle cible en secondaire"); }
-    else continue; // sans muscle commun, ce n'est pas un équivalent
+    let score = 0;
+    const raisons: string[] = [];
+    if (cible && m.some((x) => x.includes(cible) || cible.includes(x))) {
+      score += 6;
+      raisons.push("même muscle cible");
+    } else if (cible && s.some((x) => x.includes(cible))) {
+      score += 3;
+      raisons.push("muscle cible en secondaire");
+    } else continue; // sans muscle commun, ce n'est pas un équivalent
     if (c.partie_corps !== orig.partie_corps && score < 6) continue;
     score += Math.min([...m, ...s].filter((x) => famille.has(x)).length, 3);
     if (c.partie_corps === orig.partie_corps) score += 1;
-    if (c.compose === orig.compose) { score += 2; raisons.push(orig.compose ? "polyarticulaire" : "isolation"); } else score -= 1;
-    if (c.equipement === orig.equipement) score += 1; else raisons.push(LIBELLES.materiel[c.equipement ?? ""] ?? c.equipement ?? "");
+    if (c.compose === orig.compose) {
+      score += 2;
+      raisons.push(orig.compose ? "polyarticulaire" : "isolation");
+    } else score -= 1;
+    if (c.equipement === orig.equipement) score += 1;
+    else raisons.push(LIBELLES.materiel[c.equipement ?? ""] ?? c.equipement ?? "");
     score -= Math.abs((RANG_NIVEAU[c.difficulte ?? "beginner"] ?? 0) - (RANG_NIVEAU[orig.difficulte ?? "beginner"] ?? 0));
     if (score >= 5) out.push({ ...c, score, raison: raisons.filter(Boolean).join(" · ") });
   }
@@ -456,8 +735,12 @@ export type PorteeRemplacement = "seance" | "programme";
  * programme qui contiennent le même exercice (non faites). Les kcal sont recalculées avec le MET du nouvel exercice.
  */
 export async function remplacerExercice(db: KvaliaClient, userId: string, exerciceSeanceId: string, nouvelExerciceId: string, portee: PorteeRemplacement) {
-  const { data: ligne, error } = await db.from("exercices_seance").select("id, exercice_id, substitut_de, seance_id, duree_s, seances!inner(jour, programme_id)")
-    .eq("id", exerciceSeanceId).eq("user_id", userId).single();
+  const { data: ligne, error } = await db
+    .from("exercices_seance")
+    .select("id, exercice_id, substitut_de, seance_id, duree_s, seances!inner(jour, programme_id)")
+    .eq("id", exerciceSeanceId)
+    .eq("user_id", userId)
+    .single();
   if (error) throw error;
   const { data: nouveau, error: errRef } = await db.from("exercices_ref").select("id, nom, met").eq("id", nouvelExerciceId).single();
   if (errRef) throw errRef;
@@ -469,16 +752,27 @@ export async function remplacerExercice(db: KvaliaClient, userId: string, exerci
 
   let ids: Array<{ id: string; duree_s: number | null }> = [{ id: ligne.id, duree_s: ligne.duree_s }];
   if (portee === "programme" && se.programme_id) {
-    const { data: autres } = await db.from("exercices_seance").select("id, duree_s, fait, seances!inner(jour, programme_id, etat)")
-      .eq("user_id", userId).eq("exercice_id", ancien).eq("fait", false).eq("seances.programme_id", se.programme_id).gte("seances.jour", se.jour);
+    const { data: autres } = await db
+      .from("exercices_seance")
+      .select("id, duree_s, fait, seances!inner(jour, programme_id, etat)")
+      .eq("user_id", userId)
+      .eq("exercice_id", ancien)
+      .eq("fait", false)
+      .eq("seances.programme_id", se.programme_id)
+      .gte("seances.jour", se.jour);
     ids = (autres ?? []).map((a) => ({ id: a.id, duree_s: a.duree_s }));
     if (!ids.some((x) => x.id === ligne.id)) ids.push({ id: ligne.id, duree_s: ligne.duree_s });
   }
   for (const x of ids) {
-    const { error: errMaj } = await db.from("exercices_seance").update({
-      exercice_id: nouveau.id, substitut_de: origine === nouveau.id ? null : origine,
-      kcal: kcalPour(Number(nouveau.met ?? 5), poids, Number(x.duree_s ?? 0)), charge_kg: null,
-    }).eq("id", x.id);
+    const { error: errMaj } = await db
+      .from("exercices_seance")
+      .update({
+        exercice_id: nouveau.id,
+        substitut_de: origine === nouveau.id ? null : origine,
+        kcal: kcalPour(Number(nouveau.met ?? 5), poids, Number(x.duree_s ?? 0)),
+        charge_kg: null,
+      })
+      .eq("id", x.id);
     if (errMaj) throw errMaj;
   }
   return { remplaces: ids.length, ancien, nouveau: nouveau.id, nom: nouveau.nom, portee };

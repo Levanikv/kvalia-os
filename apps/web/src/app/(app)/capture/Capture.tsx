@@ -39,10 +39,20 @@ export function Capture({ initial }: { initial: string }) {
         className="w-full rounded-lg border border-border bg-surface-2 p-4 text-lg outline-none focus:border-accent"
       />
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" disabled={enCours || !texte.trim()} onClick={courses} className="tap flex items-center justify-center gap-2 rounded-md bg-accent font-medium text-white disabled:opacity-40">
+        <button
+          type="button"
+          disabled={enCours || !texte.trim()}
+          onClick={courses}
+          className="tap flex items-center justify-center gap-2 rounded-md bg-accent font-medium text-white disabled:opacity-40"
+        >
           <Icon name="shopping_cart" size={20} /> Aux courses
         </button>
-        <button type="button" disabled={enCours || !texte.trim()} onClick={tache} className="tap flex items-center justify-center gap-2 rounded-md border border-border bg-surface-2 font-medium disabled:opacity-40">
+        <button
+          type="button"
+          disabled={enCours || !texte.trim()}
+          onClick={tache}
+          className="tap flex items-center justify-center gap-2 rounded-md border border-border bg-surface-2 font-medium disabled:opacity-40"
+        >
           <Icon name="task_alt" size={20} /> En tâche
         </button>
       </div>

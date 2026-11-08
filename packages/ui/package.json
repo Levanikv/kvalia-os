@@ -10,7 +10,8 @@
     "./tokens.css": "./src/tokens.css"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint ."
   },
   "devDependencies": {
     "typescript": "^5.9.0"
