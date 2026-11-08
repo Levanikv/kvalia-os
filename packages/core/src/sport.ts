@@ -329,10 +329,14 @@ export async function cocherExercice(db: KvaliaClient, userId: string, exerciceS
   const { data: exo, error } = await db.from("exercices_seance").update({ fait, fait_le: fait ? new Date().toISOString() : null })
     .eq("id", exerciceSeanceId).eq("user_id", userId).select("seance_id").single();
   if (error) throw error;
-  // premier exercice coché = début de séance
+  // premier exercice coché = début de séance ; plus rien de coché = retour à « prévue »
   const { data: se } = await db.from("seances").select("debut_le, etat").eq("id", exo.seance_id).single();
-  if (fait && se && !se.debut_le) await db.from("seances").update({ debut_le: new Date().toISOString(), etat: "en_cours" }).eq("id", exo.seance_id);
   const kcal = await recalculerSeance(db, exo.seance_id);
+  if (se && se.etat !== "faite") {
+    const { count } = await db.from("exercices_seance").select("id", { count: "exact", head: true }).eq("seance_id", exo.seance_id).eq("fait", true);
+    if ((count ?? 0) > 0 && !se.debut_le) await db.from("seances").update({ debut_le: new Date().toISOString(), etat: "en_cours" }).eq("id", exo.seance_id);
+    else if ((count ?? 0) === 0 && se.etat === "en_cours") await db.from("seances").update({ debut_le: null, etat: "prevue" }).eq("id", exo.seance_id);
+  }
   return { seance_id: exo.seance_id, kcal };
 }
 
@@ -343,8 +347,10 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
   if (error) throw error;
   const exos = se.exercices_seance ?? [];
   const maintenant = new Date();
+  // Durée réelle = depuis le premier exercice coché, si c'était il y a moins de 4 h (sinon la séance a été entamée un autre jour : on garde la durée prévue)
   const debut = se.debut_le ? new Date(se.debut_le) : null;
-  const dureeReelleMin = debut ? Math.max(5, Math.round((maintenant.getTime() - debut.getTime()) / 60000)) : (se.duree_min ?? params.duree_min);
+  const ecartMin = debut ? (maintenant.getTime() - debut.getTime()) / 60000 : null;
+  const dureeReelleMin = ecartMin !== null && ecartMin <= 240 ? Math.max(5, Math.round(ecartMin)) : (se.duree_min ?? params.duree_min);
   let kcal: number;
   if (exos.length === 0) {
     // boxe / cardio : MET de la séance × durée réelle
