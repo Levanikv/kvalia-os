@@ -39,10 +39,10 @@ export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, chil
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-labelledby={titre ? id : undefined} data-module={mod}>
       <button type="button" aria-label="Fermer" onClick={onFermer} className="feuille-voile absolute inset-0 bg-black/45" />
       <div
-        className={`feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col rounded-t-[22px] bg-surface text-text shadow-2xl ${pleine ? "h-[90dvh]" : "max-h-[88dvh]"}`}
+        className={`feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col rounded-t-[22px] bg-surface-canvas text-fg-primary shadow-2xl ${pleine ? "h-[90dvh]" : "max-h-[88dvh]"}`}
       >
         <div className="flex shrink-0 justify-center pb-1 pt-2.5">
-          <span className="h-1.5 w-10 rounded-full bg-surface-3" />
+          <span className="h-1.5 w-10 rounded-full bg-surface-sunken" />
         </div>
         {titre && (
           <div className="flex shrink-0 items-center justify-between px-5 pb-2">
@@ -53,7 +53,7 @@ export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, chil
               type="button"
               onClick={onFermer}
               aria-label="Fermer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-text-2"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-default text-fg-secondary"
             >
               <Icon name="close" size={18} />
             </button>

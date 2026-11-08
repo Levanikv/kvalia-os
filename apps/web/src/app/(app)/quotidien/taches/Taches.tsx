@@ -43,27 +43,27 @@ export function Taches({ taches }: { taches: TacheAffichee[] }) {
           value={titre}
           onChange={(e) => setTitre(e.target.value)}
           placeholder="Nouvelle tâche…"
-          className="tap min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-base outline-none focus:border-accent"
+          className="tap min-w-0 flex-1 rounded-full border border-line-default bg-surface-default px-4 text-base outline-none focus:border-action-primary"
         />
         <input
           value={due}
           onChange={(e) => setDue(e.target.value)}
           placeholder="demain"
-          className="tap w-24 rounded-full border border-border bg-surface-2 px-3 text-sm outline-none focus:border-accent"
+          className="tap w-24 rounded-full border border-line-default bg-surface-default px-3 text-sm outline-none focus:border-action-primary"
         />
         <button
           type="submit"
           disabled={!titre.trim()}
           aria-label="Ajouter"
-          className="tap flex w-11 items-center justify-center rounded-full bg-accent text-white disabled:opacity-40"
+          className="tap flex w-11 items-center justify-center rounded-full bg-action-primary text-fg-on-brand disabled:opacity-40"
         >
           <Icon name="add" />
         </button>
       </form>
 
-      {aFaire.length === 0 && <p className="py-10 text-center text-sm text-text-3">Rien à faire. Profite.</p>}
+      {aFaire.length === 0 && <p className="py-10 text-center text-sm text-fg-tertiary">Rien à faire. Profite.</p>}
 
-      <ul className="overflow-hidden rounded-lg border border-border bg-surface-2">
+      <ul className="overflow-hidden rounded-lg border border-line-default bg-surface-default">
         {aFaire.map((t) => (
           <Item
             key={t.id}
@@ -80,8 +80,8 @@ export function Taches({ taches }: { taches: TacheAffichee[] }) {
 
       {faites.length > 0 && (
         <section>
-          <h2 className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-text-3">Faites · {faites.length}</h2>
-          <ul className="overflow-hidden rounded-lg border border-border bg-surface-2 opacity-70">
+          <h2 className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-fg-tertiary">Faites · {faites.length}</h2>
+          <ul className="overflow-hidden rounded-lg border border-line-default bg-surface-default opacity-70">
             {faites.map((t) => (
               <Item
                 key={t.id}
@@ -103,16 +103,16 @@ export function Taches({ taches }: { taches: TacheAffichee[] }) {
 
 function Item({ t, onBasculer }: { t: TacheAffichee; onBasculer: () => void }) {
   return (
-    <li className="border-b border-border last:border-b-0">
+    <li className="border-b border-line-default last:border-b-0">
       <button type="button" onClick={onBasculer} className="tap flex w-full items-center gap-3 px-3 py-2 text-left">
         <span
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${t.fait ? "border-accent bg-accent text-white" : "border-border"}`}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${t.fait ? "border-action-primary bg-action-primary text-fg-on-brand" : "border-line-default"}`}
         >
           {t.fait && <Icon name="check" size={16} />}
         </span>
-        <span className={`min-w-0 flex-1 truncate text-base ${t.fait ? "line-through text-text-3" : ""}`}>{t.titre}</span>
-        {t.priorite === "haute" && !t.fait && <Icon name="priority_high" size={18} className="text-danger" />}
-        <span className="shrink-0 text-xs text-text-2">{libelleDate(t.due)}</span>
+        <span className={`min-w-0 flex-1 truncate text-base ${t.fait ? "line-through text-fg-tertiary" : ""}`}>{t.titre}</span>
+        {t.priorite === "haute" && !t.fait && <Icon name="priority_high" size={18} className="text-feedback-danger-text" />}
+        <span className="shrink-0 text-xs text-fg-secondary">{libelleDate(t.due)}</span>
       </button>
     </li>
   );

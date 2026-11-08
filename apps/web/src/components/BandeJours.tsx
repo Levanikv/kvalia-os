@@ -53,17 +53,17 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
                 aria-current={actif ? "date" : undefined}
                 aria-label={`${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}${m?.length ? ` · ${m.length} séance${m.length > 1 ? "s" : ""}` : ""}`}
                 scroll={false}
-                className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-accent text-white" : estAuj ? "bg-accent-soft" : ""}`}
+                className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-action-primary text-fg-on-brand" : estAuj ? "bg-surface-brand-subtle" : ""}`}
               >
-                <span className={`text-[10px] uppercase ${actif ? "text-white/80" : "text-text-3"}`}>
+                <span className={`text-[10px] uppercase ${actif ? "text-fg-on-brand/80" : "text-fg-tertiary"}`}>
                   {premierDuMois ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : d.toLocaleDateString("fr-FR", { weekday: "narrow" })}
                 </span>
-                <span className={`text-base font-semibold leading-tight ${!actif && estAuj ? "text-accent" : ""}`}>{d.getDate()}</span>
+                <span className={`text-base font-semibold leading-tight ${!actif && estAuj ? "text-fg-brand" : ""}`}>{d.getDate()}</span>
                 <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
                   {(m ?? []).slice(0, 3).map((x, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-white" : "bg-success") : x.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-accent"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-white" : "bg-feedback-success") : x.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-action-primary"}`}
                     />
                   ))}
                 </span>

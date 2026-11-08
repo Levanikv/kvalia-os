@@ -34,7 +34,7 @@ export default async function Page() {
       }
     >
       {seances.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-text-3">Rien pour l’instant. Ta première séance terminée apparaîtra ici.</p>
+        <p className="mt-10 text-center text-sm text-fg-tertiary">Rien pour l’instant. Ta première séance terminée apparaîtra ici.</p>
       ) : (
         <div className="mt-2 space-y-5">
           {[...parMois.entries()].map(([mois, ss]) => {
@@ -45,25 +45,25 @@ export default async function Page() {
               <section key={mois}>
                 <div className="flex items-baseline justify-between px-1">
                   <h2 className="text-sm font-semibold capitalize">{titre}</h2>
-                  <p className="text-xs text-text-2">
+                  <p className="text-xs text-fg-secondary">
                     {ss.length} séances · {kcal.toLocaleString("fr-FR")} kcal · {Math.round((minutes / 60) * 10) / 10} h
                   </p>
                 </div>
-                <ul className="mt-2 overflow-hidden rounded-lg border border-border bg-surface-2">
+                <ul className="mt-2 overflow-hidden rounded-lg border border-line-default bg-surface-default">
                   {ss.map((s) => (
-                    <li key={s.id} className="border-b border-border last:border-b-0">
+                    <li key={s.id} className="border-b border-line-default last:border-b-0">
                       <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-3 px-4 active:opacity-80">
-                        <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={20} className="text-accent" />
+                        <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={20} className="text-fg-brand" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{s.titre ?? libelleType(s.type)}</p>
-                          <p className="text-xs text-text-3">
+                          <p className="text-xs text-fg-tertiary">
                             {new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · {s.duree_min}{" "}
                             min
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold">
-                            {s.kcal} <span className="text-xs font-normal text-text-2">kcal</span>
+                            {s.kcal} <span className="text-xs font-normal text-fg-secondary">kcal</span>
                           </p>
                           {s.ressenti ? <p className="text-sm">{RESSENTI[s.ressenti]}</p> : null}
                         </div>

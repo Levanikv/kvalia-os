@@ -14,7 +14,7 @@ apps/
   agent/      serveur MCP « KVALIA OS » + orchestrateur (Claude Agent SDK) + webhooks
 packages/
   core/       schémas zod (contrat API + outils), règles métier, types Supabase générés
-  ui/         design system (tokens, composants) exporté depuis Figma
+  ui/         registre des modules + design system importé de Figma « Kvalia Design System » (tokens, CSS, Tailwind, TS)
 supabase/
   migrations/ schéma Postgres (RLS par user_id dès le départ)
 ```

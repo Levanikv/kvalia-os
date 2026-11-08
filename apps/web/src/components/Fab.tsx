@@ -12,7 +12,7 @@ export function Fab() {
     <Link
       href="/capture"
       aria-label="Capture rapide"
-      className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg shadow-black/20 transition-transform active:scale-95"
+      className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-action-primary text-fg-on-brand shadow-lg shadow-black/20 transition-transform active:scale-95"
       style={{ bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)" }}
     >
       <Icon name="add" size={28} />

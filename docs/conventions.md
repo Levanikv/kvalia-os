@@ -38,9 +38,9 @@ Ce qui n'est pas vérifié par `pnpm check` (types, lint, tests, doc des outils)
 
 - **Mobile d'abord** : largeur max `max-w-lg`, cibles tactiles ≥ 44 px (`.tap`), zones sûres (`pt-safe`, `pb-safe`), pas de hover-only.
 - **Hiérarchie d'écran** : header (`ModuleFrame`) → barre optionnelle (bande de jours, filtres) → hero (la chose à faire) → cartes d'entrée (`EntreeCarte`) → liens secondaires. Chaque niveau important expose ses sous-modules en cartes avec un chiffre et une ligne de contexte.
-- **Feuilles** (`BottomSheet`) pour le contextuel ; une seule ouverte à la fois ; bouton principal plein, secondaire `bg-surface-2`.
+- **Feuilles** (`BottomSheet`) pour le contextuel ; une seule ouverte à la fois ; bouton principal plein (`bg-action-primary text-fg-on-brand`), secondaire `bg-surface-default`.
 - **Navigation** : menu « Applications » + `ModuleBar` par app (`packages/ui/src/index.ts`). Un écran de détail : flèche retour à gauche, pas de burger. Les états et dates vont en query (`?jour=`, `?etat=`), jamais dans le chemin.
-- **Couleurs** : tokens (`bg-surface`, `bg-surface-2`, `text-text-2`, `text-accent`, `bg-accent-soft`) ; sémantiques (`text-success`, `text-danger`) ; jamais d'hexa dans un composant sauf cas documenté (ex. point orange « boxe »).
+- **Couleurs** : rôles du design system Figma (`bg-surface-canvas|default|sunken`, `text-fg-primary|secondary|tertiary`, `border-line-default`, `bg-action-primary` + `text-fg-on-brand`, `text-fg-brand`, `bg-surface-brand-subtle`) ; statuts (`text-feedback-success-text`, `bg-feedback-danger-subtle`…) ; jamais d'hexa ni de primitive (`--amber-400`, `--brand-*`) dans un composant sauf cas documenté (ex. point orange « boxe »). Référence : `packages/ui/DESIGN_SYSTEM.md`.
 - **Icônes** : Material Symbols Rounded par ligature (`<Icon name="fitness_center" />`), `filled` pour l'état actif.
 - **Textes** : tutoiement, phrases courtes, chiffres en gros (`text-3xl font-semibold tracking-tight`), unités en petit. Vide = une phrase qui dit quoi faire, pas « Aucune donnée ».
 - **Temps réel** : `RealtimeRefresh tables={[…]}` sur les écrans que l'agent peut modifier.

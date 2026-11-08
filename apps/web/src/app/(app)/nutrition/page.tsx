@@ -29,17 +29,17 @@ export default async function Page({ searchParams }: Props) {
       <RealtimeRefresh tables={["seances", "journal_repas"]} />
 
       {/* Anneau / bilan */}
-      <section className="mt-2 rounded-lg border border-border bg-surface-2 p-5">
+      <section className="mt-2 rounded-lg border border-line-default bg-surface-default p-5">
         <div className="flex items-center gap-5">
           <div className="relative h-28 w-28 shrink-0">
             <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--surface-3)" strokeWidth="3" />
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--surface-sunken)" strokeWidth="3" />
               <circle
                 cx="18"
                 cy="18"
                 r="15.5"
                 fill="none"
-                stroke="var(--module-accent)"
+                stroke="var(--action-primary)"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={`${pct * 0.974} 100`}
@@ -47,32 +47,32 @@ export default async function Page({ searchParams }: Props) {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-2xl font-semibold tracking-tight">{b.reste.toLocaleString("fr-FR")}</span>
-              <span className="text-[10px] uppercase tracking-wide text-text-3">kcal restantes</span>
+              <span className="text-[10px] uppercase tracking-wide text-fg-tertiary">kcal restantes</span>
             </div>
           </div>
           <dl className="flex-1 space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-text-2">Base</dt>
+              <dt className="text-fg-secondary">Base</dt>
               <dd className="font-medium">{b.base.toLocaleString("fr-FR")}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="flex items-center gap-1 text-text-2">
+              <dt className="flex items-center gap-1 text-fg-secondary">
                 <Icon name="local_fire_department" size={16} className="text-[#e5484d]" /> Sport
               </dt>
-              <dd className={`font-medium ${b.brule > 0 ? "text-success" : "text-text-3"}`}>+{b.brule}</dd>
+              <dd className={`font-medium ${b.brule > 0 ? "text-feedback-success-text" : "text-fg-tertiary"}`}>+{b.brule}</dd>
             </div>
-            <div className="flex justify-between border-t border-border pt-2">
+            <div className="flex justify-between border-t border-line-default pt-2">
               <dt className="font-medium">Cible du jour</dt>
               <dd className="font-semibold">{b.cible.toLocaleString("fr-FR")}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-text-2">Consommé</dt>
+              <dt className="text-fg-secondary">Consommé</dt>
               <dd className="font-medium">{b.consomme.toLocaleString("fr-FR")}</dd>
             </div>
           </dl>
         </div>
         {b.seances.length > 0 && (
-          <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-text-2">
+          <ul className="mt-4 space-y-1 border-t border-line-default pt-3 text-xs text-fg-secondary">
             {b.seances.map((s) => (
               <li key={s.id} className="flex items-center justify-between">
                 <Link href={`/sport/seance/${s.id}`} className="flex items-center gap-1.5">
@@ -84,11 +84,11 @@ export default async function Page({ searchParams }: Props) {
             ))}
           </ul>
         )}
-        <div className="mt-3 flex items-center justify-between text-xs text-text-3">
+        <div className="mt-3 flex items-center justify-between text-xs text-fg-tertiary">
           <span>
             Protéines : {b.proteines} / {b.proteines_cible} g
           </span>
-          <Link href="/reglages/nutrition" className="flex items-center gap-1 text-accent">
+          <Link href="/reglages/nutrition" className="flex items-center gap-1 text-fg-brand">
             Régler <Icon name="chevron_right" size={14} />
           </Link>
         </div>

@@ -96,7 +96,12 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
     <>
       <div className="flex items-center justify-between pb-2">
         <h2 className="text-lg font-semibold tracking-tight">{mode === "detail" ? exo.nom : "Remplacer par…"}</h2>
-        <button type="button" onClick={onFermer} aria-label="Fermer" className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-text-2">
+        <button
+          type="button"
+          onClick={onFermer}
+          aria-label="Fermer"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-default text-fg-secondary"
+        >
           <Icon name="close" size={18} />
         </button>
       </div>
@@ -105,7 +110,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
           <div className="flex items-center gap-3">
             <Link
               href={`/sport/exercices/${exo.exercice_id}?seance=${seanceId}`}
-              className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-surface-3"
+              className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-surface-sunken"
             >
               {exo.image && <img src={exo.image} alt="" className="h-full w-full object-cover" />}
               <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white">
@@ -116,23 +121,23 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
               <p className="text-2xl font-semibold tracking-tight">
                 {exo.series} × {exo.reps}
               </p>
-              <p className="text-text-2">
+              <p className="text-fg-secondary">
                 {libellePartie(exo.partie)}
                 {exo.equipement ? ` · ${libelleMateriel(exo.equipement)}` : ""}
               </p>
-              <p className="text-xs text-text-3">
+              <p className="text-xs text-fg-tertiary">
                 {exo.repos_s ? `Repos ${exo.repos_s} s · ` : ""}
                 {exo.kcal} kcal
               </p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-lg border border-border bg-surface-2 p-4">
+          <div className="mt-5 rounded-lg border border-line-default bg-surface-default p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-text-3">Charge</p>
+                <p className="text-[11px] uppercase tracking-wide text-fg-tertiary">Charge</p>
                 {exo.derniere && (
-                  <p className="text-xs text-text-2">
+                  <p className="text-xs text-fg-secondary">
                     Dernière fois : {exo.derniere.charge_kg} kg ·{" "}
                     {new Date(exo.derniere.jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                   </p>
@@ -145,7 +150,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
                     setCharge(Math.max(0, (charge ?? 0) - pas));
                     setSauve(false);
                   }}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-3"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-sunken"
                   aria-label="Moins"
                 >
                   <Icon name="remove" size={20} />
@@ -164,7 +169,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
                     }}
                     className="w-16 bg-transparent text-right text-2xl font-semibold tabular-nums outline-none"
                   />
-                  <span className="text-sm text-text-2">kg</span>
+                  <span className="text-sm text-fg-secondary">kg</span>
                 </div>
                 <button
                   type="button"
@@ -172,16 +177,16 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
                     setCharge((charge ?? 0) + pas);
                     setSauve(false);
                   }}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-3"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-sunken"
                   aria-label="Plus"
                 >
                   <Icon name="add" size={20} />
                 </button>
               </div>
             </div>
-            <label className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <label className="mt-3 flex items-center justify-between border-t border-line-default pt-3">
               <span className="text-sm">
-                Reps réalisées <span className="text-text-3">(optionnel)</span>
+                Reps réalisées <span className="text-fg-tertiary">(optionnel)</span>
               </span>
               <input
                 type="number"
@@ -194,7 +199,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
                   setReps(e.target.value);
                   setSauve(false);
                 }}
-                className="w-20 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm outline-none focus:border-accent"
+                className="w-20 rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-right text-sm outline-none focus:border-action-primary"
               />
             </label>
           </div>
@@ -204,7 +209,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
               type="button"
               onClick={() => enregistrer(false)}
               disabled={occupe}
-              className="tap flex-1 rounded-full bg-surface-2 font-medium disabled:opacity-60"
+              className="tap flex-1 rounded-full bg-surface-default font-medium disabled:opacity-60"
             >
               {sauve ? "Enregistré ✓" : "Enregistrer"}
             </button>
@@ -213,7 +218,7 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
                 type="button"
                 onClick={() => enregistrer(true)}
                 disabled={occupe}
-                className="tap flex flex-1 items-center justify-center gap-1.5 rounded-full bg-accent font-semibold text-white disabled:opacity-60"
+                className="tap flex flex-1 items-center justify-center gap-1.5 rounded-full bg-action-primary font-semibold text-fg-on-brand disabled:opacity-60"
               >
                 <Icon name="check" size={20} /> Fait
               </button>
@@ -224,50 +229,50 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
             <button
               type="button"
               onClick={ouvrirRemplacer}
-              className="tap mt-3 flex w-full items-center justify-between rounded-lg border border-border bg-surface-2 px-4 text-sm"
+              className="tap mt-3 flex w-full items-center justify-between rounded-lg border border-line-default bg-surface-default px-4 text-sm"
             >
-              <span className="flex items-center gap-2 text-text-2">
+              <span className="flex items-center gap-2 text-fg-secondary">
                 <Icon name="swap_horiz" size={20} /> Remplacer cet exercice
               </span>
-              <Icon name="chevron_right" size={18} className="text-text-3" />
+              <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
             </button>
           )}
           <Link
             href={`/sport/exercices/${exo.exercice_id}?seance=${seanceId}`}
-            className="tap mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-surface-2 px-4 text-sm"
+            className="tap mt-2 flex w-full items-center justify-between rounded-lg border border-line-default bg-surface-default px-4 text-sm"
           >
-            <span className="flex items-center gap-2 text-text-2">
+            <span className="flex items-center gap-2 text-fg-secondary">
               <Icon name="play_circle" size={20} /> Vidéo, consignes, historique de charge
             </span>
-            <Icon name="chevron_right" size={18} className="text-text-3" />
+            <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
           </Link>
         </>
       ) : (
         <>
-          <p className="text-sm text-text-2">
-            Mêmes muscles, matériel disponible. Pour <strong className="text-text">{exo.nom}</strong>.
+          <p className="text-sm text-fg-secondary">
+            Mêmes muscles, matériel disponible. Pour <strong className="text-fg-primary">{exo.nom}</strong>.
           </p>
           {!equiv ? (
-            <p className="py-8 text-center text-sm text-text-3">Recherche d’équivalents…</p>
+            <p className="py-8 text-center text-sm text-fg-tertiary">Recherche d’équivalents…</p>
           ) : equiv.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-3">Aucun équivalent trouvé avec ton matériel.</p>
+            <p className="py-8 text-center text-sm text-fg-tertiary">Aucun équivalent trouvé avec ton matériel.</p>
           ) : (
-            <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-surface-2">
+            <ul className="mt-3 overflow-hidden rounded-lg border border-line-default bg-surface-default">
               {equiv.map((q) => (
-                <li key={q.id} className="border-b border-border last:border-b-0">
+                <li key={q.id} className="border-b border-line-default last:border-b-0">
                   <button
                     type="button"
                     onClick={() => setChoix(q.id)}
-                    className={`tap flex w-full items-center gap-3 px-3 py-2 text-left ${choix === q.id ? "bg-accent/15" : ""}`}
+                    className={`tap flex w-full items-center gap-3 px-3 py-2 text-left ${choix === q.id ? "bg-action-primary/15" : ""}`}
                   >
                     <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${choix === q.id ? "border-accent bg-accent text-white" : "border-border"}`}
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${choix === q.id ? "border-action-primary bg-action-primary text-fg-on-brand" : "border-line-default"}`}
                     >
                       {choix === q.id && <Icon name="check" size={16} />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{nomAffiche(q)}</span>
-                      <span className="block truncate text-[11px] text-text-3">
+                      <span className="block truncate text-[11px] text-fg-tertiary">
                         {libelleMateriel(q.equipement)}
                         {q.raison ? ` · ${q.raison}` : ""}
                       </span>
@@ -279,19 +284,19 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
           )}
           {choix && (
             <div className="mt-4">
-              <p className="mb-1.5 text-xs text-text-2">Portée</p>
-              <div className="flex rounded-full bg-surface-2 p-1 text-sm font-medium">
+              <p className="mb-1.5 text-xs text-fg-secondary">Portée</p>
+              <div className="flex rounded-full bg-surface-default p-1 text-sm font-medium">
                 <button
                   type="button"
                   onClick={() => setPortee("seance")}
-                  className={`flex-1 rounded-full py-2 ${portee === "seance" ? "bg-surface text-text shadow-sm" : "text-text-2"}`}
+                  className={`flex-1 rounded-full py-2 ${portee === "seance" ? "bg-surface-canvas text-fg-primary shadow-sm" : "text-fg-secondary"}`}
                 >
                   Cette séance
                 </button>
                 <button
                   type="button"
                   onClick={() => setPortee("programme")}
-                  className={`flex-1 rounded-full py-2 ${portee === "programme" ? "bg-surface text-text shadow-sm" : "text-text-2"}`}
+                  className={`flex-1 rounded-full py-2 ${portee === "programme" ? "bg-surface-canvas text-fg-primary shadow-sm" : "text-fg-secondary"}`}
                 >
                   Toutes les séances à venir
                 </button>
@@ -299,14 +304,14 @@ function Contenu({ exo, seanceId, seanceFaite, onFermer, onFait }: Omit<Props, "
             </div>
           )}
           <div className="mt-4 flex gap-2">
-            <button type="button" onClick={() => setMode("detail")} className="tap flex-1 rounded-full bg-surface-2 font-medium">
+            <button type="button" onClick={() => setMode("detail")} className="tap flex-1 rounded-full bg-surface-default font-medium">
               Retour
             </button>
             <button
               type="button"
               onClick={confirmerRemplacement}
               disabled={!choix || occupe}
-              className="tap flex-1 rounded-full bg-accent font-semibold text-white disabled:opacity-50"
+              className="tap flex-1 rounded-full bg-action-primary font-semibold text-fg-on-brand disabled:opacity-50"
             >
               {occupe ? "…" : "Remplacer"}
             </button>

@@ -30,32 +30,36 @@ function Formulaire() {
   return (
     <form onSubmit={connecter} className="flex w-full max-w-sm flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-text-2">Email</span>
+        <span className="text-fg-secondary">Email</span>
         <input
           type="email"
           autoComplete="username"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="tap rounded-md border border-border bg-surface px-3 text-base outline-none focus:border-accent"
+          className="tap rounded-md border border-line-default bg-surface-canvas px-3 text-base outline-none focus:border-action-primary"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-text-2">Mot de passe</span>
+        <span className="text-fg-secondary">Mot de passe</span>
         <input
           type="password"
           autoComplete="current-password"
           required
           value={motDePasse}
           onChange={(e) => setMotDePasse(e.target.value)}
-          className="tap rounded-md border border-border bg-surface px-3 text-base outline-none focus:border-accent"
+          className="tap rounded-md border border-line-default bg-surface-canvas px-3 text-base outline-none focus:border-action-primary"
         />
       </label>
-      {erreur && <p className="text-sm text-danger">{erreur}</p>}
-      <button type="submit" disabled={enCours} className="tap mt-2 rounded-md bg-accent font-medium text-white transition-opacity disabled:opacity-60">
+      {erreur && <p className="text-sm text-feedback-danger-text">{erreur}</p>}
+      <button
+        type="submit"
+        disabled={enCours}
+        className="tap mt-2 rounded-md bg-action-primary font-medium text-fg-on-brand transition-opacity disabled:opacity-60"
+      >
         {enCours ? "Connexion…" : "Se connecter"}
       </button>
-      <p className="mt-2 text-center text-xs text-text-3">Passkeys et lien magique arrivent en phase 0.7.</p>
+      <p className="mt-2 text-center text-xs text-fg-tertiary">Passkeys et lien magique arrivent en phase 0.7.</p>
     </form>
   );
 }
@@ -64,11 +68,11 @@ export default function Connexion() {
   return (
     <main data-module="home" className="flex min-h-dvh flex-col items-center justify-center gap-8 px-6 pt-safe pb-safe">
       <div className="flex flex-col items-center gap-2">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-white">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-action-primary text-fg-on-brand">
           <Icon name="grid_view" size={32} />
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">KVALIA OS</h1>
-        <p className="text-sm text-text-2">Ton système de vie quotidienne.</p>
+        <p className="text-sm text-fg-secondary">Ton système de vie quotidienne.</p>
       </div>
       <Suspense>
         <Formulaire />

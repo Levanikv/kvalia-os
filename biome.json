@@ -15,7 +15,11 @@
       "!packages/core/src/database.types.ts",
       "!supabase/seed/**",
       "!pnpm-lock.yaml",
-      "!**/*.md"
+      "!**/*.md",
+      "!packages/ui/figma/**",
+      "!packages/ui/tokens/figma-variables.json",
+      "!packages/ui/src/tokens.css",
+      "!packages/ui/src/tailwind.css"
     ]
   },
   "formatter": {

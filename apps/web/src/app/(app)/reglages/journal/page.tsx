@@ -13,23 +13,23 @@ export default async function Journal() {
     .limit(50);
   return (
     <ModuleFrame module="reglages" titre="Journal des appels">
-      <ul className="mt-2 overflow-hidden rounded-lg border border-border bg-surface-2">
+      <ul className="mt-2 overflow-hidden rounded-lg border border-line-default bg-surface-default">
         {(data ?? []).map((a) => (
-          <li key={a.id} className="border-b border-border px-3 py-2 last:border-b-0">
+          <li key={a.id} className="border-b border-line-default px-3 py-2 last:border-b-0">
             <div className="flex items-center gap-2 text-sm">
-              <span className={`h-2 w-2 rounded-full ${a.succes ? "bg-success" : "bg-danger"}`} />
+              <span className={`h-2 w-2 rounded-full ${a.succes ? "bg-feedback-success" : "bg-feedback-danger"}`} />
               <code className="font-medium">{a.outil}</code>
-              <span className="text-xs text-text-3">
+              <span className="text-xs text-fg-tertiary">
                 {a.canal} · {a.duree_ms} ms
               </span>
-              <span className="ml-auto text-xs text-text-3">
+              <span className="ml-auto text-xs text-fg-tertiary">
                 {new Date(a.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
-            {a.entree && <pre className="mt-1 overflow-x-auto text-[11px] text-text-2">{JSON.stringify(a.entree)}</pre>}
+            {a.entree && <pre className="mt-1 overflow-x-auto text-[11px] text-fg-secondary">{JSON.stringify(a.entree)}</pre>}
           </li>
         ))}
-        {(data ?? []).length === 0 && <li className="px-3 py-6 text-center text-sm text-text-3">Aucun appel.</li>}
+        {(data ?? []).length === 0 && <li className="px-3 py-6 text-center text-sm text-fg-tertiary">Aucun appel.</li>}
       </ul>
     </ModuleFrame>
   );

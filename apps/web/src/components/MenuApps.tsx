@@ -19,7 +19,7 @@ export function MenuApps() {
         onClick={() => setOuvert(true)}
         aria-label="Applications"
         aria-haspopup="dialog"
-        className="tap flex w-10 items-center justify-center rounded-full text-text"
+        className="tap flex w-10 items-center justify-center rounded-full text-fg-primary"
       >
         <Icon name="menu" size={26} />
       </button>
@@ -33,12 +33,12 @@ export function MenuApps() {
                 <Link
                   href={m.path}
                   onClick={() => setOuvert(false)}
-                  className={`flex min-h-[92px] flex-col justify-between rounded-lg border p-3 active:opacity-80 ${actif ? "border-accent bg-accent-soft" : "border-border bg-surface-2"}`}
+                  className={`flex min-h-[92px] flex-col justify-between rounded-lg border p-3 active:opacity-80 ${actif ? "border-action-primary bg-surface-brand-subtle" : "border-line-default bg-surface-default"}`}
                 >
-                  <Icon name={m.icon} size={24} className="text-accent" filled={actif} />
+                  <Icon name={m.icon} size={24} className="text-fg-brand" filled={actif} />
                   <div>
                     <p className="text-sm font-semibold leading-tight">{m.label}</p>
-                    <p className="mt-0.5 text-[11px] leading-tight text-text-2">{m.description}</p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-fg-secondary">{m.description}</p>
                   </div>
                 </Link>
               </li>
@@ -49,7 +49,7 @@ export function MenuApps() {
           href="/capture"
           onClick={() => setOuvert(false)}
           data-module="capture"
-          className="tap mt-1 flex items-center justify-center gap-2 rounded-full bg-accent font-semibold text-white"
+          className="tap mt-1 flex items-center justify-center gap-2 rounded-full bg-action-primary font-semibold text-fg-on-brand"
         >
           <Icon name="add" size={22} /> Capture — dire quelque chose à l’agent
         </Link>

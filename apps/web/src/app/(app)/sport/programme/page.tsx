@@ -8,10 +8,10 @@ import { libelleFocus, libelleType, positionProgramme, trierParJour } from "../l
 
 /** Couleur d'une semaine dans la frise des phases (accent du module, intensité selon le focus). */
 const TEINTE: Record<string, string> = {
-  hypertrophie: "bg-accent",
-  force: "bg-accent/70",
-  mixte: "bg-accent/45",
-  deload: "bg-surface-3",
+  hypertrophie: "bg-action-primary",
+  force: "bg-action-primary/70",
+  mixte: "bg-action-primary/45",
+  deload: "bg-surface-sunken",
 };
 const JOURS = [
   { v: 1, l: "L" },
@@ -44,15 +44,18 @@ export default async function Page() {
   if (!prog) {
     return (
       <ModuleFrame module="sport" titre="Programme">
-        <section className="relative mt-4 overflow-hidden rounded-2xl border border-border bg-surface-2 p-6">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent/30 blur-3xl" aria-hidden />
+        <section className="relative mt-4 overflow-hidden rounded-2xl border border-line-default bg-surface-default p-6">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-action-primary/30 blur-3xl" aria-hidden />
           <div className="relative">
-            <Icon name="auto_awesome" size={32} className="text-accent" />
+            <Icon name="auto_awesome" size={32} className="text-fg-brand" />
             <p className="mt-3 text-3xl font-semibold tracking-tight">Ton programme sur mesure</p>
-            <p className="mt-2 text-sm text-text-2">
+            <p className="mt-2 text-sm text-fg-secondary">
               Choisis ton objectif, ton rythme et ton matériel : l’agent construit des semaines en blocs de 4, avec progression et décharge.
             </p>
-            <Link href="/sport/programme/nouveau" className="tap mt-6 flex items-center justify-center gap-2 rounded-full bg-accent font-semibold text-white">
+            <Link
+              href="/sport/programme/nouveau"
+              className="tap mt-6 flex items-center justify-center gap-2 rounded-full bg-action-primary font-semibold text-fg-on-brand"
+            >
               <Icon name="bolt" size={20} filled /> Créer mon programme
             </Link>
           </div>
@@ -99,15 +102,15 @@ export default async function Page() {
       <RealtimeRefresh tables={["seances", "programmes"]} />
 
       {/* Hero */}
-      <section className="relative mt-2 overflow-hidden rounded-2xl border border-border bg-surface-2">
-        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent/35 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+      <section className="relative mt-2 overflow-hidden rounded-2xl border border-line-default bg-surface-default">
+        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-action-primary/35 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-action-primary/10 blur-3xl" aria-hidden />
         <div className="relative p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-brand">
             {pos?.avant ? "Commence bientôt" : pos?.apres ? "Programme terminé" : "Programme en cours"}
           </p>
           <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-tight">{r.objectif ? (LIBELLES.objectif[r.objectif] ?? prog.nom) : prog.nom}</h2>
-          <p className="text-sm text-text-2">
+          <p className="text-sm text-fg-secondary">
             {new Date(prog.debut + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} →{" "}
             {prog.fin ? new Date(prog.fin + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "…"}
           </p>
@@ -115,25 +118,25 @@ export default async function Page() {
           <div className="mt-5 flex items-center gap-5">
             <div className="relative h-32 w-32 shrink-0">
               <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90" aria-hidden>
-                <circle cx="18" cy="18" r={rayon} fill="none" stroke="var(--surface-3)" strokeWidth="2.6" />
+                <circle cx="18" cy="18" r={rayon} fill="none" stroke="var(--surface-sunken)" strokeWidth="2.6" />
                 <circle
                   cx="18"
                   cy="18"
                   r={rayon}
                   fill="none"
-                  stroke="var(--module-accent)"
+                  stroke="var(--action-primary)"
                   strokeWidth="2.6"
                   strokeLinecap="round"
                   strokeDasharray={`${pct * circ} ${circ}`}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[10px] uppercase tracking-wide text-text-3">Semaine</span>
+                <span className="text-[10px] uppercase tracking-wide text-fg-tertiary">Semaine</span>
                 <span className="text-3xl font-semibold leading-none tracking-tight">
                   {semaineCourante}
-                  <span className="text-base font-normal text-text-3">/{nbSemaines}</span>
+                  <span className="text-base font-normal text-fg-tertiary">/{nbSemaines}</span>
                 </span>
-                <span className="mt-0.5 text-[11px] text-text-2">{Math.round(pct * 100)} % fait</span>
+                <span className="mt-0.5 text-[11px] text-fg-secondary">{Math.round(pct * 100)} % fait</span>
               </div>
             </div>
             <dl className="grid flex-1 grid-cols-1 gap-3">
@@ -148,11 +151,11 @@ export default async function Page() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-1.5 text-xs">
-            {r.niveau && <span className="rounded-full bg-surface-3 px-2.5 py-1">{LIBELLES.niveau[r.niveau] ?? r.niveau}</span>}
-            <span className="rounded-full bg-surface-3 px-2.5 py-1">
+            {r.niveau && <span className="rounded-full bg-surface-sunken px-2.5 py-1">{LIBELLES.niveau[r.niveau] ?? r.niveau}</span>}
+            <span className="rounded-full bg-surface-sunken px-2.5 py-1">
               {r.salle ?? 0} muscu{r.boxe ? ` + ${r.boxe} boxe` : ""} / sem.
             </span>
-            {r.duree_min && <span className="rounded-full bg-surface-3 px-2.5 py-1">{r.duree_min} min</span>}
+            {r.duree_min && <span className="rounded-full bg-surface-sunken px-2.5 py-1">{r.duree_min} min</span>}
           </div>
         </div>
       </section>
@@ -161,7 +164,7 @@ export default async function Page() {
       <section className="mt-5">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold">Ton parcours</h2>
-          <p className="text-xs text-text-2">
+          <p className="text-xs text-fg-secondary">
             {restantes > 0 ? `${restantes} semaine${restantes > 1 ? "s" : ""} restante${restantes > 1 ? "s" : ""}` : "Dernière ligne droite"}
           </p>
         </div>
@@ -173,10 +176,10 @@ export default async function Page() {
             return (
               <div key={n} className="flex flex-1 flex-col items-center gap-1">
                 <span
-                  className={`w-full rounded-sm ${TEINTE[f] ?? "bg-accent/45"} ${f === "deload" ? "h-5" : "h-8"} ${n < semaineCourante ? "" : n === semaineCourante ? "ring-2 ring-text ring-offset-2 ring-offset-surface" : "opacity-60"}`}
+                  className={`w-full rounded-sm ${TEINTE[f] ?? "bg-action-primary/45"} ${f === "deload" ? "h-5" : "h-8"} ${n < semaineCourante ? "" : n === semaineCourante ? "ring-2 ring-fg-primary ring-offset-2 ring-offset-surface" : "opacity-60"}`}
                   title={`Semaine ${n} · ${libelleFocus(f)}`}
                 />
-                <span className={`text-[9px] tabular-nums ${ici ? "font-semibold text-text" : "text-text-3"}`}>{n}</span>
+                <span className={`text-[9px] tabular-nums ${ici ? "font-semibold text-fg-primary" : "text-fg-tertiary"}`}>{n}</span>
               </div>
             );
           })}
@@ -185,14 +188,16 @@ export default async function Page() {
           {blocs.map((b) => (
             <li
               key={b.bloc}
-              className={`rounded-md border px-2.5 py-2 ${pos && !pos.avant && pos.bloc === b.bloc ? "border-accent/60 bg-accent-soft" : "border-border bg-surface-2"}`}
+              className={`rounded-md border px-2.5 py-2 ${pos && !pos.avant && pos.bloc === b.bloc ? "border-action-primary/60 bg-surface-brand-subtle" : "border-line-default bg-surface-default"}`}
             >
-              <p className="text-[10px] uppercase tracking-wide text-text-3">Bloc {b.bloc}</p>
+              <p className="text-[10px] uppercase tracking-wide text-fg-tertiary">Bloc {b.bloc}</p>
               <p className="truncate text-sm font-semibold">{libelleFocus(b.focus)}</p>
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-text-3">3 semaines de progression, puis 1 de décharge (barre basse). Les exercices tournent d’un bloc à l’autre.</p>
+        <p className="mt-2 text-xs text-fg-tertiary">
+          3 semaines de progression, puis 1 de décharge (barre basse). Les exercices tournent d’un bloc à l’autre.
+        </p>
       </section>
 
       {/* Cette semaine — carrousel */}
@@ -200,7 +205,7 @@ export default async function Page() {
         <section className="mt-6">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Semaine {semaineCourante}</h2>
-            <p className="text-xs text-text-2">{libelleFocus(focusDe(semaineCourante))}</p>
+            <p className="text-xs text-fg-secondary">{libelleFocus(focusDe(semaineCourante))}</p>
           </div>
           <ul className="bande-jours -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-1">
             {cetteSemaine.map((s) => {
@@ -210,21 +215,21 @@ export default async function Page() {
                 <li key={s.id} className="w-40 shrink-0">
                   <Link
                     href={`/sport/seance/${s.id}`}
-                    className={`relative flex h-full flex-col overflow-hidden rounded-xl border p-3 active:opacity-90 ${aujourd ? "border-accent bg-accent-soft" : "border-border bg-surface-2"}`}
+                    className={`relative flex h-full flex-col overflow-hidden rounded-xl border p-3 active:opacity-90 ${aujourd ? "border-action-primary bg-surface-brand-subtle" : "border-line-default bg-surface-default"}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`text-[11px] font-medium capitalize ${aujourd ? "text-accent" : "text-text-2"}`}>
+                      <span className={`text-[11px] font-medium capitalize ${aujourd ? "text-fg-brand" : "text-fg-secondary"}`}>
                         {aujourd ? "Aujourd’hui" : new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}
                       </span>
                       <Icon
                         name={faite ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
                         size={18}
                         filled={faite}
-                        className={faite ? "text-success" : s.type === "boxe" ? "text-[#f0872b]" : "text-accent"}
+                        className={faite ? "text-feedback-success-text" : s.type === "boxe" ? "text-[#f0872b]" : "text-fg-brand"}
                       />
                     </div>
                     <p className="mt-3 line-clamp-2 text-sm font-semibold leading-snug">{s.titre ?? libelleType(s.type)}</p>
-                    <p className="mt-auto pt-2 text-xs text-text-3">
+                    <p className="mt-auto pt-2 text-xs text-fg-tertiary">
                       {s.duree_min} min{faite ? ` · ${Number(s.kcal ?? 0)} kcal` : ""}
                     </p>
                   </Link>
@@ -237,7 +242,7 @@ export default async function Page() {
 
       {/* Semaine type */}
       {(r.jours_salle || r.jours_boxe) && (
-        <section className="mt-6 rounded-lg border border-border bg-surface-2 p-4">
+        <section className="mt-6 rounded-lg border border-line-default bg-surface-default p-4">
           <h2 className="text-sm font-semibold">Semaine type</h2>
           <ol className="mt-3 grid grid-cols-7 gap-1 text-center">
             {JOURS.map((j) => {
@@ -245,11 +250,11 @@ export default async function Page() {
               const boxe = (r.jours_boxe ?? []).includes(j.v);
               return (
                 <li key={j.v} className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-text-3">{j.l}</span>
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${salle || boxe ? "bg-accent-soft" : "bg-surface-3"}`}>
-                    {salle && <Icon name="fitness_center" size={16} className="text-accent" />}
+                  <span className="text-[10px] text-fg-tertiary">{j.l}</span>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${salle || boxe ? "bg-surface-brand-subtle" : "bg-surface-sunken"}`}>
+                    {salle && <Icon name="fitness_center" size={16} className="text-fg-brand" />}
                     {boxe && <Icon name="sports_mma" size={16} className="text-[#f0872b]" />}
-                    {!salle && !boxe && <Icon name="bedtime" size={14} className="text-text-3" />}
+                    {!salle && !boxe && <Icon name="bedtime" size={14} className="text-fg-tertiary" />}
                   </span>
                 </li>
               );
@@ -268,27 +273,27 @@ export default async function Page() {
             const ouverte = n === semaineCourante;
             const nbFaites = ss.filter((s) => s.etat === "faite").length;
             return (
-              <details key={n} open={ouverte} className="group rounded-lg border border-border bg-surface-2">
+              <details key={n} open={ouverte} className="group rounded-lg border border-line-default bg-surface-default">
                 <summary className="tap flex cursor-pointer list-none items-center gap-3 px-4">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${ouverte ? "bg-accent text-white" : nbFaites === ss.length ? "bg-success/20 text-success" : "bg-surface-3"}`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${ouverte ? "bg-action-primary text-fg-on-brand" : nbFaites === ss.length ? "bg-feedback-success/20 text-feedback-success-text" : "bg-surface-sunken"}`}
                   >
                     {nbFaites === ss.length && !ouverte ? <Icon name="check" size={16} /> : n}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">
-                      Semaine {n} <span className="text-text-3">· Bloc {bloc}</span>
+                      Semaine {n} <span className="text-fg-tertiary">· Bloc {bloc}</span>
                     </p>
-                    <p className="truncate text-xs text-text-2">
+                    <p className="truncate text-xs text-fg-secondary">
                       {libelleFocus(focusDe(n)) ?? ""} · {new Date(ss[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                     </p>
                   </div>
-                  <span className="text-xs text-text-2">
+                  <span className="text-xs text-fg-secondary">
                     {nbFaites}/{ss.length}
                   </span>
-                  <Icon name="expand_more" size={20} className="text-text-3 transition-transform group-open:rotate-180" />
+                  <Icon name="expand_more" size={20} className="text-fg-tertiary transition-transform group-open:rotate-180" />
                 </summary>
-                <ul className="border-t border-border">
+                <ul className="border-t border-line-default">
                   {ss.map((s) => (
                     <li key={s.id}>
                       <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-3 px-4 active:opacity-80">
@@ -296,16 +301,16 @@ export default async function Page() {
                           name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
                           size={20}
                           filled={s.etat === "faite"}
-                          className={s.etat === "faite" ? "text-success" : s.jour === auj ? "text-accent" : "text-text-3"}
+                          className={s.etat === "faite" ? "text-feedback-success-text" : s.jour === auj ? "text-fg-brand" : "text-fg-tertiary"}
                         />
                         <div className="min-w-0 flex-1">
                           <p className={`truncate text-sm ${s.jour === auj ? "font-semibold" : ""}`}>{s.titre ?? libelleType(s.type)}</p>
-                          <p className="text-xs text-text-3">
+                          <p className="text-xs text-fg-tertiary">
                             {new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })} · {s.duree_min} min
                             {s.etat === "faite" ? ` · ${s.kcal} kcal` : ""}
                           </p>
                         </div>
-                        <Icon name="chevron_right" size={18} className="text-text-3" />
+                        <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
                       </Link>
                     </li>
                   ))}
@@ -317,10 +322,13 @@ export default async function Page() {
       </section>
 
       <div className="mt-6 grid grid-cols-2 gap-2">
-        <Link href="/reglages/sport" className="tap flex items-center justify-center gap-2 rounded-full bg-surface-2 text-sm font-medium">
+        <Link href="/reglages/sport" className="tap flex items-center justify-center gap-2 rounded-full bg-surface-default text-sm font-medium">
           <Icon name="tune" size={18} /> Paramètres
         </Link>
-        <Link href="/sport/programme/nouveau" className="tap flex items-center justify-center gap-2 rounded-full bg-accent text-sm font-semibold text-white">
+        <Link
+          href="/sport/programme/nouveau"
+          className="tap flex items-center justify-center gap-2 rounded-full bg-action-primary text-sm font-semibold text-fg-on-brand"
+        >
           <Icon name="autorenew" size={18} /> Nouveau programme
         </Link>
       </div>
@@ -331,9 +339,9 @@ export default async function Page() {
 function Chiffre({ label, valeur, unite }: { label: string; valeur: string; unite: string }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wide text-text-3">{label}</dt>
+      <dt className="text-[10px] uppercase tracking-wide text-fg-tertiary">{label}</dt>
       <dd className="text-xl font-semibold leading-tight tracking-tight">
-        {valeur} <span className="text-xs font-normal text-text-2">{unite}</span>
+        {valeur} <span className="text-xs font-normal text-fg-secondary">{unite}</span>
       </dd>
     </div>
   );

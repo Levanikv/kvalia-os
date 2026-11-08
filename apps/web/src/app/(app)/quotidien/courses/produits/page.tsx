@@ -6,16 +6,16 @@ export default async function Produits() {
   const { data } = await supabase.from("produits").select("id, nom, rayon, unite").order("nom");
   return (
     <div className="pt-2">
-      <ul className="overflow-hidden rounded-lg border border-border bg-surface-2">
+      <ul className="overflow-hidden rounded-lg border border-line-default bg-surface-default">
         {(data ?? []).map((p) => (
-          <li key={p.id} className="flex items-center justify-between border-b border-border px-3 py-2 text-sm last:border-b-0">
+          <li key={p.id} className="flex items-center justify-between border-b border-line-default px-3 py-2 text-sm last:border-b-0">
             <span>{p.nom}</span>
-            <span className="text-xs text-text-3">
+            <span className="text-xs text-fg-tertiary">
               {p.rayon ?? "sans rayon"} · {p.unite}
             </span>
           </li>
         ))}
-        {(data ?? []).length === 0 && <li className="px-3 py-6 text-center text-sm text-text-3">Aucun produit.</li>}
+        {(data ?? []).length === 0 && <li className="px-3 py-6 text-center text-sm text-fg-tertiary">Aucun produit.</li>}
       </ul>
       <Placeholder
         phase="1"

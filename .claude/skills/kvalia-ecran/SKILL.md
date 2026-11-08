@@ -14,5 +14,5 @@ Suis `docs/recettes/ajouter-un-ecran.md` et `apps/web/CLAUDE.md`. Résumé :
 - Sous-niveaux en `EntreeCarte` (icône, titre, chiffre, ligne de contexte). Contextuel en `BottomSheet`. Jours en `BandeJours` + `?jour=`.
 - Écritures : server action (`actions.ts`, `"use server"`) → `executer(nom, entree, { db: supabase, userId: user.id })` → `revalidatePath`. Jamais d'écriture Supabase directe dans web.
 - Interactions : client component minimal, `useOptimistic` + `useTransition`, `router.refresh()` quand d'autres écrans changent. `RealtimeRefresh` si l'agent peut modifier la donnée.
-- Tokens Tailwind (`bg-surface-2`, `text-accent`, `bg-accent-soft`), `.tap` ≥ 44 px, textes FR tutoyés, états vides utiles.
+- Tokens du design system (`bg-surface-default`, `text-fg-secondary`, `bg-action-primary` + `text-fg-on-brand`, `text-fg-brand`, `bg-surface-brand-subtle`, `.type-*` — voir `packages/ui/DESIGN_SYSTEM.md`), `.tap` ≥ 44 px, textes FR tutoyés, états vides utiles.
 - Vérifier : `pnpm --filter @kvalia/web typecheck && pnpm --filter @kvalia/web lint && pnpm --filter @kvalia/web build` puis `pnpm check`.

@@ -1,7 +1,7 @@
 # Ajouter un module (une application)
 
 1. **Décider** : un module = un usage distinct, une posture UX propre (voir les pages UX Notion / FigJam). Si c'est un sous-ensemble d'une app existante, c'est un **écran**, pas un module.
-2. **Registre** `packages/ui/src/index.ts` : entrée dans `modules` (key, label, icon, path, titre, description), ses `onglets` (3–5), position dans `menuApps`. Accent dans `packages/ui/src/tokens.css` (`--accent-<key>`, et le bloc `[data-module="<key>"]`).
+2. **Registre** `packages/ui/src/index.ts` : entrée dans `modules` (key, label, icon, path, titre, description), ses `onglets` (3–5), position dans `menuApps`. Palette : ajouter un mode au nom du module dans la collection **02 Brand** du Figma « Kvalia Design System », exporter (`packages/ui/figma/export-variables.js` → `tokens/figma-variables.json`) puis `pnpm --filter @kvalia/ui tokens` ; le bloc `[data-module="<key>"]` est généré. Sans mode Brand, le module hérite de la palette par défaut.
 3. **Sitemap** `docs/sitemap.md` : section du module, routes, états en query, flux clés.
 4. **Données** : migration(s) (recette dédiée), règles et outils dans core (recette dédiée) — **avant** l'UI.
 5. **Écrans** : `apps/web/src/app/(app)/<key>/page.tsx` (vue par défaut avec points d'entrée en cartes) + sous-écrans. `ModuleFrame module="<key>"`.

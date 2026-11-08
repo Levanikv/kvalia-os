@@ -74,9 +74,9 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
   return (
     <div className="flex flex-col gap-5 pt-2">
       {programme && (
-        <div className="rounded-lg bg-accent-soft px-4 py-3 text-sm">
+        <div className="rounded-lg bg-surface-brand-subtle px-4 py-3 text-sm">
           <p className="font-medium">Programme actif : {programme.nom}</p>
-          <p className="text-text-2">
+          <p className="text-fg-secondary">
             {new Date(programme.debut + "T12:00:00").toLocaleDateString("fr-FR")} →{" "}
             {programme.fin ? new Date(programme.fin + "T12:00:00").toLocaleDateString("fr-FR") : "…"}
           </p>
@@ -89,13 +89,13 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
         <Compteur label="Boxe" valeur={p.rythme.boxe} min={0} max={3} onChange={(v) => maj("rythme", { ...p.rythme, boxe: v })} />
         <Jours label="Jours de boxe" selection={p.jours_boxe} onToggle={(j) => toggleJour("jours_boxe", j)} />
         {(!salleOk || !boxeOk) && (
-          <p className="text-xs text-danger">
+          <p className="text-xs text-feedback-danger-text">
             {!salleOk && `Coche au moins ${p.rythme.salle} jour(s) de salle. `}
             {!boxeOk && `Coche au moins ${p.rythme.boxe} jour(s) de boxe. `}
           </p>
         )}
         {doubles > 0 && (
-          <p className="text-xs text-text-2">{doubles === 1 ? "Un jour porte" : `${doubles} jours portent`} salle + boxe : deux séances ce jour-là.</p>
+          <p className="text-xs text-fg-secondary">{doubles === 1 ? "Un jour porte" : `${doubles} jours portent`} salle + boxe : deux séances ce jour-là.</p>
         )}
       </Section>
 
@@ -125,9 +125,9 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
                 key={m}
                 type="button"
                 onClick={() => maj("materiel", actif ? p.materiel.filter((x) => x !== m) : [...p.materiel, m])}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${actif ? "bg-accent text-white" : "bg-surface-3 text-text-2"}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${actif ? "bg-action-primary text-fg-on-brand" : "bg-surface-sunken text-fg-secondary"}`}
               >
-                {LIBELLES.materiel[m] ?? m} <span className={actif ? "text-white/70" : "text-text-3"}>{n}</span>
+                {LIBELLES.materiel[m] ?? m} <span className={actif ? "text-fg-on-brand/70" : "text-fg-tertiary"}>{n}</span>
               </button>
             );
           })}
@@ -137,9 +137,9 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
       <Section titre="Calories" note="kcal = MET de l’exercice × poids × durée. Le poids vient de ta dernière pesée, sinon de la valeur ci-dessous.">
         <div className="flex items-center justify-between">
           <span className="text-sm">Poids utilisé</span>
-          <span className="text-sm text-text-2">
+          <span className="text-sm text-fg-secondary">
             {poids.valeur} kg{" "}
-            <span className="text-text-3">({poids.source === "pesee" ? "dernière pesée" : poids.source === "reglages" ? "réglage" : "défaut"})</span>
+            <span className="text-fg-tertiary">({poids.source === "pesee" ? "dernière pesée" : poids.source === "reglages" ? "réglage" : "défaut"})</span>
           </span>
         </div>
         <label className="flex items-center justify-between gap-3">
@@ -153,7 +153,7 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
             value={p.poids_kg ?? ""}
             placeholder="80"
             onChange={(e) => maj("poids_kg", e.target.value ? Number(e.target.value) : undefined)}
-            className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm outline-none focus:border-accent"
+            className="w-24 rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-right text-sm outline-none focus:border-action-primary"
           />
         </label>
       </Section>
@@ -165,14 +165,18 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
             type="date"
             value={debut}
             onChange={(e) => setDebut(e.target.value)}
-            className="rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+            className="rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-sm outline-none focus:border-action-primary"
           />
         </label>
-        <p className="text-xs text-text-3">Vide = lundi prochain.</p>
+        <p className="text-xs text-fg-tertiary">Vide = lundi prochain.</p>
       </Section>
 
       {message && (
-        <p className={`rounded-md px-4 py-3 text-sm ${message.startsWith("Échec") ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}>{message}</p>
+        <p
+          className={`rounded-md px-4 py-3 text-sm ${message.startsWith("Échec") ? "bg-feedback-danger/10 text-feedback-danger-text" : "bg-feedback-success/10 text-feedback-success-text"}`}
+        >
+          {message}
+        </p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -180,7 +184,7 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
           type="button"
           onClick={sauvegarder}
           disabled={etat === "sauvegarde" || etat === "generation"}
-          className="tap rounded-full border border-border bg-surface-2 font-medium disabled:opacity-60"
+          className="tap rounded-full border border-line-default bg-surface-default font-medium disabled:opacity-60"
         >
           {etat === "sauvegarde" ? "Enregistrement…" : "Enregistrer les paramètres"}
         </button>
@@ -189,27 +193,27 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
             type="button"
             onClick={() => setEtat("confirme")}
             disabled={etat === "generation" || !salleOk}
-            className="tap flex items-center justify-center gap-2 rounded-full bg-accent font-semibold text-white disabled:opacity-60"
+            className="tap flex items-center justify-center gap-2 rounded-full bg-action-primary font-semibold text-fg-on-brand disabled:opacity-60"
           >
             <Icon name="auto_awesome" size={20} /> {programme ? "Régénérer le programme" : `Générer le programme (${p.semaines} semaines)`}
           </button>
         ) : (
-          <div className="rounded-lg border border-danger/40 bg-danger/10 p-4">
+          <div className="rounded-lg border border-feedback-danger/40 bg-feedback-danger/10 p-4">
             <p className="text-sm font-medium">{programme ? "Remplacer le programme actif ?" : "Générer le programme ?"}</p>
-            <p className="mt-1 text-xs text-text-2">
+            <p className="mt-1 text-xs text-fg-secondary">
               {p.rythme.salle} salle + {p.rythme.boxe} boxe par semaine · {p.semaines} semaines · {p.duree_min} min · {LIBELLES.objectif[p.objectif]}.
             </p>
             <div className="mt-3 flex gap-2">
-              <button type="button" onClick={() => setEtat("idle")} className="tap flex-1 rounded-full bg-surface-3 text-sm font-medium">
+              <button type="button" onClick={() => setEtat("idle")} className="tap flex-1 rounded-full bg-surface-sunken text-sm font-medium">
                 Annuler
               </button>
-              <button type="button" onClick={generer} className="tap flex-1 rounded-full bg-accent text-sm font-semibold text-white">
+              <button type="button" onClick={generer} className="tap flex-1 rounded-full bg-action-primary text-sm font-semibold text-fg-on-brand">
                 Confirmer
               </button>
             </div>
           </div>
         )}
-        {etat === "generation" && <p className="text-center text-xs text-text-2">Génération en cours…</p>}
+        {etat === "generation" && <p className="text-center text-xs text-fg-secondary">Génération en cours…</p>}
       </div>
     </div>
   );
@@ -217,9 +221,9 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
 
 function Section({ titre, note, children }: { titre: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-border bg-surface-2 p-4">
+    <section className="rounded-lg border border-line-default bg-surface-default p-4">
       <h2 className="text-sm font-semibold">{titre}</h2>
-      {note && <p className="mt-0.5 text-xs text-text-3">{note}</p>}
+      {note && <p className="mt-0.5 text-xs text-fg-tertiary">{note}</p>}
       <div className="mt-3 flex flex-col gap-3">{children}</div>
     </section>
   );
@@ -247,7 +251,7 @@ function Compteur({
         <button
           type="button"
           onClick={() => onChange(Math.max(min, valeur - pas))}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-3"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-sunken"
           aria-label="Moins"
         >
           <Icon name="remove" size={18} />
@@ -256,7 +260,7 @@ function Compteur({
         <button
           type="button"
           onClick={() => onChange(Math.min(max, valeur + pas))}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-3"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-sunken"
           aria-label="Plus"
         >
           <Icon name="add" size={18} />
@@ -269,7 +273,7 @@ function Compteur({
 function Jours({ label, selection, onToggle }: { label: string; selection: number[]; onToggle: (j: number) => void }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs text-text-2">{label}</p>
+      <p className="mb-1.5 text-xs text-fg-secondary">{label}</p>
       <div className="flex justify-between">
         {JOURS.map((j, i) => {
           const actif = selection.includes(j.v);
@@ -279,7 +283,7 @@ function Jours({ label, selection, onToggle }: { label: string; selection: numbe
               type="button"
               onClick={() => onToggle(j.v)}
               aria-pressed={actif}
-              className={`h-10 w-10 rounded-full text-sm font-semibold transition-colors ${actif ? "bg-accent text-white" : "bg-surface-3 text-text-2"}`}
+              className={`h-10 w-10 rounded-full text-sm font-semibold transition-colors ${actif ? "bg-action-primary text-fg-on-brand" : "bg-surface-sunken text-fg-secondary"}`}
             >
               {j.l}
             </button>
@@ -293,7 +297,7 @@ function Jours({ label, selection, onToggle }: { label: string; selection: numbe
 function Choix({ label, options, valeur, onChange }: { label: string; options: Array<[string, string]>; valeur: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs text-text-2">{label}</p>
+      <p className="mb-1.5 text-xs text-fg-secondary">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {options.map(([v, l]) => (
           <button
@@ -301,7 +305,7 @@ function Choix({ label, options, valeur, onChange }: { label: string; options: A
             type="button"
             onClick={() => onChange(v)}
             aria-pressed={valeur === v}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${valeur === v ? "bg-accent text-white" : "bg-surface-3 text-text-2"}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${valeur === v ? "bg-action-primary text-fg-on-brand" : "bg-surface-sunken text-fg-secondary"}`}
           >
             {l}
           </button>

@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "@kvalia/ui/tokens.css";
 import "./globals.css";
+
+// Polices du design system (Figma : Geist / Geist Mono), reprises par --font-sans / --font-mono.
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "KVALIA OS", template: "%s · Kvalia" },
@@ -12,8 +17,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f12" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#050505" },
   ],
   viewportFit: "cover",
   width: "device-width",
@@ -24,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${geist.variable} ${geistMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
