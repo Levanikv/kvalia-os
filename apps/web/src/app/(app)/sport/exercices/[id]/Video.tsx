@@ -29,7 +29,7 @@ export function Video({ src, srcF, poster, posterF }: Props) {
       ) : affiche ? (
         <img src={affiche} alt="" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full items-center justify-center text-text-3">
+        <div className="flex h-full items-center justify-center text-fg-tertiary">
           <Icon name="videocam_off" size={40} />
         </div>
       )}

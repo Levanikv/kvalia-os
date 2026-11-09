@@ -35,7 +35,7 @@ export async function enteteJour(db: Db, jour: string, auj: string, base: "/spor
   const sousTitre = (
     <span className="flex items-center gap-1.5">
       <span
-        className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${estAuj ? "bg-accent text-white" : "bg-surface-3 text-text-2"}`}
+        className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${estAuj ? "bg-action-primary text-fg-on-brand" : "bg-surface-sunken text-fg-secondary"}`}
       >
         {jourRelatif(jour, auj)}
       </span>
@@ -46,7 +46,7 @@ export async function enteteJour(db: Db, jour: string, auj: string, base: "/spor
     </span>
   );
   const action = !estAuj ? (
-    <Link href={base} className="tap flex items-center gap-1 rounded-full bg-surface-2 px-3 text-sm font-medium" aria-label="Revenir à aujourd’hui">
+    <Link href={base} className="tap flex items-center gap-1 rounded-full bg-surface-default px-3 text-sm font-medium" aria-label="Revenir à aujourd’hui">
       <Icon name="today" size={18} /> Auj.
     </Link>
   ) : undefined;

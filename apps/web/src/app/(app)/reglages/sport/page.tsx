@@ -30,13 +30,13 @@ export default async function Page() {
     >
       <Link
         href="/sport/programme/nouveau"
-        className="tap mt-2 flex items-center justify-between rounded-lg bg-accent-soft px-4 text-sm font-medium"
+        className="tap mt-2 flex items-center justify-between rounded-lg bg-surface-brand-subtle px-4 text-sm font-medium"
         data-module="sport"
       >
         <span className="flex items-center gap-2">
-          <Icon name="bolt" size={20} filled className="text-accent" /> Créer un programme pas à pas
+          <Icon name="bolt" size={20} filled className="text-fg-brand" /> Créer un programme pas à pas
         </span>
-        <Icon name="chevron_right" size={18} className="text-text-3" />
+        <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
       </Link>
       <FormulaireSport
         initial={params}

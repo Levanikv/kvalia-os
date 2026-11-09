@@ -7,6 +7,9 @@
  */
 export type Onglet = { href: string; label: string; icon: string };
 
+/** Design system (généré depuis Figma « Kvalia Design System ») : brands, typeRoles, cssVar, typeClass… */
+export * from "./tokens.gen";
+
 export const modules = [
   { key: "home", label: "Home", icon: "home", path: "/", titre: "Aujourd’hui", description: "Ta journée en un coup d’œil" },
   { key: "quotidien", label: "Quotidien", icon: "checklist", path: "/quotidien/courses", titre: "Quotidien", description: "Courses, tâches, habitudes" },

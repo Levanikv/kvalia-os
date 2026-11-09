@@ -26,19 +26,19 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
   const m = module(key);
   const initiale = await initialeUtilisateur();
   return (
-    <div data-module={key} className="min-h-dvh bg-surface text-text">
-      <header className="sticky top-0 z-30 bg-surface/85 pt-safe backdrop-blur-md">
+    <div data-module={key} className="min-h-dvh bg-surface-canvas text-fg-primary">
+      <header className="sticky top-0 z-30 bg-surface-canvas/85 pt-safe backdrop-blur-md">
         <div className="mx-auto flex h-[var(--header-h)] max-w-lg items-center gap-2 px-3">
           {gauche ?? <MenuApps />}
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold tracking-tight">{titre ?? m.titre}</h1>
-            {sousTitre && <div className="truncate text-xs text-text-2">{sousTitre}</div>}
+            {sousTitre && <div className="truncate text-xs text-fg-secondary">{sousTitre}</div>}
           </div>
           {action ?? (
             <Link
               href="/reglages"
               aria-label="Réglages et compte"
-              className="tap flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent"
+              className="tap flex h-10 w-10 items-center justify-center rounded-full bg-surface-brand-subtle text-sm font-semibold text-fg-brand"
             >
               {initiale}
             </Link>

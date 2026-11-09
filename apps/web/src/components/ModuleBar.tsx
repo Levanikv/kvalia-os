@@ -17,7 +17,7 @@ export function ModuleBar() {
     <nav
       aria-label="Navigation de l’application"
       data-module={app}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/90 pb-safe backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line-default bg-surface-canvas/90 pb-safe backdrop-blur-md"
     >
       <ul className="mx-auto flex h-[var(--tabbar-h)] max-w-lg items-stretch justify-around">
         {barre.map((o) => {
@@ -27,7 +27,7 @@ export function ModuleBar() {
               <Link
                 href={o.href}
                 aria-current={estActif ? "page" : undefined}
-                className={`tap flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors ${estActif ? "text-accent" : "text-text-2"}`}
+                className={`tap flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors ${estActif ? "text-fg-brand" : "text-fg-secondary"}`}
               >
                 <Icon name={o.icon} filled={estActif} />
                 <span className="truncate">{o.label}</span>

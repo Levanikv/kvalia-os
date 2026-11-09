@@ -36,14 +36,14 @@ export function Capture({ initial }: { initial: string }) {
         onChange={(e) => setTexte(e.target.value)}
         rows={4}
         placeholder="2 skyr, riz 1 kg, œufs&#10;ou : Appeler le garage"
-        className="w-full rounded-lg border border-border bg-surface-2 p-4 text-lg outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line-default bg-surface-default p-4 text-lg outline-none focus:border-action-primary"
       />
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           disabled={enCours || !texte.trim()}
           onClick={courses}
-          className="tap flex items-center justify-center gap-2 rounded-md bg-accent font-medium text-white disabled:opacity-40"
+          className="tap flex items-center justify-center gap-2 rounded-md bg-action-primary font-medium text-fg-on-brand disabled:opacity-40"
         >
           <Icon name="shopping_cart" size={20} /> Aux courses
         </button>
@@ -51,13 +51,13 @@ export function Capture({ initial }: { initial: string }) {
           type="button"
           disabled={enCours || !texte.trim()}
           onClick={tache}
-          className="tap flex items-center justify-center gap-2 rounded-md border border-border bg-surface-2 font-medium disabled:opacity-40"
+          className="tap flex items-center justify-center gap-2 rounded-md border border-line-default bg-surface-default font-medium disabled:opacity-40"
         >
           <Icon name="task_alt" size={20} /> En tâche
         </button>
       </div>
-      {etat && <p className="text-center text-sm text-success">{etat}</p>}
-      <p className="text-center text-xs text-text-3">
+      {etat && <p className="text-center text-sm text-feedback-success-text">{etat}</p>}
+      <p className="text-center text-xs text-fg-tertiary">
         Le micro et la phrase libre vers l’agent (« il me manque du skyr ») arrivent en phase 1. En attendant : claude.ai avec le connecteur KVALIA OS.
       </p>
     </div>

@@ -1,22 +1,30 @@
 @import "tailwindcss";
+/*
+  Design system : Figma « Kvalia Design System » → packages/ui (tokens.css chargé dans layout.tsx).
+  Le pont généré expose les rôles sémantiques à Tailwind : bg-surface-default, text-fg-secondary, border-line-default,
+  bg-action-primary + text-fg-on-brand, text-fg-brand, bg-feedback-success-subtle, shadow-card… (voir packages/ui/DESIGN_SYSTEM.md).
+*/
+@import "@kvalia/ui/tailwind.css";
 
-/* Les tokens (packages/ui/tokens.css) sont exposés à Tailwind : bg-surface, text-text-2, border-border, text-accent… */
+/* Échelle de rayons Tailwind = rôles du DS, dans l'ordre croissant (noms Figma : radius/tag…sheet). */
 @theme inline {
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-surface-3: var(--surface-3);
-  --color-text: var(--text);
-  --color-text-2: var(--text-2);
-  --color-text-3: var(--text-3);
-  --color-border: var(--border);
-  --color-accent: var(--module-accent);
-  --color-accent-soft: var(--module-accent-soft);
-  --color-danger: var(--danger);
-  --color-success: var(--success);
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --font-sans: var(--font-sans);
+  --radius-sm: var(--radius-tag); /* 10 */
+  --radius-md: var(--radius-input); /* 16 */
+  --radius-lg: var(--radius-tile); /* 24 */
+  --radius-xl: var(--radius-card); /* 28 */
+  --radius-2xl: var(--radius-card-hero); /* 32 */
+  --radius-3xl: var(--radius-sheet); /* 36 */
+}
+
+/* Constantes du shell (hors Figma) : hauteur de la barre d'app = control/xl, en-tête 56 px. */
+:root {
+  --tabbar-h: var(--control-xl);
+  --header-h: 56px;
+}
+
+/* Sport : identité sombre quel que soit le thème système (règle produit, cf. ModuleFrame / data-module). */
+[data-module="sport"] {
+  color-scheme: dark;
 }
 
 html {
@@ -26,8 +34,8 @@ html {
 }
 
 body {
-  background: var(--surface);
-  color: var(--text);
+  background: var(--surface-canvas);
+  color: var(--text-primary);
   min-height: 100dvh;
 }
 
@@ -74,7 +82,7 @@ body {
 
 /* Boutons et lignes : surfaces tactiles ≥ 44px */
 .tap {
-  min-height: 44px;
+  min-height: var(--control-min);
 }
 
 /* Feuilles modales (BottomSheet) */
@@ -95,10 +103,10 @@ body {
   }
 }
 .feuille-voile {
-  animation: feuille-voile 180ms ease-out;
+  animation: feuille-voile var(--duration-quick) var(--ease-decelerate);
 }
 .feuille-panneau {
-  animation: feuille-panneau 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: feuille-panneau var(--duration-slow) var(--ease-emphasized);
 }
 /* Parcours en étapes (création de programme) : chaque écran glisse depuis la droite */
 @keyframes assistant-etape {
@@ -112,7 +120,7 @@ body {
   }
 }
 .assistant-etape {
-  animation: assistant-etape 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: assistant-etape var(--duration-base) var(--ease-emphasized);
 }
 @media (prefers-reduced-motion: reduce) {
   .assistant-etape,

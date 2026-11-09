@@ -1,17 +1,21 @@
 {
   "name": "@kvalia/ui",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./tailwind.css": "./src/tailwind.css"
   },
   "scripts": {
+    "tokens": "node scripts/build-tokens.mjs",
+    "tokens:check": "node scripts/build-tokens.mjs --check",
+    "tokens:strict": "node scripts/build-tokens.mjs --check --strict",
     "typecheck": "tsc --noEmit",
-    "lint": "biome lint ."
+    "lint": "biome lint . && node scripts/build-tokens.mjs --check"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

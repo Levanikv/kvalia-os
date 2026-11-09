@@ -36,8 +36,8 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
 
   return (
     <div className="pt-2">
-      <label className="flex items-center gap-2 rounded-full bg-surface-2 px-4">
-        <Icon name="search" size={20} className="text-text-3" />
+      <label className="flex items-center gap-2 rounded-full bg-surface-default px-4">
+        <Icon name="search" size={20} className="text-fg-tertiary" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -46,7 +46,7 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
         />
         {q && (
           <button type="button" onClick={() => setQ("")} aria-label="Effacer">
-            <Icon name="close" size={18} className="text-text-3" />
+            <Icon name="close" size={18} className="text-fg-tertiary" />
           </button>
         )}
       </label>
@@ -72,14 +72,17 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-text-3">
+      <p className="mt-3 text-xs text-fg-tertiary">
         {liste.length} exercice{liste.length > 1 ? "s" : ""}
       </p>
       <ul className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-3">
         {liste.map((e) => (
           <li key={e.id}>
-            <Link href={`/sport/exercices/${e.id}`} className="block overflow-hidden rounded-lg border border-border bg-surface-2 active:opacity-80">
-              <div className="relative aspect-[4/3] bg-surface-3">
+            <Link
+              href={`/sport/exercices/${e.id}`}
+              className="block overflow-hidden rounded-lg border border-line-default bg-surface-default active:opacity-80"
+            >
+              <div className="relative aspect-[4/3] bg-surface-sunken">
                 {e.image_url && <img src={e.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />}
                 <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
                   {LIBELLES.partie[e.partie_corps ?? ""] ?? e.partie_corps}
@@ -87,7 +90,7 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
               </div>
               <div className="p-2.5">
                 <p className="truncate text-sm font-medium">{e.affiche}</p>
-                <p className="truncate text-[11px] text-text-3">
+                <p className="truncate text-[11px] text-fg-tertiary">
                   {LIBELLES.materiel[e.equipement ?? ""] ?? e.equipement}
                   {e.compose ? " · poly" : ""}
                 </p>
@@ -105,7 +108,7 @@ function Chip({ actif, onClick, children, discret }: { actif: boolean; onClick: 
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${actif ? (discret ? "bg-surface-3 text-text ring-1 ring-border" : "bg-accent text-white") : discret ? "text-text-3" : "bg-surface-2 text-text-2"}`}
+      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${actif ? (discret ? "bg-surface-sunken text-fg-primary ring-1 ring-line-default" : "bg-action-primary text-fg-on-brand") : discret ? "text-fg-tertiary" : "bg-surface-default text-fg-secondary"}`}
     >
       {children}
     </button>

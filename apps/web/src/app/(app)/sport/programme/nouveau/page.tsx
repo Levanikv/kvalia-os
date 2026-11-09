@@ -18,7 +18,7 @@ export default async function Page() {
   for (const m of materiels ?? []) if (m.equipement) compte.set(m.equipement, (compte.get(m.equipement) ?? 0) + 1);
 
   return (
-    <div data-module="sport" className="min-h-dvh bg-surface text-text">
+    <div data-module="sport" className="min-h-dvh bg-surface-canvas text-fg-primary">
       <Assistant
         initial={params}
         auj={aujourdhui()}

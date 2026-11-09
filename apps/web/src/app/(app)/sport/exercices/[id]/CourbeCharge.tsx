@@ -1,6 +1,6 @@
 /** Mini courbe de la charge dans le temps (SVG inline, pas de lib). */
 export function CourbeCharge({ points }: { points: Array<{ jour: string; kg: number }> }) {
-  if (points.length < 2) return <p className="mt-2 text-xs text-text-3">La courbe apparaît à partir de deux séances notées.</p>;
+  if (points.length < 2) return <p className="mt-2 text-xs text-fg-tertiary">La courbe apparaît à partir de deux séances notées.</p>;
   const W = 320,
     H = 72,
     P = 6;
@@ -12,10 +12,10 @@ export function CourbeCharge({ points }: { points: Array<{ jour: string; kg: num
   const d = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(" ");
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 h-20 w-full" role="img" aria-label={`Charge de ${min} à ${max} kg sur ${points.length} séances`}>
-      <path d={`${d} L${x(points.length - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`} fill="var(--module-accent)" opacity="0.12" />
-      <path d={d} fill="none" stroke="var(--module-accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={`${d} L${x(points.length - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`} fill="var(--action-primary)" opacity="0.12" />
+      <path d={d} fill="none" stroke="var(--action-primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
       {points.map((p, i) => (
-        <circle key={p.jour + i} cx={x(i)} cy={y(p.kg)} r="3.5" fill="var(--surface-2)" stroke="var(--module-accent)" strokeWidth="2" />
+        <circle key={p.jour + i} cx={x(i)} cy={y(p.kg)} r="3.5" fill="var(--surface-default)" stroke="var(--action-primary)" strokeWidth="2" />
       ))}
     </svg>
   );

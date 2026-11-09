@@ -25,12 +25,16 @@ export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
             router.push(suivant);
           })
         }
-        className={`tap flex flex-1 items-center justify-center gap-2 rounded-full font-semibold ${local ? "bg-success/20 text-success" : "bg-accent text-white"}`}
+        className={`tap flex flex-1 items-center justify-center gap-2 rounded-full font-semibold ${local ? "bg-feedback-success/20 text-feedback-success-text" : "bg-action-primary text-fg-on-brand"}`}
       >
         <Icon name={local ? "check_circle" : "check"} size={20} filled={local} /> {local ? "Fait" : "Fait → suivant"}
       </button>
       {local && (
-        <button type="button" onClick={() => router.push(suivant)} className="tap flex items-center gap-1 rounded-full bg-surface-3 px-4 text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => router.push(suivant)}
+          className="tap flex items-center gap-1 rounded-full bg-surface-sunken px-4 text-sm font-medium"
+        >
           Suivant <Icon name="chevron_right" size={18} />
         </button>
       )}

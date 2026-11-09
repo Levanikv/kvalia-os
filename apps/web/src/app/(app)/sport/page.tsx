@@ -62,13 +62,16 @@ export default async function Page({ searchParams }: Props) {
 
       {/* Programme suivi */}
       {programme && pos && (
-        <Link href="/sport/programme" className="relative mt-1 block overflow-hidden rounded-lg border border-border bg-surface-2 px-4 py-3 active:opacity-90">
-          <div className="absolute inset-y-0 left-0 w-1 bg-accent" aria-hidden />
+        <Link
+          href="/sport/programme"
+          className="relative mt-1 block overflow-hidden rounded-lg border border-line-default bg-surface-default px-4 py-3 active:opacity-90"
+        >
+          <div className="absolute inset-y-0 left-0 w-1 bg-action-primary" aria-hidden />
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-text-3">Programme suivi</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-tertiary">Programme suivi</p>
               <p className="truncate text-sm font-semibold">{programme.nom}</p>
-              <p className="truncate text-xs text-text-2">
+              <p className="truncate text-xs text-fg-secondary">
                 {pos.avant
                   ? `Commence le ${new Date(pos.debut + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}`
                   : pos.apres
@@ -80,18 +83,18 @@ export default async function Page({ searchParams }: Props) {
               <div className="shrink-0 text-right">
                 <p className="text-2xl font-semibold leading-none tracking-tight">
                   S{pos.semaine}
-                  <span className="text-sm font-normal text-text-3">/{pos.total ?? "?"}</span>
+                  <span className="text-sm font-normal text-fg-tertiary">/{pos.total ?? "?"}</span>
                 </p>
               </div>
             )}
-            <Icon name="chevron_right" size={18} className="shrink-0 text-text-3" />
+            <Icon name="chevron_right" size={18} className="shrink-0 text-fg-tertiary" />
           </div>
           {dansProgramme && pos.total && (
             <div className="mt-2.5 flex gap-0.5" aria-hidden>
               {Array.from({ length: pos.total }, (_, i) => (
                 <span
                   key={i}
-                  className={`h-1 flex-1 rounded-full ${i + 1 < pos.semaine ? "bg-accent" : i + 1 === pos.semaine ? "bg-accent/60" : "bg-surface-3"}`}
+                  className={`h-1 flex-1 rounded-full ${i + 1 < pos.semaine ? "bg-action-primary" : i + 1 === pos.semaine ? "bg-action-primary/60" : "bg-surface-sunken"}`}
                 />
               ))}
             </div>
@@ -104,7 +107,7 @@ export default async function Page({ searchParams }: Props) {
         {seances.length > 1 && (
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold">Double séance</h2>
-            <p className="text-xs text-text-2">{seances.map((s) => (s.type === "boxe" ? "Boxe" : "Muscu")).join(" + ")}</p>
+            <p className="text-xs text-fg-secondary">{seances.map((s) => (s.type === "boxe" ? "Boxe" : "Muscu")).join(" + ")}</p>
           </div>
         )}
         <div className="space-y-3">
@@ -123,30 +126,33 @@ export default async function Page({ searchParams }: Props) {
 
         {seances.length === 0 &&
           (programme ? (
-            <div className="rounded-lg border border-border bg-surface-2 p-5">
-              <div className="flex items-center gap-2 text-text-2">
+            <div className="rounded-lg border border-line-default bg-surface-default p-5">
+              <div className="flex items-center gap-2 text-fg-secondary">
                 <Icon name="self_improvement" size={22} />
                 <span className="text-sm font-medium">Repos</span>
               </div>
               <p className="mt-2 text-2xl font-semibold tracking-tight">Récupération active</p>
-              <p className="mt-1 text-sm text-text-2">Marche, mobilité, sommeil. Les muscles se construisent aujourd’hui.</p>
+              <p className="mt-1 text-sm text-fg-secondary">Marche, mobilité, sommeil. Les muscles se construisent aujourd’hui.</p>
               {prochaine && (
-                <Link href={`/sport?jour=${prochaine.jour}`} className="mt-4 flex items-center justify-between rounded-md bg-surface-3 px-3 py-2.5 text-sm">
+                <Link
+                  href={`/sport?jour=${prochaine.jour}`}
+                  className="mt-4 flex items-center justify-between rounded-md bg-surface-sunken px-3 py-2.5 text-sm"
+                >
                   <span>
                     Prochaine : <strong>{prochaine.titre}</strong> ·{" "}
                     {new Date(prochaine.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}
                   </span>
-                  <Icon name="chevron_right" size={18} className="text-text-3" />
+                  <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
                 </Link>
               )}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-border p-5">
+            <div className="rounded-lg border border-dashed border-line-default p-5">
               <p className="text-2xl font-semibold tracking-tight">Pas encore de programme</p>
-              <p className="mt-1 text-sm text-text-2">Objectif, rythme, matériel : l’agent construit tes semaines en blocs de 4.</p>
+              <p className="mt-1 text-sm text-fg-secondary">Objectif, rythme, matériel : l’agent construit tes semaines en blocs de 4.</p>
               <Link
                 href="/sport/programme/nouveau"
-                className="tap mt-4 flex items-center justify-center gap-2 rounded-full bg-accent px-5 font-semibold text-white"
+                className="tap mt-4 flex items-center justify-center gap-2 rounded-full bg-action-primary px-5 font-semibold text-fg-on-brand"
               >
                 <Icon name="auto_awesome" size={20} /> Créer mon programme
               </Link>
@@ -156,10 +162,10 @@ export default async function Page({ searchParams }: Props) {
 
       {/* La semaine */}
       {semaineSeances.length > 0 && (
-        <section className="mt-5 rounded-lg border border-border bg-surface-2 p-4">
+        <section className="mt-5 rounded-lg border border-line-default bg-surface-default p-4">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">{dansProgramme ? `Semaine ${pos.semaine}` : "Cette semaine"}</h2>
-            <p className="text-xs text-text-2">
+            <p className="text-xs text-fg-secondary">
               {faitesSemaine.length}/{semaineSeances.length} séances · {kcalSemaine.toLocaleString("fr-FR")} kcal
             </p>
           </div>
@@ -174,11 +180,11 @@ export default async function Page({ searchParams }: Props) {
                     href={`/sport?jour=${j}`}
                     scroll={false}
                     aria-current={actif ? "date" : undefined}
-                    className={`flex min-h-16 flex-col items-center gap-1 rounded-md py-1.5 ${actif ? "bg-accent-soft ring-1 ring-accent/50" : ""}`}
+                    className={`flex min-h-16 flex-col items-center gap-1 rounded-md py-1.5 ${actif ? "bg-surface-brand-subtle ring-1 ring-action-primary/50" : ""}`}
                   >
-                    <span className={`text-[10px] font-medium ${j === auj ? "text-accent" : "text-text-3"}`}>{l}</span>
+                    <span className={`text-[10px] font-medium ${j === auj ? "text-fg-brand" : "text-fg-tertiary"}`}>{l}</span>
                     {ss.length === 0 ? (
-                      <span className="mt-1 h-1 w-1 rounded-full bg-surface-3" />
+                      <span className="mt-1 h-1 w-1 rounded-full bg-surface-sunken" />
                     ) : (
                       ss.map((s) => (
                         <Icon
@@ -186,7 +192,7 @@ export default async function Page({ searchParams }: Props) {
                           name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
                           size={16}
                           filled={s.etat === "faite"}
-                          className={s.etat === "faite" ? "text-success" : s.type === "boxe" ? "text-[#f0872b]" : "text-accent"}
+                          className={s.etat === "faite" ? "text-feedback-success-text" : s.type === "boxe" ? "text-fg-accent" : "text-fg-brand"}
                         />
                       ))
                     )}
@@ -217,7 +223,7 @@ export default async function Page({ searchParams }: Props) {
         />
       </section>
       {seances.length > 0 && (
-        <p className="mt-3 text-center text-xs text-text-3">
+        <p className="mt-3 text-center text-xs text-fg-tertiary">
           {seances.map((s) => s.titre ?? libelleType(s.type)).join(" · ")} — {params.duree_min} min visées
         </p>
       )}

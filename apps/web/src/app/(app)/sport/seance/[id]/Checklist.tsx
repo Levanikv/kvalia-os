@@ -70,16 +70,16 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
   return (
     <div className="pt-2">
       {/* Bandeau kcal / progression */}
-      <div className="rounded-lg border border-border bg-surface-2 p-4">
+      <div className="rounded-lg border border-line-default bg-surface-default p-4">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-text-3">{faite ? "Brûlées" : "Brûlées jusqu’ici"}</p>
+            <p className="text-[11px] uppercase tracking-wide text-fg-tertiary">{faite ? "Brûlées" : "Brûlées jusqu’ici"}</p>
             <p className="text-3xl font-semibold tracking-tight">
               {kcal}
-              <span className="text-base font-normal text-text-2"> / {faite ? kcal : kcalPrevues} kcal</span>
+              <span className="text-base font-normal text-fg-secondary"> / {faite ? kcal : kcalPrevues} kcal</span>
             </p>
           </div>
-          <div className="text-right text-xs text-text-2">
+          <div className="text-right text-xs text-fg-secondary">
             <p>{seance.duree_min ?? "—"} min</p>
             {exos.length > 0 && (
               <p>
@@ -88,27 +88,27 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
             )}
           </div>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-3">
-          <div className={`h-full transition-all ${faite ? "bg-success" : "bg-accent"}`} style={{ width: `${progression * 100}%` }} />
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken">
+          <div className={`h-full transition-all ${faite ? "bg-feedback-success" : "bg-action-primary"}`} style={{ width: `${progression * 100}%` }} />
         </div>
-        <p className="mt-2 text-[11px] text-text-3">
+        <p className="mt-2 text-[11px] text-fg-tertiary">
           Estimation MET × {poids.valeur} kg{poids.source === "defaut" ? " (poids par défaut — renseigne-le dans les réglages)" : ""}.
         </p>
       </div>
 
-      {seance.notes && <p className="mt-4 rounded-lg bg-accent-soft px-4 py-3 text-sm">{seance.notes}</p>}
+      {seance.notes && <p className="mt-4 rounded-lg bg-surface-brand-subtle px-4 py-3 text-sm">{seance.notes}</p>}
 
       {/* Exercices */}
       {exos.length > 0 && (
-        <ol className="mt-4 overflow-hidden rounded-lg border border-border bg-surface-2">
+        <ol className="mt-4 overflow-hidden rounded-lg border border-line-default bg-surface-default">
           {exos.map((e, i) => (
-            <li key={e.id} className="flex items-stretch border-b border-border last:border-b-0">
+            <li key={e.id} className="flex items-stretch border-b border-line-default last:border-b-0">
               <Link
                 href={`/sport/exercices/${e.exercice_id}?seance=${seance.id}`}
                 aria-label={`Vidéo : ${e.nom}`}
                 className="flex shrink-0 items-center py-2.5 pl-3 active:opacity-80"
               >
-                <div className="relative h-14 w-14 overflow-hidden rounded-md bg-surface-3">
+                <div className="relative h-14 w-14 overflow-hidden rounded-md bg-surface-sunken">
                   {e.image && <img src={e.image} alt="" className="h-full w-full object-cover" loading="lazy" />}
                   <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
                     <Icon name="play_arrow" size={22} filled />
@@ -120,18 +120,18 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
                 onClick={() => setOuvert(e.id)}
                 className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2.5 text-left active:opacity-80"
               >
-                <p className={`truncate font-medium ${e.fait ? "text-text-3 line-through" : ""}`}>
+                <p className={`truncate font-medium ${e.fait ? "text-fg-tertiary line-through" : ""}`}>
                   {i + 1}. {e.nom}
                 </p>
-                <p className="text-xs text-text-2">
+                <p className="text-xs text-fg-secondary">
                   {e.series} × {e.reps_faites ?? e.reps}
                   {e.charge_kg !== null ? (
-                    <span className="ml-1.5 rounded-full bg-accent/20 px-1.5 py-px text-[11px] font-semibold text-accent">{e.charge_kg} kg</span>
+                    <span className="ml-1.5 rounded-full bg-action-primary/20 px-1.5 py-px text-[11px] font-semibold text-fg-brand">{e.charge_kg} kg</span>
                   ) : e.derniere ? (
-                    <span className="ml-1.5 text-text-3">· dernière fois {e.derniere.charge_kg} kg</span>
+                    <span className="ml-1.5 text-fg-tertiary">· dernière fois {e.derniere.charge_kg} kg</span>
                   ) : null}
                 </p>
-                <p className="text-[11px] text-text-3">
+                <p className="text-[11px] text-fg-tertiary">
                   {libellePartie(e.partie)} · {e.kcal} kcal{e.substitut ? " · remplacé" : ""}
                   {e.repos_s ? ` · repos ${e.repos_s} s` : ""}
                 </p>
@@ -144,7 +144,7 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
                 className="tap flex w-16 shrink-0 items-center justify-center active:opacity-70 disabled:opacity-60"
               >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${e.fait ? "border-success bg-success text-white" : "border-border"}`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${e.fait ? "border-feedback-success bg-feedback-success text-fg-inverse" : "border-line-default"}`}
                 >
                   {e.fait && <Icon name="check" size={20} />}
                 </span>
@@ -154,25 +154,25 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
         </ol>
       )}
       {exos.length > 0 && (
-        <p className="mt-2 px-1 text-[11px] text-text-3">
+        <p className="mt-2 px-1 text-[11px] text-fg-tertiary">
           Tape le nom pour noter la charge ou remplacer l’exercice, la vignette pour la vidéo, le rond pour valider.
         </p>
       )}
 
       {/* Résumé si faite */}
       {faite && (
-        <div className="mt-4 rounded-lg border border-success/40 bg-success/10 p-4">
+        <div className="mt-4 rounded-lg border border-feedback-success/40 bg-feedback-success/10 p-4">
           <p className="flex items-center gap-2 font-semibold">
-            <Icon name="task_alt" size={22} className="text-success" filled /> Séance terminée
+            <Icon name="task_alt" size={22} className="text-feedback-success-text" filled /> Séance terminée
           </p>
-          <p className="mt-1 text-sm text-text-2">
+          <p className="mt-1 text-sm text-fg-secondary">
             {seance.kcal} kcal · {seance.duree_min} min
             {seance.ressenti ? ` · ressenti ${RESSENTIS.find((r) => r.v === seance.ressenti)?.e ?? seance.ressenti}` : ""}
             {seance.faite_le ? ` · ${new Date(seance.faite_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : ""}
           </p>
-          <Link href={`/nutrition?jour=${seance.jour}`} className="mt-3 flex items-center justify-between rounded-md bg-surface-2 px-3 py-2.5 text-sm">
+          <Link href={`/nutrition?jour=${seance.jour}`} className="mt-3 flex items-center justify-between rounded-md bg-surface-default px-3 py-2.5 text-sm">
             <span>Cible nutrition du jour ajustée de +{seance.kcal} kcal</span>
-            <Icon name="chevron_right" size={18} className="text-text-3" />
+            <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
           </Link>
         </div>
       )}
@@ -196,7 +196,7 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
             <button
               type="button"
               onClick={() => setFin(true)}
-              className="tap flex w-full items-center justify-center gap-2 rounded-full bg-accent font-semibold text-white shadow-lg"
+              className="tap flex w-full items-center justify-center gap-2 rounded-full bg-action-primary font-semibold text-fg-on-brand shadow-lg"
             >
               <Icon name="flag" size={22} filled /> {exos.length > 0 && faits < exos.length ? `Terminer (${faits}/${exos.length})` : "Terminer la séance"}
             </button>
@@ -212,10 +212,10 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
               key={r.v}
               type="button"
               onClick={() => setRessenti(r.v)}
-              className={`flex w-14 flex-col items-center gap-1 rounded-lg py-2 text-2xl ${ressenti === r.v ? "bg-accent/20 ring-2 ring-accent" : "bg-surface-2"}`}
+              className={`flex w-14 flex-col items-center gap-1 rounded-lg py-2 text-2xl ${ressenti === r.v ? "bg-action-primary/20 ring-2 ring-action-primary" : "bg-surface-default"}`}
             >
               <span>{r.e}</span>
-              <span className="text-[10px] text-text-2">{r.l}</span>
+              <span className="text-[10px] text-fg-secondary">{r.l}</span>
             </button>
           ))}
         </div>
@@ -223,19 +223,24 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Une note ? (charge, douleur, PR…)"
-          className="mt-4 w-full rounded-md border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="mt-4 w-full rounded-md border border-line-default bg-surface-default px-3 py-2.5 text-sm outline-none focus:border-action-primary"
         />
-        <div className="mt-4 rounded-md bg-surface-2 px-3 py-2.5 text-sm text-text-2">
+        <div className="mt-4 rounded-md bg-surface-default px-3 py-2.5 text-sm text-fg-secondary">
           <p>
-            <strong className="text-text">{kcalFaites > 0 ? kcalFaites : kcalPrevues} kcal</strong> seront ajoutées à ta cible nutrition du jour.
+            <strong className="text-fg-primary">{kcalFaites > 0 ? kcalFaites : kcalPrevues} kcal</strong> seront ajoutées à ta cible nutrition du jour.
           </p>
           {exos.length > 0 && faits < exos.length && <p className="mt-1">Les {exos.length - faits} exercices restants seront comptés comme faits.</p>}
         </div>
         <div className="mt-4 flex gap-2">
-          <button type="button" onClick={() => setFin(false)} className="tap flex-1 rounded-full bg-surface-2 font-medium">
+          <button type="button" onClick={() => setFin(false)} className="tap flex-1 rounded-full bg-surface-default font-medium">
             Annuler
           </button>
-          <button type="button" onClick={valider} disabled={enCours} className="tap flex-1 rounded-full bg-accent font-semibold text-white disabled:opacity-60">
+          <button
+            type="button"
+            onClick={valider}
+            disabled={enCours}
+            className="tap flex-1 rounded-full bg-action-primary font-semibold text-fg-on-brand disabled:opacity-60"
+          >
             {enCours ? "…" : "Terminer la séance"}
           </button>
         </div>

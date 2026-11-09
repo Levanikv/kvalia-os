@@ -12,12 +12,12 @@ export function FormulaireNutrition({ initial }: { initial: ParametresNutrition 
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <section className="rounded-lg border border-border bg-surface-2 p-4">
+      <section className="rounded-lg border border-line-default bg-surface-default p-4">
         <label className="flex items-center justify-between gap-3">
           <span className="text-sm">
             Cible de base (kcal / jour)
             <br />
-            <span className="text-xs text-text-3">Sans séance : maintenance ou déficit</span>
+            <span className="text-xs text-fg-tertiary">Sans séance : maintenance ou déficit</span>
           </span>
           <input
             type="number"
@@ -30,7 +30,7 @@ export function FormulaireNutrition({ initial }: { initial: ParametresNutrition 
               setP({ ...p, cible_kcal: Number(e.target.value) });
               setOk(false);
             }}
-            className="w-28 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm outline-none focus:border-accent"
+            className="w-28 rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-right text-sm outline-none focus:border-action-primary"
           />
         </label>
         <label className="mt-4 flex items-center justify-between gap-3">
@@ -46,7 +46,7 @@ export function FormulaireNutrition({ initial }: { initial: ParametresNutrition 
               setP({ ...p, proteines_g: Number(e.target.value) });
               setOk(false);
             }}
-            className="w-28 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm outline-none focus:border-accent"
+            className="w-28 rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-right text-sm outline-none focus:border-action-primary"
           />
         </label>
         <label className="mt-4 flex items-center justify-between gap-3">
@@ -58,7 +58,7 @@ export function FormulaireNutrition({ initial }: { initial: ParametresNutrition 
               setP({ ...p, ajuster_avec_sport: e.target.checked });
               setOk(false);
             }}
-            className="h-6 w-6 accent-[var(--module-accent)]"
+            className="h-6 w-6 accent-[var(--action-primary)]"
           />
         </label>
       </section>
@@ -71,7 +71,7 @@ export function FormulaireNutrition({ initial }: { initial: ParametresNutrition 
             router.refresh();
           })
         }
-        className="tap rounded-full bg-accent font-semibold text-white"
+        className="tap rounded-full bg-action-primary font-semibold text-fg-on-brand"
       >
         {ok ? "Enregistré ✓" : "Enregistrer"}
       </button>

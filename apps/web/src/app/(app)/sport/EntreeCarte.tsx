@@ -6,14 +6,14 @@ type Props = { href: string; icone: string; titre: string; detail: string; sous?
 /** Point d'entrée vers un sous-module : icône, titre, un chiffre ou un état, une ligne de contexte. */
 export function EntreeCarte({ href, icone, titre, detail, sous, module: mod }: Props) {
   return (
-    <Link href={href} data-module={mod} className="tap block rounded-lg border border-border bg-surface-2 p-4 active:opacity-80">
+    <Link href={href} data-module={mod} className="tap block rounded-lg border border-line-default bg-surface-default p-4 active:opacity-80">
       <div className="flex items-center justify-between">
-        <Icon name={icone} size={22} className="text-accent" />
-        <Icon name="chevron_right" size={18} className="text-text-3" />
+        <Icon name={icone} size={22} className="text-fg-brand" />
+        <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
       </div>
-      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-text-3">{titre}</p>
+      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-fg-tertiary">{titre}</p>
       <p className="mt-0.5 truncate text-lg font-semibold tracking-tight">{detail}</p>
-      {sous && <p className="truncate text-xs text-text-2">{sous}</p>}
+      {sous && <p className="truncate text-xs text-fg-secondary">{sous}</p>}
     </Link>
   );
 }
