@@ -192,7 +192,7 @@ export default async function Page({ searchParams }: Props) {
                           name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
                           size={16}
                           filled={s.etat === "faite"}
-                          className={s.etat === "faite" ? "text-feedback-success-text" : s.type === "boxe" ? "text-[#f0872b]" : "text-fg-brand"}
+                          className={s.etat === "faite" ? "text-feedback-success-text" : s.type === "boxe" ? "text-fg-accent" : "text-fg-brand"}
                         />
                       ))
                     )}

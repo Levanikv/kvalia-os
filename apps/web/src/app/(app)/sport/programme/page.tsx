@@ -176,7 +176,7 @@ export default async function Page() {
             return (
               <div key={n} className="flex flex-1 flex-col items-center gap-1">
                 <span
-                  className={`w-full rounded-sm ${TEINTE[f] ?? "bg-action-primary/45"} ${f === "deload" ? "h-5" : "h-8"} ${n < semaineCourante ? "" : n === semaineCourante ? "ring-2 ring-fg-primary ring-offset-2 ring-offset-surface" : "opacity-60"}`}
+                  className={`w-full rounded-sm ${TEINTE[f] ?? "bg-action-primary/45"} ${f === "deload" ? "h-5" : "h-8"} ${n < semaineCourante ? "" : n === semaineCourante ? "ring-2 ring-fg-primary ring-offset-2 ring-offset-surface-canvas" : "opacity-60"}`}
                   title={`Semaine ${n} · ${libelleFocus(f)}`}
                 />
                 <span className={`text-[9px] tabular-nums ${ici ? "font-semibold text-fg-primary" : "text-fg-tertiary"}`}>{n}</span>
@@ -225,7 +225,7 @@ export default async function Page() {
                         name={faite ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
                         size={18}
                         filled={faite}
-                        className={faite ? "text-feedback-success-text" : s.type === "boxe" ? "text-[#f0872b]" : "text-fg-brand"}
+                        className={faite ? "text-feedback-success-text" : s.type === "boxe" ? "text-fg-accent" : "text-fg-brand"}
                       />
                     </div>
                     <p className="mt-3 line-clamp-2 text-sm font-semibold leading-snug">{s.titre ?? libelleType(s.type)}</p>
@@ -253,7 +253,7 @@ export default async function Page() {
                   <span className="text-[10px] text-fg-tertiary">{j.l}</span>
                   <span className={`flex h-9 w-9 items-center justify-center rounded-full ${salle || boxe ? "bg-surface-brand-subtle" : "bg-surface-sunken"}`}>
                     {salle && <Icon name="fitness_center" size={16} className="text-fg-brand" />}
-                    {boxe && <Icon name="sports_mma" size={16} className="text-[#f0872b]" />}
+                    {boxe && <Icon name="sports_mma" size={16} className="text-fg-accent" />}
                     {!salle && !boxe && <Icon name="bedtime" size={14} className="text-fg-tertiary" />}
                   </span>
                 </li>

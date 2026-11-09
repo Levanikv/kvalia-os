@@ -11,7 +11,7 @@
 | Build | `pnpm --filter @kvalia/ui tokens` · CI : `tokens:check` · `tokens:strict` (contraste bloquant) |
 | CSS | `@kvalia/ui/tokens.css` · Tailwind v4 : `@kvalia/ui/tailwind.css` |
 | TS | `import { brands, modules, cssVar, typeClass } from "@kvalia/ui"` |
-| Contraste | `packages/ui/tokens/CONTRAST.md` (504 vérifications, 7 mini-apps × 2 thèmes) |
+| Contraste | `packages/ui/tokens/CONTRAST.md` (490 vérifications bloquantes avec `--strict` + `border/strong` indicatif, 7 mini-apps × 2 thèmes) |
 
 ---
 
@@ -109,13 +109,15 @@ Unités : tailles, espacements, rayons, flous → `px` ; durées → `ms` ; grai
 | `feedback/*` | `*-feedback-*` | `bg-feedback-danger-subtle text-feedback-danger-text` |
 | `focus/*`, `overlay/*`, `data/*` | `*-focus-*`, `*-overlay-*`, `*-data-*` | `bg-data-protein` |
 | effect styles | `shadow-*` | `shadow-card`, `shadow-floating`, `shadow-brand-glow`, `shadow-step-1…4` |
-| radius (via `globals.css`) | `rounded-sm|md|lg` | → `radius/tag` 10 · `radius/input` 16 · `radius/card` 28 |
+| radius (via `globals.css`) | `rounded-sm|md|lg|xl|2xl|3xl` | → `radius/tag` 10 · `input` 16 · `tile` 24 · `card` 28 · `card-hero` 32 · `sheet` 36 (ordre croissant) |
 
 **Règle d'or : `bg-action-primary` va toujours avec `text-fg-on-brand`, jamais `text-white`.** Le texte sur primary est foncé pour 6 mini-apps sur 7 (blanc seulement pour Entreprise).
 
-Autres rayons, espacements et durées : variables du DS (`rounded-[var(--radius-sheet)]`, `p-[var(--inset-md)]`, `duration-[var(--duration-base)]`). Ils ne sont pas dans le pont généré car leurs noms entrent en collision avec les espaces de noms de Tailwind (`--radius-*`, `--blur-*`).
+Espacements, durées et rayons d'un seul coin : variables du DS (`rounded-t-[var(--radius-sheet)]`, `p-[var(--inset-md)]`, `duration-[var(--duration-base)]`). Ils ne sont pas dans le pont généré car leurs noms entrent en collision avec les espaces de noms de Tailwind (`--radius-*`, `--blur-*`).
 
 Constantes du shell, hors Figma (`globals.css`) : `--tabbar-h` = `--control-xl` (64 px), `--header-h` = 56 px.
+
+Séances de **boxe** : 2ᵉ teinte du module (`text-fg-accent`, `bg-surface-accent` — rouge dans Sport), pour rester distinctes des séances normales (orange `action-primary`).
 
 ### 3.4 Migration depuis les tokens v0
 
@@ -177,4 +179,4 @@ Geist et Geist Mono, chargées par `next/font` dans `apps/web/src/app/layout.tsx
 
 ## 5. Accessibilité
 
-`tokens/CONTRAST.md` vérifie, pour chaque mini-app et chaque thème : textes primaire / secondaire / tertiaire / marque sur les surfaces, `on-brand` sur toutes les variantes d'action, inverse, glass, textes de feedback sur leurs fonds, et l'anneau de focus (3:1). Résultat actuel : **504 / 504 conformes**. Une modification dans Figma qui casserait un de ces contrastes apparaît dans le rapport au prochain build (bloquant avec `tokens:strict`).
+`tokens/CONTRAST.md` vérifie, pour chaque mini-app et chaque thème : textes primaire / secondaire / tertiaire / marque sur les surfaces, `on-brand` sur toutes les variantes d'action, inverse, glass, textes de feedback sur leurs fonds, et l'anneau de focus (3:1). Résultat actuel : **490 / 490 conformes** ; `border/strong` (bordures décoratives, indicatif à 3:1) est sous le seuil dans les 14 combinaisons, ce qui est attendu pour une bordure non fonctionnelle (⚠️ dans le rapport). Une modification dans Figma qui casserait un de ces contrastes apparaît dans le rapport au prochain build (bloquant avec `tokens:strict`).

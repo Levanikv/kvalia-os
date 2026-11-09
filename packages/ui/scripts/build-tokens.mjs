@@ -328,7 +328,7 @@ function buildContrast() {
   const L = [
     `# Rapport de contraste — KVALIA OS`,
     ``,
-    `Généré par \`scripts/build-tokens.mjs\` depuis l'export Figma. ${rows.length} vérifications (${BRANDS.length} mini-apps × 2 thèmes). **Sous le seuil : ${failing.length}.**`,
+    `Généré par \`scripts/build-tokens.mjs\` depuis l'export Figma. ${rows.length} vérifications (${BRANDS.length} mini-apps × 2 thèmes). **Sous le seuil : ${failing.length}** · indicatif sous le seuil (⚠️) : ${rows.filter((r) => r.info && !r.ok).length}.`,
     ``,
     `Seuils : texte 4.5:1 (WCAG 1.4.3 AA), focus 3:1 (1.4.11). \`border/strong\` est indicatif (bordures décoratives). Couleurs translucides composées sur \`surface/canvas\`. \`--strict\` rend ces échecs bloquants.`,
     ``,
@@ -343,12 +343,12 @@ function buildContrast() {
     const cells = BRANDS.flatMap((br) =>
       ["Light", "Dark"].map((th) => {
         const r = rows.find((x) => x.brand === br && x.theme === th && x.f === f && x.b === b);
-        return r ? `${r.ok ? "" : "❌ "}${r.rt.toFixed(1)}` : "—";
+        return r ? `${r.ok ? "" : r.info ? "⚠️ " : "❌ "}${r.rt.toFixed(1)}` : "—";
       }),
     );
     L.push(`| \`${f}\` / \`${b}\` | ${min} | ${cells.join(" | ")} |`);
   }
-  return { md: L.join("\n") + "\n", failing: failing.length, total: rows.length };
+  return { md: L.join("\n") + "\n", failing: failing.length, total: rows.filter((r) => !r.info).length };
 }
 
 // ---------------------------------------------------------------------------

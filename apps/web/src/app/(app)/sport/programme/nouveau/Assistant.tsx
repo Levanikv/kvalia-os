@@ -385,7 +385,7 @@ export function Assistant({ initial, auj, poids, programme, materiels }: Props) 
                             <Icon
                               name={s.genre === "boxe" ? "sports_mma" : "fitness_center"}
                               size={16}
-                              className={s.genre === "boxe" ? "text-[#f0872b]" : "text-fg-brand"}
+                              className={s.genre === "boxe" ? "text-fg-accent" : "text-fg-brand"}
                             />
                             {s.genre === "boxe" ? "Boxe" : s.titre}
                           </span>
@@ -474,7 +474,7 @@ function Pastille({ actif, icone, label, onClick, boxe }: { actif: boolean; icon
       onClick={onClick}
       aria-pressed={actif}
       aria-label={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${actif ? (boxe ? "bg-[#f0872b] text-fg-on-brand" : "bg-action-primary text-fg-on-brand") : "bg-surface-sunken text-fg-tertiary"}`}
+      className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${actif ? (boxe ? "bg-surface-accent text-fg-on-brand" : "bg-action-primary text-fg-on-brand") : "bg-surface-sunken text-fg-tertiary"}`}
     >
       <Icon name={icone} size={20} filled={actif} />
     </button>

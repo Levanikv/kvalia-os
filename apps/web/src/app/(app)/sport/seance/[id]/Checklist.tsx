@@ -144,7 +144,7 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
                 className="tap flex w-16 shrink-0 items-center justify-center active:opacity-70 disabled:opacity-60"
               >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${e.fait ? "border-feedback-success bg-feedback-success text-white" : "border-line-default"}`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${e.fait ? "border-feedback-success bg-feedback-success text-fg-inverse" : "border-line-default"}`}
                 >
                   {e.fait && <Icon name="check" size={20} />}
                 </span>

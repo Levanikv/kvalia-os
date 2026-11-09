@@ -57,7 +57,10 @@ export default async function Page({ searchParams }: Props) {
             </div>
             <div className="flex justify-between">
               <dt className="flex items-center gap-1 text-fg-secondary">
-                <Icon name="local_fire_department" size={16} className="text-[#e5484d]" /> Sport
+                <span data-module="sport" className="contents">
+                  <Icon name="local_fire_department" size={16} className="text-action-primary" />
+                </span>{" "}
+                Sport
               </dt>
               <dd className={`font-medium ${b.brule > 0 ? "text-feedback-success-text" : "text-fg-tertiary"}`}>+{b.brule}</dd>
             </div>

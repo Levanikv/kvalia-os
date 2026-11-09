@@ -63,7 +63,7 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
                   {(m ?? []).slice(0, 3).map((x, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-white" : "bg-feedback-success") : x.type === "boxe" ? (actif ? "bg-white/80" : "bg-[#f0872b]") : actif ? "bg-white/70" : "bg-action-primary"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-fg-on-brand" : "bg-feedback-success") : x.type === "boxe" ? (actif ? "bg-fg-on-brand/80" : "bg-surface-accent") : actif ? "bg-fg-on-brand/70" : "bg-action-primary"}`}
                     />
                   ))}
                 </span>

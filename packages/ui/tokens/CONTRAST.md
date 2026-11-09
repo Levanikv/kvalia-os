@@ -1,6 +1,6 @@
 # Rapport de contraste — KVALIA OS
 
-Généré par `scripts/build-tokens.mjs` depuis l'export Figma. 504 vérifications (7 mini-apps × 2 thèmes). **Sous le seuil : 0.**
+Généré par `scripts/build-tokens.mjs` depuis l'export Figma. 504 vérifications (7 mini-apps × 2 thèmes). **Sous le seuil : 0** · indicatif sous le seuil (⚠️) : 14.
 
 Seuils : texte 4.5:1 (WCAG 1.4.3 AA), focus 3:1 (1.4.11). `border/strong` est indicatif (bordures décoratives). Couleurs translucides composées sur `surface/canvas`. `--strict` rend ces échecs bloquants.
 
@@ -43,4 +43,4 @@ Seuils : texte 4.5:1 (WCAG 1.4.3 AA), focus 3:1 (1.4.11). `border/strong` est in
 | `feedback/info-text` / `feedback/info-subtle` | 4.5 | 8.0 | 9.1 | 8.0 | 9.1 | 8.0 | 9.1 | 8.0 | 9.1 | 8.0 | 9.1 | 8.0 | 9.1 | 8.0 | 9.1 |
 | `focus/ring` / `surface/canvas` | 3 | 3.1 | 13.6 | 3.5 | 10.3 | 3.6 | 12.8 | 5.8 | 10.6 | 6.5 | 9.0 | 4.2 | 11.2 | 4.0 | 9.5 |
 | `focus/ring` / `surface/default` | 3 | 3.4 | 13.2 | 3.8 | 10.0 | 3.9 | 12.4 | 6.3 | 10.3 | 7.1 | 8.7 | 4.6 | 10.8 | 4.3 | 9.2 |
-| `border/strong` / `surface/default` | 3 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 | ❌ 1.8 | ❌ 2.1 |
+| `border/strong` / `surface/default` | 3 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 | ⚠️ 1.8 | ⚠️ 2.1 |

@@ -16,7 +16,7 @@ export function Carte({ titre, icone, href, module: mod, children, vide }: Props
     </div>
   );
   const corps = (
-    <div data-module={mod} className="rounded-lg border border-line-default bg-surface-default p-4">
+    <div data-module={mod} className="rounded-xl border border-line-default bg-surface-default p-4">
       {entete}
       {children ?? <p className="text-sm text-fg-tertiary">{vide}</p>}
     </div>
