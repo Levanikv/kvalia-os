@@ -20,8 +20,12 @@ import type {
 const FOURNISSEUR = "tiime";
 /** Recouvrement à chaque synchro : Tiime complète parfois des transactions après coup (libellé, catégorie). */
 const RECOUVREMENT_JOURS = 10;
-/** Statuts de facture qui ne comptent pas dans le CA (brouillon, annulée). */
-const STATUTS_HORS_CA = new Set(["draft", "cancelled", "canceled"]);
+/**
+ * Factures : un brouillon n'est pas une facture. Une facture numérotée puis annulée l'est par un avoir (montant négatif) :
+ * les deux restent dans le CA et s'annulent. Exclure l'annulée sans exclure son avoir retirerait deux fois le montant.
+ */
+const BROUILLON = "draft";
+const ANNULEE = new Set(["cancelled", "canceled"]);
 
 // ---------------------------------------------------------------------------
 // Jetons Tiime dans `connexions_externes` (lisible par la seule clé service role)
@@ -145,19 +149,28 @@ export function versNoteFrais(n: NoteFraisTiime, userId: string): TablesInsert<"
   };
 }
 
+/** Adresse Tiime : texte, ou objet { street, postal_code, city, country } (forme vue le 11 nov. 2026). */
+export function adresseTiime(v: unknown): string | null {
+  if (typeof v === "string") return texte(v);
+  if (!v || typeof v !== "object") return null;
+  const a = v as Record<string, unknown>;
+  const direct = texte(a.label) ?? texte(a.address);
+  if (direct) return direct;
+  const ville = [texte(a.postal_code), texte(a.city)].filter(Boolean).join(" ");
+  return [texte(a.street), ville].filter(Boolean).join(", ") || null;
+}
+
 /** Trajet : modèle non documenté, on lit les noms connus (création : date, distance, departure_address, arrival_address, round_trip). */
 export function versTrajet(t: TrajetTiime, userId: string): TablesInsert<"trajets"> | null {
   const jour = jourIso(texte(t.date));
   if (!jour) return null;
-  const adresse = (v: unknown) =>
-    texte(v) ?? (v && typeof v === "object" ? texte((v as Record<string, unknown>).label ?? (v as Record<string, unknown>).address) : null);
   return {
     user_id: userId,
     source: "tiime",
     externe_id: String(t.id),
     jour,
-    depart: adresse(t.departure_address),
-    arrivee: texte(t.arrival_company_name) ?? adresse(t.arrival_address),
+    depart: adresseTiime(t.departure_address),
+    arrivee: texte(t.arrival_company_name) ?? adresseTiime(t.arrival_address),
     distance_km: nombre(t.total_distance) ?? nombre(t.distance) ?? 0,
     aller_retour: t.round_trip === true,
     montant: nombre(t.amount) ?? nombre(t.estimated_amount),
@@ -303,7 +316,8 @@ const arrondi = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * Chiffres de l'année pour la SASU, à partir des tables synchronisées.
- * CA facturé = factures émises dans l'année hors brouillons et annulées ; encaissé = celles au statut « paid »
+ * CA facturé = factures numérotées de l'année, avoirs compris (hors brouillons) ; `emises` / `en_attente` ne comptent
+ * ni les avoirs ni les factures annulées ; encaissé = factures au statut « paid »
  * (Tiime ne donne pas la date de paiement dans la liste : on les rattache à l'année d'émission).
  */
 export async function pilotageSasu(db: KvaliaClient, userId: string, annee: number): Promise<PilotageSasu> {
@@ -319,9 +333,12 @@ export async function pilotageSasu(db: KvaliaClient, userId: string, annee: numb
   ]);
   for (const r of [factures, comptes, notes, trajets, connexion]) if (r.error) throw r.error;
 
-  const fact = (factures.data ?? []).filter((f) => !STATUTS_HORS_CA.has(f.statut));
-  const payees = fact.filter((f) => f.statut === "paid");
-  const attente = fact.filter((f) => f.statut !== "paid");
+  // CA = toutes les factures numérotées, avoirs compris (une annulée et son avoir s'annulent).
+  const fact = (factures.data ?? []).filter((f) => f.statut !== BROUILLON);
+  // Factures « vivantes » : ni avoir (montant négatif), ni annulée.
+  const vivantes = fact.filter((f) => Number(f.montant_ht) >= 0 && !ANNULEE.has(f.statut));
+  const payees = vivantes.filter((f) => f.statut === "paid");
+  const attente = vivantes.filter((f) => f.statut !== "paid");
   const somme = <T>(xs: T[], f: (x: T) => number | string | null) => arrondi(xs.reduce((a, x) => a + Number(f(x) ?? 0), 0));
 
   const comptesSasu = comptes.data ?? [];
@@ -348,7 +365,7 @@ export async function pilotageSasu(db: KvaliaClient, userId: string, annee: numb
     annee,
     derniere_sync: connexion.data?.derniere_sync ?? null,
     factures: {
-      emises: fact.length,
+      emises: vivantes.length,
       ca_facture_ht: somme(fact, (f) => f.montant_ht),
       ca_facture_ttc: somme(fact, (f) => f.montant_ttc),
       payees: payees.length,
