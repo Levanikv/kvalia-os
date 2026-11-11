@@ -246,6 +246,13 @@ describe("pilotageSasu", () => {
     expect(p.derniere_sync).toBe(MAINTENANT.toISOString());
   });
 
+  it("côté app (connexions_externes illisible par RLS), la date de synchro vient du compte pro", async () => {
+    const db = fausseDb({});
+    await synchroniserTiime(db, USER, fauxTiime(), { maintenant: MAINTENANT });
+    db.tables.connexions_externes = [];
+    expect((await pilotageSasu(db, USER, 2026)).derniere_sync).toBe(MAINTENANT.toISOString());
+  });
+
   it("sans données : zéros et solde inconnu", async () => {
     const p = await pilotageSasu(fausseDb({}), USER, 2026);
     expect(p.banque.solde).toBeNull();

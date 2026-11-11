@@ -35,7 +35,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /finances/budgets             Budgets par catégorie, reste à dépenser
 │   └── /finances/comptes             Comptes, dernière sync, consentement
 ├── /entreprise           Mini-app Entreprise — la SASU (Tiime)
-│   ├── /entreprise                   Pilotage : CA encaissé / facturé, charges, jauge « encore passable en frais », projection fin d'année
+│   ├── /entreprise                   Pilotage (données Tiime, outil pilotage_sasu) : CA facturé / encaissé, en attente, compte pro, notes de frais, IK · ?annee= — à venir : jauge « encore passable en frais », projection fin d'année
 │   ├── /entreprise/factures          Factures et clients (émises, payées, en retard) · ?annee=
 │   ├── /entreprise/charges           Dépenses pro, catégorie déductible, justificatif lié (→ /documents/[id])
 │   ├── /entreprise/echeances         TVA, URSSAF, IR, CFE… avec montants estimés et rappels

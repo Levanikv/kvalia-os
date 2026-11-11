@@ -314,6 +314,11 @@ export type PilotageSasu = {
 
 const arrondi = (n: number) => Math.round(n * 100) / 100;
 
+function derniereSyncComptes(comptes: { derniere_sync: string | null }[]): string | null {
+  const dates = comptes.map((c) => c.derniere_sync).filter((d): d is string => !!d);
+  return dates.length ? dates.reduce((a, b) => (new Date(b) > new Date(a) ? b : a)) : null;
+}
+
 /**
  * Chiffres de l'année pour la SASU, à partir des tables synchronisées.
  * CA facturé = factures numérotées de l'année, avoirs compris (hors brouillons) ; `emises` / `en_attente` ne comptent
@@ -326,7 +331,7 @@ export async function pilotageSasu(db: KvaliaClient, userId: string, annee: numb
 
   const [factures, comptes, notes, trajets, connexion] = await Promise.all([
     db.from("factures").select("statut, montant_ht, montant_ttc").eq("user_id", userId).gte("emise_le", debut).lte("emise_le", fin),
-    db.from("comptes").select("id, solde, actif").eq("user_id", userId).eq("perimetre", "sasu"),
+    db.from("comptes").select("id, solde, actif, derniere_sync").eq("user_id", userId).eq("perimetre", "sasu"),
     db.from("notes_frais").select("montant, statut_paiement, statut").eq("user_id", userId).gte("jour", debut).lte("jour", fin),
     db.from("trajets").select("distance_km, montant").eq("user_id", userId).gte("jour", debut).lte("jour", fin),
     db.from("connexions_externes").select("derniere_sync").eq("user_id", userId).eq("fournisseur", FOURNISSEUR).maybeSingle(),
@@ -363,7 +368,8 @@ export async function pilotageSasu(db: KvaliaClient, userId: string, annee: numb
 
   return {
     annee,
-    derniere_sync: connexion.data?.derniere_sync ?? null,
+    // `connexions_externes` n'est lisible que par l'agent (service role) : côté app, la date vient des comptes synchronisés.
+    derniere_sync: connexion.data?.derniere_sync ?? derniereSyncComptes(comptesSasu),
     factures: {
       emises: vivantes.length,
       ca_facture_ht: somme(fact, (f) => f.montant_ht),
