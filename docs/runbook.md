@@ -58,6 +58,13 @@ Voir `.env.example`. Côté Railway : `web` a les deux `NEXT_PUBLIC_*` + `PORT=3
 
 Rotation du `MCP_TOKEN` : nouvelle valeur dans Railway, puis mettre à jour l'URL du connecteur dans claude.ai (Réglages → Connecteurs).
 
+## Tiime (Entreprise, ADR 0010)
+
+- Variables du service **agent** uniquement : `TIIME_EMAIL`, `TIIME_PASSWORD` (à saisir par Levani dans Railway, jamais dans le chat ni dans un commit), `TIIME_SOCIETE_ID=626568`, `TIIME_APP_VERSION` (optionnel).
+- Le compte a la double authentification (SMS). **Première connexion** en local : `pnpm --filter @kvalia/agent tiime:connexion` (le code se tape dans le terminal, puis une synchro tourne). Le jeton de rafraîchissement est stocké dans `connexions_externes` (RLS sans politique : service role seulement), donc l'agent Railway en profite sans nouveau code.
+- **Reconnexion depuis le téléphone** : dans claude.ai, « reconnecte Tiime » → `connecter_tiime` (SMS) → donner le code → `valider_code_tiime`. Le parcours SMS vit en mémoire du processus agent : un redéploiement entre les deux étapes oblige à recommencer.
+- Synchro : outil `synchroniser_tiime` (lecture seule ; relancer est sans risque, upsert sur l'identifiant Tiime). Chiffres : `pilotage_sasu`.
+
 ## Pannes connues
 
 | Symptôme                                            | Cause                                 | Remède                                             |
@@ -68,6 +75,8 @@ Rotation du `MCP_TOKEN` : nouvelle valeur dans Railway, puis mettre à jour l'UR
 | `No start command detected` sur Railway             | pas de `railpack.json` au bon endroit | voir Config de build                               |
 | `vue_jour` vide côté agent                          | `auth.uid()` null avec service role   | passer `p_user_id`                                 |
 | Push sans déploiement                               | GitHub App pas liée au service        | `connect-service-source`                           |
+| Outil Tiime : `mfa_requis` / `connexion_refusee`    | jeton de rafraîchissement expiré      | `connecter_tiime` puis `valider_code_tiime`        |
+| Synchro Tiime : avertissement 404 ou 403            | Tiime a changé son API interne        | comparer avec eko/mcp-tiime `docs/api-tiime.md`    |
 
 ## Sauvegardes et retour arrière
 

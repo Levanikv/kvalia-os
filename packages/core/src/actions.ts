@@ -19,9 +19,25 @@ import {
   seancePrincipale,
   terminerSeance,
 } from "./sport";
+import { pilotageSasu, synchroniserTiime } from "./entreprise";
+import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 
-export type ContexteOutil = { db: KvaliaClient; userId: string };
+/**
+ * `tiime` n'existe que côté agent (secrets Tiime, ADR 0010) ; l'app web lit les tables synchronisées.
+ */
+export type ContexteOutil = { db: KvaliaClient; userId: string; tiime?: { auth: AuthTiime; client: ClientTiime } };
 type Ctx = ContexteOutil;
+
+function tiimeOuErreur(ctx: Ctx): NonNullable<Ctx["tiime"]> {
+  if (!ctx.tiime) throw new Error("Tiime n'est joignable que par l'agent (secrets côté agent) : passer par l'agent KVALIA OS");
+  return ctx.tiime;
+}
+
+function reponseConnexion(defi: DefiConnexion | null) {
+  return defi
+    ? { statut: "code_requis" as const, methode: defi.methode || null, message: defi.message || "Tiime attend un code de vérification" }
+    : { statut: "connecte" as const, methode: null, message: "Connecté à Tiime" };
+}
 
 async function listeActiveId(ctx: Ctx): Promise<string> {
   const { data } = await ctx.db
@@ -310,6 +326,27 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "remplacer_exercice": {
       const e = entree as ToolInput<"remplacer_exercice">;
       return (await remplacerExercice(ctx.db, ctx.userId, e.exercice_seance_id, e.nouvel_exercice_id, e.portee)) as ToolOutput<T>;
+    }
+
+    // ---------- Entreprise (Tiime, lecture seule) ----------
+    case "connecter_tiime": {
+      const e = entree as ToolInput<"connecter_tiime">;
+      return reponseConnexion(await tiimeOuErreur(ctx).auth.demarrerConnexion(e.methode)) as ToolOutput<T>;
+    }
+
+    case "valider_code_tiime": {
+      const e = entree as ToolInput<"valider_code_tiime">;
+      return reponseConnexion(await tiimeOuErreur(ctx).auth.validerCode(e.code)) as ToolOutput<T>;
+    }
+
+    case "synchroniser_tiime": {
+      const e = entree as ToolInput<"synchroniser_tiime">;
+      return (await synchroniserTiime(ctx.db, ctx.userId, tiimeOuErreur(ctx).client, { depuis: e.depuis })) as ToolOutput<T>;
+    }
+
+    case "pilotage_sasu": {
+      const e = entree as ToolInput<"pilotage_sasu">;
+      return (await pilotageSasu(ctx.db, ctx.userId, e.annee ?? Number(aujourdhuiIso().slice(0, 4)))) as ToolOutput<T>;
     }
   }
   throw new Error(`Outil inconnu : ${String(nom)}`);

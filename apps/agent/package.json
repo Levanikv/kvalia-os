@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "seed:exercices": "node scripts/seed-exercices.mjs",
+    "tiime:connexion": "tsx scripts/tiime-connexion.ts",
     "lint": "biome lint ."
   },
   "dependencies": {

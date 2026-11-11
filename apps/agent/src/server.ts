@@ -13,6 +13,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createServiceClient, executer, tools, toolsAvecConfirmation, type ToolName } from "@kvalia/core";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { contexteTiime } from "./tiime";
 
 // Charge le .env à la racine du mono-repo (apps/agent/src → ../../../.env). En prod les variables viennent de l'hébergeur.
 const ENV_RACINE = fileURLToPath(new URL("../../../.env", import.meta.url));
@@ -43,9 +44,19 @@ function messageErreur(err: unknown): string {
   return String(err);
 }
 
+/** Entrées à ne pas journaliser telles quelles dans `appels_outils` (codes de vérification). */
+const CHAMPS_MASQUES: Partial<Record<ToolName, string[]>> = { valider_code_tiime: ["code"] };
+
+function masquer(nom: ToolName, entree: unknown): unknown {
+  const champs = CHAMPS_MASQUES[nom];
+  if (!champs || !entree || typeof entree !== "object") return entree;
+  return Object.fromEntries(Object.entries(entree).map(([k, v]) => [k, champs.includes(k) ? "***" : v]));
+}
+
 function creerServeurMcp() {
   const mcp = new McpServer({ name: "kvalia-os", version: "0.0.1" });
   const db = createServiceClient();
+  const tiime = contexteTiime(db, USER_ID) ?? undefined;
 
   for (const nom of Object.keys(tools) as ToolName[]) {
     const def = tools[nom];
@@ -60,12 +71,12 @@ function creerServeurMcp() {
         const debut = Date.now();
         try {
           const entree = def.input.parse(args ?? {});
-          const sortie = await executer(nom, entree as never, { db, userId: USER_ID });
+          const sortie = await executer(nom, entree as never, { db, userId: USER_ID, tiime });
           await db.from("appels_outils").insert({
             user_id: USER_ID,
             outil: nom,
             canal: "claude",
-            entree: entree as never,
+            entree: masquer(nom, entree) as never,
             sortie: sortie as never,
             succes: true,
             duree_ms: Date.now() - debut,
@@ -77,7 +88,7 @@ function creerServeurMcp() {
             user_id: USER_ID,
             outil: nom,
             canal: "claude",
-            entree: args as never,
+            entree: masquer(nom, args) as never,
             sortie: { erreur: message },
             succes: false,
             duree_ms: Date.now() - debut,

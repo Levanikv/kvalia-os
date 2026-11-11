@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-15 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+19 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -231,3 +231,58 @@ Remplace un exercice d'une séance par un autre (id du référentiel, voir equiv
 - `nouveau` : string
 - `nom` : string
 - `portee` : `seance` · `programme`
+
+## `connecter_tiime`
+
+Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime envoie alors un code par SMS à Levani : lui demander ce code, puis appeler valider_code_tiime. Ne jamais demander son mot de passe.
+
+**Entrée**
+- `methode` : `sms` · `email` — défaut `"sms"` — Canal du code de vérification ; sms par défaut
+
+**Sortie**
+- `statut` : `connecte` · `code_requis`
+- `methode` : string | null
+- `message` : string
+
+## `valider_code_tiime`
+
+Termine la connexion Tiime lancée par connecter_tiime avec le code reçu par SMS (ou e-mail). Si Tiime refuse le code, redemander le code à Levani.
+
+**Entrée**
+- `code` : string (regex) — Code de vérification reçu par Levani
+
+**Sortie**
+- `statut` : `connecte` · `code_requis`
+- `methode` : string | null
+- `message` : string
+
+## `synchroniser_tiime`
+
+Rapatrie depuis Tiime (lecture seule, rien n'est modifié dans Tiime) : compte pro et ses transactions, factures émises avec leur statut, notes de frais, trajets d'indemnités kilométriques. À appeler avant de répondre sur les chiffres de la SASU si la dernière synchro date de plus d'un jour, ou quand Levani le demande. Sans `depuis`, reprend depuis la dernière synchro (ou le 1er janvier de l'année précédente la première fois).
+
+**Entrée**
+- `depuis` : string (date) (optionnel) — Date de départ des transactions (YYYY-MM-DD)
+
+**Sortie**
+- `depuis` : string
+- `comptes` : nombre
+- `transactions` : nombre
+- `factures` : nombre
+- `notes_frais` : nombre
+- `trajets` : nombre
+- `avertissements` : liste de string
+
+## `pilotage_sasu`
+
+Chiffres de la SASU sur une année à partir des données Tiime synchronisées : CA facturé (HT/TTC), encaissé, factures en attente, solde et flux du compte pro, dépenses sans justificatif, notes de frais (dont à rembourser), indemnités kilométriques. Regarder `derniere_sync` : si elle est ancienne, proposer synchroniser_tiime. Rappeler que ce n'est pas un avis comptable.
+
+**Entrée**
+- `annee` : entier (optionnel) — Année civile ; par défaut l'année en cours
+
+**Sortie**
+- `annee` : nombre
+- `derniere_sync` : string | null
+- `factures` : objet { emises, ca_facture_ht, ca_facture_ttc, payees, encaisse_ttc, en_attente, en_attente_ttc }
+- `banque` : objet { solde, entrees, sorties, operations, sans_justificatif }
+- `notes_frais` : objet { nombre, montant, a_rembourser }
+- `indemnites_km` : objet { trajets, km, montant }

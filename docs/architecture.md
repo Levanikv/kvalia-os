@@ -58,4 +58,4 @@ Le détail des colonnes est dans `packages/core/src/database.types.ts` (génér�
 
 ## Ce qui vient (ne pas construire avant l'ADR)
 
-Multi-utilisateur + OAuth MCP · Service worker / hors-ligne · Passkeys · Orchestrateur (Claude Agent SDK) pour les jobs du matin · Siri / Telegram / Alexa · Finances (Enable Banking) · Entreprise (Tiime).
+Multi-utilisateur + OAuth MCP · Service worker / hors-ligne · Passkeys · Orchestrateur (Claude Agent SDK) pour les jobs du matin · Siri / Telegram / Alexa · Finances (Enable Banking) · Entreprise : écriture vers Tiime (la lecture est faite, ADR 0010).

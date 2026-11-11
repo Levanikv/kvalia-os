@@ -210,6 +210,63 @@ export const tools = {
     input: z.object({ exercice_seance_id: z.string().uuid(), nouvel_exercice_id: z.string(), portee: z.enum(["seance", "programme"]).default("seance") }),
     output: z.object({ remplaces: z.number(), ancien: z.string(), nouveau: z.string(), nom: z.string(), portee: z.enum(["seance", "programme"]) }),
   },
+
+  // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
+  connecter_tiime: {
+    description:
+      "Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime envoie alors un code par SMS à Levani : lui demander ce code, puis appeler valider_code_tiime. Ne jamais demander son mot de passe.",
+    input: z.object({ methode: z.enum(["sms", "email"]).default("sms").describe("Canal du code de vérification ; sms par défaut") }),
+    output: z.object({ statut: z.enum(["connecte", "code_requis"]), methode: z.string().nullable(), message: z.string() }),
+  },
+
+  valider_code_tiime: {
+    description:
+      "Termine la connexion Tiime lancée par connecter_tiime avec le code reçu par SMS (ou e-mail). Si Tiime refuse le code, redemander le code à Levani.",
+    input: z.object({
+      code: z
+        .string()
+        .regex(/^\d{4,8}$/, "code à 4-8 chiffres")
+        .describe("Code de vérification reçu par Levani"),
+    }),
+    output: z.object({ statut: z.enum(["connecte", "code_requis"]), methode: z.string().nullable(), message: z.string() }),
+  },
+
+  synchroniser_tiime: {
+    description:
+      "Rapatrie depuis Tiime (lecture seule, rien n'est modifié dans Tiime) : compte pro et ses transactions, factures émises avec leur statut, notes de frais, trajets d'indemnités kilométriques. À appeler avant de répondre sur les chiffres de la SASU si la dernière synchro date de plus d'un jour, ou quand Levani le demande. Sans `depuis`, reprend depuis la dernière synchro (ou le 1er janvier de l'année précédente la première fois).",
+    input: z.object({ depuis: z.string().date().optional().describe("Date de départ des transactions (YYYY-MM-DD)") }),
+    output: z.object({
+      depuis: z.string(),
+      comptes: z.number(),
+      transactions: z.number(),
+      factures: z.number(),
+      notes_frais: z.number(),
+      trajets: z.number(),
+      avertissements: z.array(z.string()),
+    }),
+  },
+
+  pilotage_sasu: {
+    description:
+      "Chiffres de la SASU sur une année à partir des données Tiime synchronisées : CA facturé (HT/TTC), encaissé, factures en attente, solde et flux du compte pro, dépenses sans justificatif, notes de frais (dont à rembourser), indemnités kilométriques. Regarder `derniere_sync` : si elle est ancienne, proposer synchroniser_tiime. Rappeler que ce n'est pas un avis comptable.",
+    input: z.object({ annee: z.number().int().min(2000).max(2100).optional().describe("Année civile ; par défaut l'année en cours") }),
+    output: z.object({
+      annee: z.number(),
+      derniere_sync: z.string().nullable(),
+      factures: z.object({
+        emises: z.number(),
+        ca_facture_ht: z.number(),
+        ca_facture_ttc: z.number(),
+        payees: z.number(),
+        encaisse_ttc: z.number(),
+        en_attente: z.number(),
+        en_attente_ttc: z.number(),
+      }),
+      banque: z.object({ solde: z.number().nullable(), entrees: z.number(), sorties: z.number(), operations: z.number(), sans_justificatif: z.number() }),
+      notes_frais: z.object({ nombre: z.number(), montant: z.number(), a_rembourser: z.number() }),
+      indemnites_km: z.object({ trajets: z.number(), km: z.number(), montant: z.number().nullable() }),
+    }),
+  },
 } as const;
 
 export type ToolName = keyof typeof tools;
