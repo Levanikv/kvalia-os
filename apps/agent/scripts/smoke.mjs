@@ -16,6 +16,8 @@ const appels = [
   ["ajouter_tache", { titre: "Appeler le garage", due: "demain", priorite: "haute" }],
   ["agenda_du_jour", {}],
   ["brief", {}],
+  // Lecture en base seulement : ne contacte pas Tiime (pas de SMS, pas de synchro).
+  ["pilotage_sasu", {}],
 ];
 
 async function appeler(nom, args, id) {

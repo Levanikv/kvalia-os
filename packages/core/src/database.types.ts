@@ -174,6 +174,45 @@ export type Database = {
         }
         Relationships: []
       }
+      connexions_externes: {
+        Row: {
+          acces_expire_le: string | null
+          created_at: string
+          derniere_sync: string | null
+          fournisseur: string
+          id: string
+          jeton_acces: string | null
+          jeton_rafraichissement: string | null
+          meta: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acces_expire_le?: string | null
+          created_at?: string
+          derniere_sync?: string | null
+          fournisseur: string
+          id?: string
+          jeton_acces?: string | null
+          jeton_rafraichissement?: string | null
+          meta?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acces_expire_le?: string | null
+          created_at?: string
+          derniere_sync?: string | null
+          fournisseur?: string
+          id?: string
+          jeton_acces?: string | null
+          jeton_rafraichissement?: string | null
+          meta?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -411,6 +450,65 @@ export type Database = {
             columns: ["substitut_de"]
             isOneToOne: false
             referencedRelation: "exercices_ref"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factures: {
+        Row: {
+          client: string | null
+          created_at: string
+          document_id: string | null
+          emise_le: string | null
+          externe_id: string
+          id: string
+          montant_ht: number
+          montant_ttc: number
+          numero: string | null
+          source: Database["public"]["Enums"]["compte_source"]
+          statut: string
+          titre: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client?: string | null
+          created_at?: string
+          document_id?: string | null
+          emise_le?: string | null
+          externe_id: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero?: string | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          statut: string
+          titre?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client?: string | null
+          created_at?: string
+          document_id?: string | null
+          emise_le?: string | null
+          externe_id?: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero?: string | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          statut?: string
+          titre?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -668,6 +766,57 @@ export type Database = {
           etat?: Database["public"]["Enums"]["liste_etat"]
           faite_le?: string | null
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes_frais: {
+        Row: {
+          commentaire: string | null
+          created_at: string
+          externe_id: string
+          id: string
+          jour: string | null
+          montant: number
+          montant_tva: number
+          nom: string | null
+          source: Database["public"]["Enums"]["compte_source"]
+          statut: string | null
+          statut_paiement: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commentaire?: string | null
+          created_at?: string
+          externe_id: string
+          id?: string
+          jour?: string | null
+          montant?: number
+          montant_tva?: number
+          nom?: string | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          statut?: string | null
+          statut_paiement?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commentaire?: string | null
+          created_at?: string
+          externe_id?: string
+          id?: string
+          jour?: string | null
+          montant?: number
+          montant_tva?: number
+          nom?: string | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          statut?: string | null
+          statut_paiement?: string | null
+          type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1185,8 +1334,60 @@ export type Database = {
           },
         ]
       }
+      trajets: {
+        Row: {
+          aller_retour: boolean
+          arrivee: string | null
+          brut: Json | null
+          commentaire: string | null
+          created_at: string
+          depart: string | null
+          distance_km: number
+          externe_id: string
+          id: string
+          jour: string
+          montant: number | null
+          source: Database["public"]["Enums"]["compte_source"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aller_retour?: boolean
+          arrivee?: string | null
+          brut?: Json | null
+          commentaire?: string | null
+          created_at?: string
+          depart?: string | null
+          distance_km?: number
+          externe_id: string
+          id?: string
+          jour: string
+          montant?: number | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aller_retour?: boolean
+          arrivee?: string | null
+          brut?: Json | null
+          commentaire?: string | null
+          created_at?: string
+          depart?: string | null
+          distance_km?: number
+          externe_id?: string
+          id?: string
+          jour?: string
+          montant?: number | null
+          source?: Database["public"]["Enums"]["compte_source"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
+          categorie_externe: string | null
           categorie_id: string | null
           categorise_par: Database["public"]["Enums"]["categorise_par"] | null
           compte_id: string
@@ -1199,11 +1400,13 @@ export type Database = {
           libelle: string
           libelle_brut: string | null
           montant: number
+          nb_justificatifs: number | null
           recurrente: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          categorie_externe?: string | null
           categorie_id?: string | null
           categorise_par?: Database["public"]["Enums"]["categorise_par"] | null
           compte_id: string
@@ -1216,11 +1419,13 @@ export type Database = {
           libelle: string
           libelle_brut?: string | null
           montant: number
+          nb_justificatifs?: number | null
           recurrente?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          categorie_externe?: string | null
           categorie_id?: string | null
           categorise_par?: Database["public"]["Enums"]["categorise_par"] | null
           compte_id?: string
@@ -1233,6 +1438,7 @@ export type Database = {
           libelle?: string
           libelle_brut?: string | null
           montant?: number
+          nb_justificatifs?: number | null
           recurrente?: boolean
           updated_at?: string
           user_id?: string

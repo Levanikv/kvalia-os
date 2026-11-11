@@ -161,6 +161,26 @@ export function fausseDb(tables: Tables) {
         };
         return sel;
       },
+      /** upsert(lignes, { onConflict: "a,b" }) : fusionne sur les colonnes de conflit, sinon insère (comme PostgREST). */
+      upsert(v: Ligne | Ligne[], opts?: { onConflict?: string }) {
+        const cles = (opts?.onConflict ?? "id").split(",").map((c) => c.trim());
+        const touches: Ligne[] = [];
+        for (const r of Array.isArray(v) ? v : [v]) {
+          const existante = get(table).find((l) => cles.every((c) => l[c] === r[c]));
+          if (existante) {
+            Object.assign(existante, r);
+            touches.push(existante);
+          } else {
+            const nouvelle = { id: randomUUID(), created_at: new Date().toISOString(), ...(DEFAUTS[table] ?? {}), ...r };
+            get(table).push(nouvelle);
+            touches.push(nouvelle);
+          }
+        }
+        return {
+          select: () => ({ single: () => Promise.resolve({ data: touches[0], error: null }), then: (res: any) => res({ data: touches, error: null }) }),
+          then: (res: any) => res({ error: null }),
+        };
+      },
       update(patch: Ligne) {
         const appliquer = () => {
           const touches: Ligne[] = [];

@@ -104,7 +104,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 - Échéancier fiscal et social avec montants estimés, rappels 15 jours avant.
 - Simulateur what-if : facturer X de plus, passer Y en frais, se verser Z → effet sur le net et l'impôt.
 - Conseils de l'agent : questions en langage naturel (« je peux passer mon vélo en frais ? »), **avec le disclaimer** : ce n'est pas un comptable, les chiffres se valident avec le sien.
-- Source : Tiime (CSV, ou API interne via SDK communautaire), factures uploadées dans Documents (type `sasu`).
+- Source : Tiime, par son API interne en lecture seule (ADR 0010) — synchro par l'agent vers `comptes`/`transactions` (périmètre `sasu`), `factures`, `notes_frais`, `trajets` ; outils `synchroniser_tiime`, `pilotage_sasu`. Factures uploadées dans Documents (type `sasu`).
 
 ## 4 flux clés (à maquetter en FigJam)
 
