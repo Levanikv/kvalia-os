@@ -2,17 +2,20 @@
 /**
  * Première connexion à Tiime depuis le terminal (ADR 0010), puis une synchro pour vérifier.
  * Lit TIIME_EMAIL / TIIME_PASSWORD / TIIME_SOCIETE_ID et la clé service role dans le .env racine.
- * Le code SMS est tapé ici, dans ton terminal ; le jeton de rafraîchissement part dans `connexions_externes`
+ * La vérification (notification dans l'app Tiime, ou code SMS / e-mail) se fait ici, dans ton terminal ; le jeton de rafraîchissement part dans `connexions_externes`
  * (lisible par l'agent seul), et l'agent sur Railway s'en sert ensuite sans redemander de code.
  *
- * Usage : pnpm --filter @kvalia/agent tiime:connexion            (connexion + synchro)
- *         pnpm --filter @kvalia/agent tiime:connexion -- --email (code par e-mail au lieu du SMS)
+ * Usage : pnpm --filter @kvalia/agent tiime:connexion            (méthode proposée par Tiime, puis synchro)
+ *         pnpm --filter @kvalia/agent tiime:connexion -- --sms   (forcer le code SMS ; --email, --push aussi)
+ *         pnpm --filter @kvalia/agent tiime:synchro              (synchro seule avec le jeton enregistré, sans mot de passe)
  */
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
-import { createServiceClient, ErreurTiime, synchroniserTiime } from "@kvalia/core";
+import { aujourdhuiIso, createServiceClient, ErreurTiime, pilotageSasu, synchroniserTiime } from "@kvalia/core";
 import { contexteTiime } from "../src/tiime";
 
 const ENV_RACINE = fileURLToPath(new URL("../../../.env", import.meta.url));
@@ -20,22 +23,29 @@ if (existsSync(ENV_RACINE)) process.loadEnvFile(ENV_RACINE);
 
 const userId = process.env.KVALIA_USER_ID;
 if (!userId) throw new Error("KVALIA_USER_ID manquant dans .env");
-for (const v of ["TIIME_EMAIL", "TIIME_PASSWORD", "TIIME_SOCIETE_ID"]) if (!process.env[v]) throw new Error(`${v} manquant dans .env`);
+const synchroSeule = process.argv.includes("--synchro");
+const requises = synchroSeule ? ["TIIME_SOCIETE_ID"] : ["TIIME_EMAIL", "TIIME_PASSWORD", "TIIME_SOCIETE_ID"];
+for (const v of requises) if (!process.env[v]) throw new Error(`${v} manquant dans .env`);
 
 const db = createServiceClient();
 const tiime = contexteTiime(db, userId);
 if (!tiime) throw new Error("TIIME_SOCIETE_ID invalide");
-const methode = process.argv.includes("--email") ? "email" : "sms";
+const methode = ["push", "sms", "email"].find((m) => process.argv.includes(`--${m}`));
 
 const rl = createInterface({ input: stdin, output: stdout });
 try {
-  let defi = await tiime.auth.demarrerConnexion(methode);
+  let defi = synchroSeule ? null : await tiime.auth.demarrerConnexion(methode);
   while (defi) {
     console.log(`\nTiime : ${defi.message}`);
-    const code = (await rl.question(`Code reçu (${defi.methode || methode}) : `)).trim();
-    defi = await tiime.auth.validerCode(code);
+    if (defi.attend_code) {
+      const code = (await rl.question(`Code reçu (${defi.methode}) : `)).trim();
+      defi = await tiime.auth.validerCode(code);
+    } else {
+      await rl.question("Valide la notification dans l'app Tiime sur ton iPhone, puis appuie sur Entrée… ");
+      defi = await tiime.auth.validerCode();
+    }
   }
-  console.log("✓ Connecté à Tiime, jeton de rafraîchissement enregistré.");
+  if (!synchroSeule) console.log("✓ Connecté à Tiime, jeton de rafraîchissement enregistré.");
 
   const societes = await tiime.client.societes();
   const societe = societes.find((s) => s.id === tiime.client.societeId);
@@ -45,8 +55,17 @@ try {
   console.log("… synchro (lecture seule)");
   const bilan = await synchroniserTiime(db, userId, tiime.client);
   console.log(JSON.stringify(bilan, null, 2));
+  const annee = Number(aujourdhuiIso().slice(0, 4));
+  console.log(`… pilotage ${annee}`);
+  console.log(JSON.stringify(await pilotageSasu(db, userId, annee), null, 2));
 } catch (err) {
   console.error(err instanceof ErreurTiime ? `✗ Tiime (${err.code}) : ${err.message}` : err);
+  if (err instanceof ErreurTiime && err.html) {
+    // Pour adapter le parcours : la page telle que Tiime l'a servie (contient un état de session à usage unique).
+    const fichier = join(tmpdir(), "tiime-page-non-geree.html");
+    writeFileSync(fichier, err.html, { mode: 0o600 });
+    console.error(`  Page enregistrée dans ${fichier}`);
+  }
   process.exitCode = 1;
 } finally {
   rl.close();

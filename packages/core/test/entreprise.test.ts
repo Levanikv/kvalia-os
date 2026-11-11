@@ -29,7 +29,7 @@ function fauxTiime(refus: string[] = []) {
     transactions: async (_id: number, depuis?: string) => {
       depuisDemandes.push(depuis);
       return [
-        { id: 1, transaction_date: "2026-10-30", wording: "VIR CLIENT ACME", amount: 14400, count_documents: 0, count_invoices: 1 },
+        { id: 1, transaction_date: "2026-10-30", wording: "VIR CLIENT ACME", amount: 6000, count_documents: 0, count_invoices: 1 },
         {
           id: 2,
           transaction_date: "2026-11-02",
@@ -43,18 +43,46 @@ function fauxTiime(refus: string[] = []) {
       ];
     },
     factures: async () => [
+      // cas réel : facture n°1 annulée par l'avoir n°3 puis refacturée (n°4), une facture envoyée non payée, un brouillon
       {
-        id: 27430462,
+        id: 1,
+        compiled_number: "2026-000001",
+        status: "cancelled",
+        emission_date: "2026-07-28",
+        client_name: "ACME",
+        total_excluding_taxes: 3000,
+        total_including_taxes: 3600,
+      },
+      {
+        id: 3,
+        compiled_number: "2026-000003",
+        status: "saved",
+        emission_date: "2026-09-14",
+        client_name: "ACME",
+        total_excluding_taxes: -3000,
+        total_including_taxes: -3600,
+      },
+      {
+        id: 4,
+        compiled_number: "2026-000004",
+        status: "paid",
+        emission_date: "2026-09-14",
+        client_name: "ACME",
+        total_excluding_taxes: 3000,
+        total_including_taxes: 3600,
+      },
+      {
+        id: 101,
         compiled_number: "F-008",
-        title: "Product Design System",
+        title: "Mission design",
         status: "paid",
         emission_date: "2026-10-28",
         client_name: "ACME",
-        total_excluding_taxes: 12000,
-        total_including_taxes: 14400,
+        total_excluding_taxes: 5000,
+        total_including_taxes: 6000,
       },
       {
-        id: 27430463,
+        id: 102,
         compiled_number: "F-009",
         status: "sent",
         emission_date: "2026-11-05",
@@ -62,7 +90,7 @@ function fauxTiime(refus: string[] = []) {
         total_excluding_taxes: 1000,
         total_including_taxes: 1200,
       },
-      { id: 27430464, status: "draft", emission_date: "2026-11-10", total_excluding_taxes: 999, total_including_taxes: 999 },
+      { id: 103, status: "draft", emission_date: "2026-11-10", total_excluding_taxes: 999, total_including_taxes: 999 },
     ],
     notesFrais: async () => {
       refuser("notes");
@@ -88,7 +116,7 @@ function fauxTiime(refus: string[] = []) {
       ];
     },
     trajets: async () => [
-      { id: 501, date: "2026-10-03", distance: 42, departure_address: "Massy", arrival_company_name: "ACME", round_trip: true, amount: 25.3 },
+      { id: 501, date: "2026-10-03", distance: 42, departure_address: "Paris", arrival_company_name: "ACME", round_trip: true, amount: 25.3 },
       { id: 502, date: "pas une date", distance: 10 },
     ],
   };
@@ -144,6 +172,22 @@ describe("conversions Tiime", () => {
       arrivee: "Lyon",
       montant: null,
     });
+    // forme réelle de Tiime : adresses en objet, montant estimé par Tiime
+    expect(
+      versTrajet(
+        {
+          id: 2,
+          date: "2026-10-30",
+          distance: 50,
+          round_trip: true,
+          estimated_amount: 20.5,
+          departure_address: { street: "1 rue de l'Exemple", postal_code: "75001", city: "PARIS", country: "FR" },
+          arrival_address: { city: "Lyon" },
+          arrival_company_name: "",
+        },
+        USER,
+      ),
+    ).toMatchObject({ depart: "1 rue de l'Exemple, 75001 PARIS", arrivee: "Lyon", distance_km: 50, aller_retour: true, montant: 20.5 });
   });
 
   it("départ de synchro : 1er janvier de l'an passé la première fois, puis dernière synchro − 10 jours", () => {
@@ -157,7 +201,7 @@ describe("synchroniserTiime", () => {
     const db = fausseDb({});
     const tiime = fauxTiime();
     const bilan = await synchroniserTiime(db, USER, tiime, { maintenant: MAINTENANT });
-    expect(bilan).toMatchObject({ depuis: "2025-01-01", comptes: 1, transactions: 3, factures: 3, notes_frais: 1, trajets: 1, avertissements: [] });
+    expect(bilan).toMatchObject({ depuis: "2025-01-01", comptes: 1, transactions: 3, factures: 6, notes_frais: 1, trajets: 1, avertissements: [] });
 
     const [compte] = db.tables.comptes;
     expect(compte).toMatchObject({ perimetre: "sasu", source: "tiime", externe_id: "7", solde: 12345.67, user_id: USER });
@@ -172,14 +216,14 @@ describe("synchroniserTiime", () => {
     expect(tiime.depuisDemandes).toEqual(["2025-01-01", "2026-11-01"]);
     expect(db.tables.comptes).toHaveLength(1);
     expect(db.tables.transactions).toHaveLength(3);
-    expect(db.tables.factures).toHaveLength(3);
+    expect(db.tables.factures).toHaveLength(6);
     expect(db.tables.transactions[0].categorie_id).toBe("cat-perso");
   });
 
   it("une ressource refusée par Tiime n'empêche pas les autres", async () => {
     const db = fausseDb({});
     const bilan = await synchroniserTiime(db, USER, fauxTiime(["banque", "notes"]), { maintenant: MAINTENANT });
-    expect(bilan).toMatchObject({ comptes: 0, factures: 3, notes_frais: 0, trajets: 1 });
+    expect(bilan).toMatchObject({ comptes: 0, factures: 6, notes_frais: 0, trajets: 1 });
     expect(bilan.avertissements).toEqual(["banque : GET banque : accès refusé par Tiime", "notes de frais : GET notes : accès refusé par Tiime"]);
   });
 
@@ -190,13 +234,13 @@ describe("synchroniserTiime", () => {
 });
 
 describe("pilotageSasu", () => {
-  it("additionne CA, encaissé, banque, notes de frais et IK de l'année", async () => {
+  it("additionne CA (avoirs compris, l'annulée et son avoir s'annulent), encaissé, banque, notes de frais et IK", async () => {
     const db = fausseDb({});
     await synchroniserTiime(db, USER, fauxTiime(), { maintenant: MAINTENANT });
     const p = await pilotageSasu(db, USER, 2026);
-    expect(p.factures).toEqual({ emises: 2, ca_facture_ht: 13000, ca_facture_ttc: 15600, payees: 1, encaisse_ttc: 14400, en_attente: 1, en_attente_ttc: 1200 });
+    expect(p.factures).toEqual({ emises: 3, ca_facture_ht: 9000, ca_facture_ttc: 10800, payees: 2, encaisse_ttc: 9600, en_attente: 1, en_attente_ttc: 1200 });
     // la transaction URSSAF de 2025 est hors de l'année
-    expect(p.banque).toEqual({ solde: 12345.67, entrees: 14400, sorties: -15, operations: 2, sans_justificatif: 1 });
+    expect(p.banque).toEqual({ solde: 12345.67, entrees: 6000, sorties: -15, operations: 2, sans_justificatif: 1 });
     expect(p.notes_frais).toEqual({ nombre: 1, montant: 86.4, a_rembourser: 86.4 });
     expect(p.indemnites_km).toEqual({ trajets: 1, km: 42, montant: 25.3 });
     expect(p.derniere_sync).toBe(MAINTENANT.toISOString());

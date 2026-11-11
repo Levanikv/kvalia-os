@@ -234,26 +234,28 @@ Remplace un exercice d'une séance par un autre (id du référentiel, voir equiv
 
 ## `connecter_tiime`
 
-Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime envoie alors un code par SMS à Levani : lui demander ce code, puis appeler valider_code_tiime. Ne jamais demander son mot de passe.
+Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime demande alors une vérification : si `attend_code` est faux, c'est une notification dans l'app Tiime sur l'iPhone — demander à Levani de la valider puis appeler valider_code_tiime sans code ; si `attend_code` est vrai, demander le code reçu (SMS, e-mail) puis appeler valider_code_tiime avec. Ne jamais demander son mot de passe.
 
 **Entrée**
-- `methode` : `sms` · `email` — défaut `"sms"` — Canal du code de vérification ; sms par défaut
+- `methode` : `push` · `sms` · `email` (optionnel) — Méthode de vérification ; par défaut celle que Tiime propose (notification dans l'app)
 
 **Sortie**
 - `statut` : `connecte` · `code_requis`
 - `methode` : string | null
+- `attend_code` : booléen — Vrai : demander un code ; faux : faire valider la notification dans l'app Tiime
 - `message` : string
 
 ## `valider_code_tiime`
 
-Termine la connexion Tiime lancée par connecter_tiime avec le code reçu par SMS (ou e-mail). Si Tiime refuse le code, redemander le code à Levani.
+Termine la connexion Tiime lancée par connecter_tiime : avec le code reçu (SMS, e-mail), ou sans code une fois la notification validée dans l'app Tiime. Si la réponse est encore `code_requis`, le code était faux ou la notification pas encore validée : redemander à Levani.
 
 **Entrée**
-- `code` : string (regex) — Code de vérification reçu par Levani
+- `code` : string (regex) (optionnel) — Code de vérification reçu par Levani ; vide pour une notification validée dans l'app
 
 **Sortie**
 - `statut` : `connecte` · `code_requis`
 - `methode` : string | null
+- `attend_code` : booléen — Vrai : demander un code ; faux : faire valider la notification dans l'app Tiime
 - `message` : string
 
 ## `synchroniser_tiime`
