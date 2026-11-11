@@ -65,6 +65,9 @@ export default async function Page({ searchParams }: Props) {
     </div>
   );
 
+  // Année sans aucune activité (ex. avant la création de la SASU) : un message plutôt qu'une page de zéros.
+  const anneeVide = !jamaisSynchro && f.ca_facture_ht === 0 && f.emises === 0 && b.operations === 0 && n.nombre === 0 && ik.trajets === 0;
+
   const sousTitre = jamaisSynchro ? "Pas encore synchronisé avec Tiime" : `Tiime · synchro ${quand(p.derniere_sync!, auj)}`;
 
   return (
@@ -79,30 +82,41 @@ export default async function Page({ searchParams }: Props) {
         </div>
       )}
 
-      {/* Chiffre d'affaires */}
-      <section className="relative mt-3 overflow-hidden rounded-xl border border-line-default bg-surface-default p-4">
-        <div className="absolute inset-y-0 left-0 w-1 bg-action-primary" aria-hidden />
-        <p className="type-overline text-fg-tertiary">Chiffre d’affaires facturé</p>
-        <p className="type-numeric-lg mt-1 tracking-tight">{euros(f.ca_facture_ht)}</p>
-        <p className="text-xs text-fg-secondary">
-          HT · {euros(f.ca_facture_ttc)} TTC · {f.emises} facture{f.emises > 1 ? "s" : ""}
-        </p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden>
-          <div className="h-full rounded-full bg-action-primary" style={{ width: `${partEncaissee}%` }} />
+      {anneeVide && (
+        <div className="mt-3 rounded-xl border border-line-default bg-surface-default p-4 text-sm text-fg-secondary">
+          <Icon name="event_busy" size={22} className="text-fg-tertiary" />
+          <p className="mt-2">Aucune facture, opération, note de frais ni trajet dans Tiime en {annee}.</p>
         </div>
-        <p className="mt-1.5 text-xs text-fg-secondary">{partEncaissee} % encaissé</p>
-      </section>
+      )}
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Tuile icone="payments" titre="Encaissé" valeur={euros(f.encaisse_ttc)} sous={`${f.payees} payée${f.payees > 1 ? "s" : ""} · TTC`} />
-        <Tuile
-          icone="schedule"
-          titre="En attente"
-          valeur={euros(f.en_attente_ttc)}
-          sous={f.en_attente ? `${f.en_attente} facture${f.en_attente > 1 ? "s" : ""} · TTC` : "Rien à relancer"}
-          alerte={f.en_attente > 0}
-        />
-      </div>
+      {/* Chiffre d'affaires */}
+      {!anneeVide && (
+        <section className="relative mt-3 overflow-hidden rounded-xl border border-line-default bg-surface-default p-4">
+          <div className="absolute inset-y-0 left-0 w-1 bg-action-primary" aria-hidden />
+          <p className="type-overline text-fg-tertiary">Chiffre d’affaires facturé</p>
+          <p className="type-numeric-lg mt-1 tracking-tight">{euros(f.ca_facture_ht)}</p>
+          <p className="text-xs text-fg-secondary">
+            HT · {euros(f.ca_facture_ttc)} TTC · {f.emises} facture{f.emises > 1 ? "s" : ""}
+          </p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden>
+            <div className="h-full rounded-full bg-action-primary" style={{ width: `${partEncaissee}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs text-fg-secondary">{partEncaissee} % encaissé</p>
+        </section>
+      )}
+
+      {!anneeVide && (
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Tuile icone="payments" titre="Encaissé" valeur={euros(f.encaisse_ttc)} sous={`${f.payees} payée${f.payees > 1 ? "s" : ""} · TTC`} />
+          <Tuile
+            icone="schedule"
+            titre="En attente"
+            valeur={euros(f.en_attente_ttc)}
+            sous={f.en_attente ? `${f.en_attente} facture${f.en_attente > 1 ? "s" : ""} · TTC` : "Rien à relancer"}
+            alerte={f.en_attente > 0}
+          />
+        </div>
+      )}
 
       {/* Compte pro */}
       <section className="mt-3 rounded-xl border border-line-default bg-surface-default p-4">
@@ -112,16 +126,18 @@ export default async function Page({ searchParams }: Props) {
         </div>
         <p className="type-numeric-lg mt-2 tracking-tight">{b.solde === null ? "—" : euros(b.solde, 2)}</p>
         <p className="text-xs text-fg-secondary">Solde actuel</p>
-        <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-line-subtle pt-3 text-sm">
-          <div>
-            <dt className="text-xs text-fg-tertiary">Entrées {annee}</dt>
-            <dd className="font-semibold text-feedback-success-text">+{euros(b.entrees)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-fg-tertiary">Sorties {annee}</dt>
-            <dd className="font-semibold">{euros(b.sorties)}</dd>
-          </div>
-        </dl>
+        {!anneeVide && (
+          <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-line-subtle pt-3 text-sm">
+            <div>
+              <dt className="text-xs text-fg-tertiary">Entrées {annee}</dt>
+              <dd className="font-semibold text-feedback-success-text">+{euros(b.entrees)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-fg-tertiary">Sorties {annee}</dt>
+              <dd className="font-semibold">{euros(b.sorties)}</dd>
+            </div>
+          </dl>
+        )}
         {b.sans_justificatif > 0 && (
           <p className="mt-3 flex items-center gap-2 rounded-lg bg-feedback-warning-subtle px-3 py-2 text-sm text-feedback-warning-text">
             <Icon name="receipt_long" size={18} className="shrink-0" />
@@ -130,23 +146,31 @@ export default async function Page({ searchParams }: Props) {
         )}
       </section>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Tuile
-          icone="receipt"
-          titre="Notes de frais"
-          valeur={euros(n.montant)}
-          sous={n.a_rembourser > 0 ? `${euros(n.a_rembourser, 2)} à te rembourser` : `${n.nombre} note${n.nombre > 1 ? "s" : ""}, tout remboursé`}
-          alerte={n.a_rembourser > 0}
-        />
-        <Tuile
-          icone="directions_car"
-          titre="Indemnités km"
-          valeur={ik.montant === null ? `${ik.km.toLocaleString("fr-FR")} km` : euros(ik.montant)}
-          sous={`${ik.trajets} trajet${ik.trajets > 1 ? "s" : ""} · ${ik.km.toLocaleString("fr-FR")} km`}
-        />
-      </div>
+      {!anneeVide && (
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Tuile
+            icone="receipt"
+            titre="Notes de frais"
+            valeur={euros(n.montant)}
+            sous={
+              n.a_rembourser > 0
+                ? `${euros(n.a_rembourser, 2)} à te rembourser`
+                : n.nombre
+                  ? `${n.nombre} note${n.nombre > 1 ? "s" : ""}, tout remboursé`
+                  : "Aucune note"
+            }
+            alerte={n.a_rembourser > 0}
+          />
+          <Tuile
+            icone="directions_car"
+            titre="Indemnités km"
+            valeur={ik.montant === null ? `${ik.km.toLocaleString("fr-FR")} km` : euros(ik.montant)}
+            sous={`${ik.trajets} trajet${ik.trajets > 1 ? "s" : ""} · ${ik.km.toLocaleString("fr-FR")} km`}
+          />
+        </div>
+      )}
 
-      <p className="mt-5 mb-2 text-center text-xs text-fg-tertiary">
+      <p className="mt-5 mb-20 px-6 text-center text-xs text-fg-tertiary">
         Chiffres lus dans Tiime, sans rien y modifier. Ce n’est pas un avis comptable : valide-les avec ton comptable.
       </p>
     </ModuleFrame>
