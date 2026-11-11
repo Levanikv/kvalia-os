@@ -56,8 +56,11 @@ export class ErreurTiime extends Error {
   }
 }
 
-/** Ce que Tiime attend pour finir la connexion (un code reçu par SMS ou e-mail). */
-export type DefiConnexion = { methode: string; message: string };
+/**
+ * Ce que Tiime attend pour finir la connexion : un code (SMS, e-mail) ou une validation dans l'app Tiime
+ * (notification « push » sur le téléphone, `attend_code = false`).
+ */
+export type DefiConnexion = { methode: string; attend_code: boolean; message: string };
 
 export type ConfigAuthTiime = {
   email?: string;
@@ -113,9 +116,10 @@ export class AuthTiime {
 
   /**
    * Lance une connexion complète. Rend `null` si Tiime n'a pas demandé de code (connecté),
-   * sinon le défi à résoudre avec `validerCode`. `methode` : sms (défaut), email…
+   * sinon le défi à résoudre avec `validerCode`. Sans `methode`, on prend celle que Tiime propose d'abord
+   * (souvent la notification dans l'app) ; sinon sms, email, push…
    */
-  async demarrerConnexion(methode = "sms"): Promise<DefiConnexion | null> {
+  async demarrerConnexion(methode?: string): Promise<DefiConnexion | null> {
     if (!this.cfg.email || !this.cfg.motDePasse) throw new ErreurTiime("identifiants_manquants", "TIIME_EMAIL / TIIME_PASSWORD absents côté agent");
     this.enCours = null;
     try {
@@ -129,8 +133,11 @@ export class AuthTiime {
     return this.poursuivre(parcours);
   }
 
-  /** Envoie le code reçu. Rend `null` une fois connecté, ou un nouveau défi si Tiime refuse le code. */
-  async validerCode(code: string): Promise<DefiConnexion | null> {
+  /**
+   * Envoie le code reçu, ou confirme une notification validée dans l'app (sans code).
+   * Rend `null` une fois connecté, ou un nouveau défi si Tiime refuse (code faux, notification pas encore validée).
+   */
+  async validerCode(code?: string): Promise<DefiConnexion | null> {
     const parcours = this.enCours;
     if (!parcours) throw new ErreurTiime("aucune_connexion_en_cours", "Aucune connexion Tiime en cours : lancer connecter_tiime d'abord");
     try {
@@ -267,6 +274,22 @@ export async function defiPkce(verificateur: string): Promise<string> {
   return base64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verificateur))));
 }
 
+/** Erreur lisible pour une page qu'on ne sait pas traiter : chemin, boutons et texte, pour adapter le parcours. */
+function pageNonGeree(page: Page, boutons: { valeur: string }[]): ErreurTiime {
+  const chemin = (() => {
+    try {
+      return new URL(page.url).pathname;
+    } catch {
+      return page.url;
+    }
+  })();
+  return new ErreurTiime(
+    "page_inattendue",
+    `Page de connexion Tiime non gérée (${page.statut}, ${chemin}, boutons : ${boutons.map((b) => b.valeur).join(", ") || "aucun"}) : ${texteDePage(page.corps)}`,
+    page.statut,
+  );
+}
+
 /** Pages de connexion Auth0 avec cookies, sans suivre les redirections (chaque étape est inspectée). */
 class ParcoursConnexion {
   readonly verificateur = jetonAleatoire(32);
@@ -279,7 +302,7 @@ class ParcoursConnexion {
     private readonly authUrl: string,
     private readonly email: string,
     private readonly motDePasse: string,
-    private readonly methode: string,
+    private readonly methode: string | undefined,
   ) {}
 
   async demarrer(): Promise<void> {
@@ -330,20 +353,21 @@ class ParcoursConnexion {
       const etat = etatDePage(page.corps);
       if (!etat) throw new ErreurTiime("page_inattendue", `Page de connexion Tiime inattendue (${page.statut}) : ${texteDePage(page.corps)}`, page.statut);
       const boutons = boutonsAction(page.corps);
-      if (RE_CHAMP_CODE.test(page.corps)) {
-        const actuelle = methodeDuDefi(page.url);
+      const actuelle = methodeDuDefi(page.url);
+      const attendCode = RE_CHAMP_CODE.test(page.corps);
+      // Page de défi : champ « code » (SMS, e-mail, appli OTP) ou attente d'une validation dans l'app (push).
+      if (attendCode || actuelle) {
         const peutChanger = boutons.some((b) => b.valeur === "pick-authenticator");
-        if (actuelle !== this.methode && peutChanger && !this.methodeChangee) {
+        if (this.methode && actuelle !== this.methode && peutChanger && !this.methodeChangee) {
           this.methodeChangee = true;
           this.page = await this.poster(page.url, { state: etat, action: "pick-authenticator" });
           continue;
         }
-        return { defi: { methode: actuelle, message: texteDePage(page.corps) } };
+        return { defi: { methode: actuelle || "code", attend_code: attendCode, message: texteDePage(page.corps) } };
       }
       const methodes = boutons.filter((b) => b.valeur.includes("::"));
-      if (methodes.length === 0)
-        throw new ErreurTiime("page_inattendue", `Page de connexion Tiime non gérée (${page.statut}) : ${texteDePage(page.corps)}`, page.statut);
-      const choix = methodes.find((b) => b.valeur.startsWith(`${this.methode}::`));
+      if (methodes.length === 0) throw pageNonGeree(page, boutons);
+      const choix = this.methode ? methodes.find((b) => b.valeur.startsWith(`${this.methode}::`)) : methodes[0];
       if (!choix)
         throw new ErreurTiime(
           "connexion_refusee",
@@ -354,11 +378,22 @@ class ParcoursConnexion {
     throw new ErreurTiime("page_inattendue", "La connexion Tiime ne s'est pas terminée (trop d'étapes)");
   }
 
-  async envoyerCode(code: string): Promise<void> {
+  /** Code sur une page à champ « code » ; sans champ (notification), clique « J'ai répondu sur mon appareil ». */
+  async envoyerCode(code?: string): Promise<void> {
     const page = this.page;
     const etat = page && etatDePage(page.corps);
-    if (!page || !etat) throw new ErreurTiime("aucune_connexion_en_cours", "Aucun code attendu par Tiime");
-    this.page = await this.poster(page.url, { state: etat, code: code.trim(), action: "default" });
+    if (!page || !etat) throw new ErreurTiime("aucune_connexion_en_cours", "Aucune validation attendue par Tiime");
+    if (RE_CHAMP_CODE.test(page.corps)) {
+      if (!code?.trim()) throw new ErreurTiime("connexion_refusee", "Tiime attend un code de vérification");
+      this.page = await this.poster(page.url, { state: etat, code: code.trim(), action: "default" });
+      return;
+    }
+    const boutons = boutonsAction(page.corps);
+    const confirmer =
+      boutons.find((b) => b.valeur === "default") ??
+      boutons.find((b) => /répondu|responded|continuer|continue/i.test(b.libelle) && b.valeur !== "pick-authenticator");
+    if (!confirmer) throw pageNonGeree(page, boutons);
+    this.page = await this.poster(page.url, { state: etat, action: confirmer.valeur });
   }
 
   private async obtenir(url: string): Promise<Page> {

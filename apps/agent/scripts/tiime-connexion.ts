@@ -2,11 +2,11 @@
 /**
  * Première connexion à Tiime depuis le terminal (ADR 0010), puis une synchro pour vérifier.
  * Lit TIIME_EMAIL / TIIME_PASSWORD / TIIME_SOCIETE_ID et la clé service role dans le .env racine.
- * Le code SMS est tapé ici, dans ton terminal ; le jeton de rafraîchissement part dans `connexions_externes`
+ * La vérification (notification dans l'app Tiime, ou code SMS / e-mail) se fait ici, dans ton terminal ; le jeton de rafraîchissement part dans `connexions_externes`
  * (lisible par l'agent seul), et l'agent sur Railway s'en sert ensuite sans redemander de code.
  *
- * Usage : pnpm --filter @kvalia/agent tiime:connexion            (connexion + synchro)
- *         pnpm --filter @kvalia/agent tiime:connexion -- --email (code par e-mail au lieu du SMS)
+ * Usage : pnpm --filter @kvalia/agent tiime:connexion            (méthode proposée par Tiime, puis synchro)
+ *         pnpm --filter @kvalia/agent tiime:connexion -- --sms   (forcer le code SMS ; --email, --push aussi)
  */
 import { existsSync } from "node:fs";
 import { stdin, stdout } from "node:process";
@@ -25,15 +25,20 @@ for (const v of ["TIIME_EMAIL", "TIIME_PASSWORD", "TIIME_SOCIETE_ID"]) if (!proc
 const db = createServiceClient();
 const tiime = contexteTiime(db, userId);
 if (!tiime) throw new Error("TIIME_SOCIETE_ID invalide");
-const methode = process.argv.includes("--email") ? "email" : "sms";
+const methode = ["push", "sms", "email"].find((m) => process.argv.includes(`--${m}`));
 
 const rl = createInterface({ input: stdin, output: stdout });
 try {
   let defi = await tiime.auth.demarrerConnexion(methode);
   while (defi) {
     console.log(`\nTiime : ${defi.message}`);
-    const code = (await rl.question(`Code reçu (${defi.methode || methode}) : `)).trim();
-    defi = await tiime.auth.validerCode(code);
+    if (defi.attend_code) {
+      const code = (await rl.question(`Code reçu (${defi.methode}) : `)).trim();
+      defi = await tiime.auth.validerCode(code);
+    } else {
+      await rl.question("Valide la notification dans l'app Tiime sur ton iPhone, puis appuie sur Entrée… ");
+      defi = await tiime.auth.validerCode();
+    }
   }
   console.log("✓ Connecté à Tiime, jeton de rafraîchissement enregistré.");
 

@@ -107,7 +107,7 @@ describe("AuthTiime — connexion avec code SMS", () => {
     const auth = new AuthTiime({ email: "x@y.fr", motDePasse: "secret", stockage: m.stockage, fetch: f, maintenant: () => MAINTENANT });
 
     const defi = await auth.demarrerConnexion("sms");
-    expect(defi).toMatchObject({ methode: "sms" });
+    expect(defi).toMatchObject({ methode: "sms", attend_code: true });
     expect(defi?.message).toContain("Code envoyé");
     expect(auth.connexionEnCours).toBe(true);
 
@@ -139,12 +139,85 @@ describe("AuthTiime — connexion avec code SMS", () => {
   });
 });
 
+/** Page de validation par notification dans l'app Tiime (ce que renvoie le compte de Levani). */
+const PAGE_PUSH = (erreur = "") => `<p>${erreur}Nous avons envoyé une notification à l'appareil suivant via l'application Tiime: iPhone</p>
+  <form method="POST"><input type="hidden" name="state" value="ETATPUSH"/>
+  <input type="checkbox" name="rememberBrowser" value="true"/> Se souvenir de cet appareil pendant 30 jours
+  <button type="submit" name="action" value="default">J'ai répondu sur mon appareil</button>
+  <button type="submit" name="action" value="resend">Renvoyer</button>
+  <button type="submit" name="action" value="pick-authenticator">Essayer une autre méthode</button></form>`;
+
+describe("AuthTiime — connexion avec notification dans l'app Tiime", () => {
+  function auth0Push() {
+    let valide = false;
+    const fake = fauxFetch((url, init) => {
+      const corps = String(init.body ?? "");
+      if (url.endsWith("/oauth/token")) {
+        const p = JSON.parse(corps);
+        if (p.grant_type === "authorization_code") return json({ access_token: "ACC", refresh_token: "REF", expires_in: 86400 });
+        return json({ error: "mfa_required" }, 403);
+      }
+      if (url.endsWith("/co/authenticate")) return json({ login_ticket: "TICKET" });
+      if (url.includes("/authorize?")) return new Response(null, { status: 302, headers: { Location: "/u/mfa-push-challenge-push?state=ETATPUSH" } });
+      if (url.includes("/u/mfa-push-challenge-push") && init.method === "GET") return new Response(PAGE_PUSH(), { status: 200 });
+      if (url.includes("/u/mfa-push-challenge-push")) {
+        const action = new URLSearchParams(corps).get("action");
+        if (action === "pick-authenticator") return new Response(null, { status: 302, headers: { Location: "/u/mfa-login-options?state=ETAT1" } });
+        return valide
+          ? new Response(null, { status: 302, headers: { Location: "https://apps.tiime.fr/auth-callback?code=CODEPUSH" } })
+          : new Response(PAGE_PUSH("Notification pas encore validée. "), { status: 400 });
+      }
+      if (url.includes("/u/mfa-login-options") && init.method === "GET") return new Response(PAGE_CHOIX, { status: 200 });
+      if (url.includes("/u/mfa-login-options")) return new Response(null, { status: 302, headers: { Location: "/u/mfa-sms-challenge?state=ETAT2" } });
+      if (url.includes("/u/mfa-sms-challenge")) return new Response(PAGE_CODE_SMS, { status: 200 });
+      return new Response("inconnu", { status: 404 });
+    });
+    return { ...fake, valider: () => void (valide = true) };
+  }
+
+  it("sans méthode imposée, accepte la notification puis attend la validation sur le téléphone", async () => {
+    const { f, appels, valider } = auth0Push();
+    const m = memoire();
+    const auth = new AuthTiime({ email: "x@y.fr", motDePasse: "secret", stockage: m.stockage, fetch: f });
+
+    const defi = await auth.demarrerConnexion();
+    expect(defi).toMatchObject({ methode: "push", attend_code: false });
+    expect(defi?.message).toContain("notification");
+
+    // pas encore validée sur le téléphone : Tiime renvoie la même page, on reste en attente
+    const encore = await auth.validerCode();
+    expect(encore).toMatchObject({ methode: "push", attend_code: false });
+    expect(encore?.message).toContain("pas encore validée");
+    expect(new URLSearchParams(String(appels.at(-1)!.init.body)).get("action")).toBe("default");
+
+    valider();
+    expect(await auth.validerCode()).toBeNull();
+    expect(m.get()).toMatchObject({ acces: "ACC", rafraichissement: "REF" });
+  });
+
+  it("avec --sms, quitte la page de notification pour le code SMS", async () => {
+    const { f, appels } = auth0Push();
+    const auth = new AuthTiime({ email: "x@y.fr", motDePasse: "secret", stockage: memoire().stockage, fetch: f });
+    const defi = await auth.demarrerConnexion("sms");
+    expect(defi).toMatchObject({ methode: "sms", attend_code: true });
+    expect(appels.some((a) => new URLSearchParams(String(a.init.body ?? "")).get("action") === "pick-authenticator")).toBe(true);
+  });
+
+  it("un code est exigé quand la page en attend un", async () => {
+    const { f } = auth0Push();
+    const auth = new AuthTiime({ email: "x@y.fr", motDePasse: "secret", stockage: memoire().stockage, fetch: f });
+    await auth.demarrerConnexion("sms");
+    await expect(auth.validerCode()).rejects.toMatchObject({ code: "connexion_refusee" });
+  });
+});
+
 describe("pages de connexion", () => {
   it("lit l'état, les boutons, la méthode du défi et le texte", () => {
     expect(etatDePage(PAGE_CHOIX)).toBe("ETAT1");
     expect(etatDePage('<input value="a&amp;b" name="state">')).toBe("a&b");
     expect(boutonsAction(PAGE_CHOIX).map((b) => b.valeur)).toEqual(["email::1", "sms::0"]);
     expect(methodeDuDefi("https://auth0.tiime.fr/u/mfa-sms-challenge?state=x")).toBe("sms");
+    expect(methodeDuDefi("https://auth0.tiime.fr/u/mfa-push-challenge-push?state=x")).toBe("push");
     expect(texteDePage("<script>x()</script><p>Bonjour&nbsp;Levani</p>")).toBe("Bonjour Levani");
   });
 

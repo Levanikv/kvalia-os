@@ -37,6 +37,13 @@ const SeanceSortie = z.object({
   exercices: z.array(ExerciceSeanceSortie),
 });
 
+const SortieConnexionTiime = z.object({
+  statut: z.enum(["connecte", "code_requis"]),
+  methode: z.string().nullable(),
+  attend_code: z.boolean().describe("Vrai : demander un code ; faux : faire valider la notification dans l'app Tiime"),
+  message: z.string(),
+});
+
 export const tools = {
   ajouter_produit: {
     description: "Ajoute un ou plusieurs articles à la liste de courses active. Crée le produit s'il n'existe pas. Fusionne les doublons (quantité cumulée).",
@@ -214,21 +221,24 @@ export const tools = {
   // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
   connecter_tiime: {
     description:
-      "Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime envoie alors un code par SMS à Levani : lui demander ce code, puis appeler valider_code_tiime. Ne jamais demander son mot de passe.",
-    input: z.object({ methode: z.enum(["sms", "email"]).default("sms").describe("Canal du code de vérification ; sms par défaut") }),
-    output: z.object({ statut: z.enum(["connecte", "code_requis"]), methode: z.string().nullable(), message: z.string() }),
+      "Connecte l'agent au compte Tiime de la SASU. À utiliser quand une synchro Tiime échoue faute de connexion (« connexion requise », jeton expiré) ou quand Levani demande de (re)connecter Tiime. Tiime demande alors une vérification : si `attend_code` est faux, c'est une notification dans l'app Tiime sur l'iPhone — demander à Levani de la valider puis appeler valider_code_tiime sans code ; si `attend_code` est vrai, demander le code reçu (SMS, e-mail) puis appeler valider_code_tiime avec. Ne jamais demander son mot de passe.",
+    input: z.object({
+      methode: z.enum(["push", "sms", "email"]).optional().describe("Méthode de vérification ; par défaut celle que Tiime propose (notification dans l'app)"),
+    }),
+    output: SortieConnexionTiime,
   },
 
   valider_code_tiime: {
     description:
-      "Termine la connexion Tiime lancée par connecter_tiime avec le code reçu par SMS (ou e-mail). Si Tiime refuse le code, redemander le code à Levani.",
+      "Termine la connexion Tiime lancée par connecter_tiime : avec le code reçu (SMS, e-mail), ou sans code une fois la notification validée dans l'app Tiime. Si la réponse est encore `code_requis`, le code était faux ou la notification pas encore validée : redemander à Levani.",
     input: z.object({
       code: z
         .string()
         .regex(/^\d{4,8}$/, "code à 4-8 chiffres")
-        .describe("Code de vérification reçu par Levani"),
+        .optional()
+        .describe("Code de vérification reçu par Levani ; vide pour une notification validée dans l'app"),
     }),
-    output: z.object({ statut: z.enum(["connecte", "code_requis"]), methode: z.string().nullable(), message: z.string() }),
+    output: SortieConnexionTiime,
   },
 
   synchroniser_tiime: {

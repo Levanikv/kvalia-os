@@ -35,8 +35,13 @@ function tiimeOuErreur(ctx: Ctx): NonNullable<Ctx["tiime"]> {
 
 function reponseConnexion(defi: DefiConnexion | null) {
   return defi
-    ? { statut: "code_requis" as const, methode: defi.methode || null, message: defi.message || "Tiime attend un code de vérification" }
-    : { statut: "connecte" as const, methode: null, message: "Connecté à Tiime" };
+    ? {
+        statut: "code_requis" as const,
+        methode: defi.methode || null,
+        attend_code: defi.attend_code,
+        message: defi.message || (defi.attend_code ? "Tiime attend un code de vérification" : "Valider la notification dans l'app Tiime"),
+      }
+    : { statut: "connecte" as const, methode: null, attend_code: false, message: "Connecté à Tiime" };
 }
 
 async function listeActiveId(ctx: Ctx): Promise<string> {
