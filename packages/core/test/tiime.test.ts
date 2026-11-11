@@ -211,11 +211,44 @@ describe("AuthTiime — connexion avec notification dans l'app Tiime", () => {
   });
 });
 
+describe("AuthTiime — notification sans bouton lisible", () => {
+  it("envoie action=default sur /u/mfa-push-challenge, comme le bouton « J'ai répondu »", async () => {
+    let valide = false;
+    const page = `<form method="POST"><input type="hidden" name="state" value="E"/><p>Nous avons envoyé une notification</p><a href="#">J'ai répondu sur mon appareil</a></form>`;
+    const { f, appels } = fauxFetch((url, init) => {
+      if (url.endsWith("/oauth/token")) {
+        const p = JSON.parse(String(init.body));
+        return p.grant_type === "authorization_code" ? json({ access_token: "A", refresh_token: "R", expires_in: 3600 }) : json({ error: "mfa_required" }, 403);
+      }
+      if (url.endsWith("/co/authenticate")) return json({ login_ticket: "T" });
+      if (url.includes("/authorize?")) return new Response(null, { status: 302, headers: { Location: "/u/mfa-push-challenge?state=E" } });
+      if (init.method === "GET") return new Response(page, { status: 200 });
+      return valide
+        ? new Response(null, { status: 302, headers: { Location: "https://apps.tiime.fr/auth-callback?code=C" } })
+        : new Response(page, { status: 200 });
+    });
+    const auth = new AuthTiime({ email: "x@y.fr", motDePasse: "s", stockage: memoire().stockage, fetch: f });
+    expect(await auth.demarrerConnexion()).toMatchObject({ methode: "push", attend_code: false });
+    valide = true;
+    expect(await auth.validerCode()).toBeNull();
+    expect(new URLSearchParams(String(appels.find((a) => a.init.method === "POST" && a.url.includes("mfa-push"))!.init.body)).get("action")).toBe("default");
+  });
+});
+
 describe("pages de connexion", () => {
   it("lit l'état, les boutons, la méthode du défi et le texte", () => {
     expect(etatDePage(PAGE_CHOIX)).toBe("ETAT1");
     expect(etatDePage('<input value="a&amp;b" name="state">')).toBe("a&b");
     expect(boutonsAction(PAGE_CHOIX).map((b) => b.valeur)).toEqual(["email::1", "sms::0"]);
+    // attributs dans un autre ordre, guillemets simples, <input type="submit">
+    expect(
+      boutonsAction(
+        `<button class="c" value='default' type="submit" name="action">J'ai répondu</button><input type="submit" name="action" value="resend-push"><input type="hidden" name="action" value="x">`,
+      ),
+    ).toEqual([
+      { valeur: "default", libelle: "J'ai répondu" },
+      { valeur: "resend-push", libelle: "resend-push" },
+    ]);
     expect(methodeDuDefi("https://auth0.tiime.fr/u/mfa-sms-challenge?state=x")).toBe("sms");
     expect(methodeDuDefi("https://auth0.tiime.fr/u/mfa-push-challenge-push?state=x")).toBe("push");
     expect(texteDePage("<script>x()</script><p>Bonjour&nbsp;Levani</p>")).toBe("Bonjour Levani");

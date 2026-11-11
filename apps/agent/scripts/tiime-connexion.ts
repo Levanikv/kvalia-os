@@ -8,7 +8,9 @@
  * Usage : pnpm --filter @kvalia/agent tiime:connexion            (méthode proposée par Tiime, puis synchro)
  *         pnpm --filter @kvalia/agent tiime:connexion -- --sms   (forcer le code SMS ; --email, --push aussi)
  */
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
@@ -52,6 +54,12 @@ try {
   console.log(JSON.stringify(bilan, null, 2));
 } catch (err) {
   console.error(err instanceof ErreurTiime ? `✗ Tiime (${err.code}) : ${err.message}` : err);
+  if (err instanceof ErreurTiime && err.html) {
+    // Pour adapter le parcours : la page telle que Tiime l'a servie (contient un état de session à usage unique).
+    const fichier = join(tmpdir(), "tiime-page-non-geree.html");
+    writeFileSync(fichier, err.html, { mode: 0o600 });
+    console.error(`  Page enregistrée dans ${fichier}`);
+  }
   process.exitCode = 1;
 } finally {
   rl.close();

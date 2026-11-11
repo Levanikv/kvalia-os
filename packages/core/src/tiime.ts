@@ -50,6 +50,8 @@ export class ErreurTiime extends Error {
     public readonly code: CodeErreurTiime,
     message: string,
     public readonly statut?: number,
+    /** HTML de la page de connexion non gérée (diagnostic local, jamais renvoyé par un outil). */
+    public readonly html?: string,
   ) {
     super(message);
     this.name = "ErreurTiime";
@@ -219,7 +221,8 @@ type Page = { url: string; statut: number; location: string | null; corps: strin
 
 const RE_ETAT = /name="state"[^>]*value="([^"]+)"|value="([^"]+)"[^>]*name="state"/;
 const RE_CHAMP_CODE = /<input[^>]+name="code"/;
-const RE_BOUTON = /<button[^>]*name="action"[^>]*value="([^"]+)"[^>]*>([\s\S]*?)<\/button>/g;
+const RE_CONTROLE = /<button\b([^>]*)>([\s\S]*?)<\/button>|<input\b([^>]*)>/gi;
+const RE_ATTRIBUT = /([a-zA-Z_:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
 const RE_URL_DEFI = /\/u\/mfa-([a-z-]+?)-challenge/;
 
 function decoderHtml(s: string): string {
@@ -250,7 +253,16 @@ export function etatDePage(html: string): string | null {
 
 /** Boutons `action` d'une page, dans l'ordre d'affichage. Les méthodes de vérification sont de la forme `sms::0`. */
 export function boutonsAction(html: string): { valeur: string; libelle: string }[] {
-  return [...html.matchAll(RE_BOUTON)].map((m) => ({ valeur: decoderHtml(m[1]), libelle: texteDePage(m[2]) || m[1] }));
+  const boutons: { valeur: string; libelle: string }[] = [];
+  for (const m of html.matchAll(RE_CONTROLE)) {
+    const attrs: Record<string, string> = {};
+    for (const a of (m[1] ?? m[3] ?? "").matchAll(RE_ATTRIBUT)) attrs[a[1].toLowerCase()] = decoderHtml(a[2] ?? a[3] ?? a[4] ?? "");
+    // <button name="action" value="…"> (attributs dans n'importe quel ordre) ou <input type="submit" name="action" value="…">
+    if (attrs.name !== "action" || !attrs.value) continue;
+    if (m[3] !== undefined && (attrs.type ?? "").toLowerCase() !== "submit") continue;
+    boutons.push({ valeur: attrs.value, libelle: (m[2] !== undefined ? texteDePage(m[2]) : "") || attrs.value });
+  }
+  return boutons;
 }
 
 /** Méthode d'un défi d'après l'URL (`/u/mfa-sms-challenge` → `sms`). */
@@ -287,6 +299,7 @@ function pageNonGeree(page: Page, boutons: { valeur: string }[]): ErreurTiime {
     "page_inattendue",
     `Page de connexion Tiime non gérée (${page.statut}, ${chemin}, boutons : ${boutons.map((b) => b.valeur).join(", ") || "aucun"}) : ${texteDePage(page.corps)}`,
     page.statut,
+    page.corps,
   );
 }
 
@@ -392,8 +405,8 @@ class ParcoursConnexion {
     const confirmer =
       boutons.find((b) => b.valeur === "default") ??
       boutons.find((b) => /répondu|responded|continuer|continue/i.test(b.libelle) && b.valeur !== "pick-authenticator");
-    if (!confirmer) throw pageNonGeree(page, boutons);
-    this.page = await this.poster(page.url, { state: etat, action: confirmer.valeur });
+    // Sans bouton lisible, on envoie l'action standard d'Auth0 (« J'ai répondu sur mon appareil » = action=default).
+    this.page = await this.poster(page.url, { state: etat, action: confirmer?.valeur ?? "default" });
   }
 
   private async obtenir(url: string): Promise<Page> {
