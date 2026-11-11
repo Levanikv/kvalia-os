@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   PARAMETRES_SPORT_DEFAUT,
   ParametresSport,
@@ -68,14 +68,25 @@ describe("genererProgramme", () => {
     for (const e of db.tables.exercices_seance) expect(["dumbbell", "body weight"]).toContain(parId.get(e.exercice_id)!.equipement);
   });
 
-  it("remplace le programme actif et supprime ses séances futures non faites", async () => {
-    const db = base();
-    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
-    const premier = db.tables.programmes[0].id;
-    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 3, boxe: 0 }, jours_salle: [1, 3, 5], poids_kg: 80 }, "2027-03-01");
-    expect(db.tables.programmes.find((p: any) => p.id === premier).actif).toBe(false);
-    expect(db.tables.seances.filter((s: any) => s.programme_id === premier)).toHaveLength(0);
-    expect(db.tables.programmes.filter((p: any) => p.actif)).toHaveLength(1);
+  it("remplace le programme actif, supprime ses séances futures non faites et garde les passées", async () => {
+    // Horloge figée : « aujourd'hui » = mer. 11 nov. 2026, quelle que soit la date réelle du test.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T12:00:00Z"));
+    try {
+      const db = base();
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+      const premier = db.tables.programmes[0].id;
+      const passees = db.tables.seances.filter((s: any) => s.programme_id === premier && s.jour < "2026-11-11").map((s: any) => s.id);
+      expect(passees.length).toBeGreaterThan(0);
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 3, boxe: 0 }, jours_salle: [1, 3, 5], poids_kg: 80 }, "2027-03-01");
+      expect(db.tables.programmes.find((p: any) => p.id === premier).actif).toBe(false);
+      // Les séances passées restent dans l'historique ; toutes celles d'aujourd'hui et après sont supprimées.
+      const restantes = db.tables.seances.filter((s: any) => s.programme_id === premier).map((s: any) => s.id);
+      expect(restantes.sort()).toEqual([...passees].sort());
+      expect(db.tables.programmes.filter((p: any) => p.actif)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
