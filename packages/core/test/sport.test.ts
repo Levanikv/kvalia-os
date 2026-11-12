@@ -218,3 +218,58 @@ describe("phasesProgramme", () => {
     for (const s of db.tables.seances.filter((x: any) => x.type !== "boxe")) expect(s.focus).toBe(ph[s.semaine - 1].focus);
   });
 });
+
+describe("onboarding → paramètres", () => {
+  it("traduit les réponses en paramètres du générateur (salle seule, sans boxe)", async () => {
+    const { appliquerProfil } = await import("../src/sport");
+    const p = appliquerProfil(PARAMETRES_SPORT_DEFAUT, {
+      seances_semaine: 4,
+      jours: [5, 1, 3, 6],
+      duree_min: 75,
+      objectifs: ["masse", "force"],
+      niveau: "beginner",
+      echeance_semaines: 30,
+      lieu: "les_deux",
+      salle: "basique",
+      materiel_maison: ["kettlebell", "elastiques"],
+      poids_kg: 78.5,
+    });
+    expect(p.rythme).toEqual({ salle: 4, boxe: 0 });
+    expect(p.jours_salle).toEqual([1, 3, 5, 6]);
+    expect(p.jours_boxe).toEqual([]);
+    expect(p.duree_min).toBe(75);
+    expect(p.objectif).toBe("force"); // ordre de l'écran : Force avant Prise de muscle
+    expect(p.niveau).toBe("beginner");
+    expect(p.semaines).toBe(24); // borné
+    expect(p.materiel).toEqual(expect.arrayContaining(["dumbbell", "cable", "kettlebell", "band", "body weight"]));
+    expect(p.materiel).not.toContain("barbell");
+    expect(p.poids_kg).toBe(78.5);
+  });
+
+  it("calcule les cibles kcal et protéines (Mifflin-St Jeor, objectif de poids)", async () => {
+    const { ciblesDepuisProfil, poidsCibleParDefaut } = await import("../src/sport");
+    expect(ciblesDepuisProfil({ sexe: "homme", age: 31 })).toBeNull();
+    const profil = { sexe: "homme", age: 31, taille_cm: 178, poids_kg: 78.5, activite: "actif", objectifs: ["force", "masse"], duree_min: 75 } as const;
+    expect(poidsCibleParDefaut(profil)).toBe(81.5);
+    const c = ciblesDepuisProfil({ ...profil, objectifs: [...profil.objectifs] });
+    // BMR = 785 + 1112,5 − 155 + 5 = 1747,5 ; × 1,45 = 2533,9 ; × 1,08 (prise) = 2736,6
+    expect(c).toEqual({ kcal_repos: 2740, kcal_seance: 3160, proteines_g: 163 });
+  });
+
+  it("regler_sport fusionne le profil, recalcule le programme et la nutrition si demandé", async () => {
+    const db = base();
+    await executer("regler_sport", { profil: { seances_semaine: 3, jours: [1, 3, 5] }, onboarding: { etape: 6 } }, { db, userId: USER });
+    const r = await executer(
+      "regler_sport",
+      { profil: { sexe: "homme", age: 31, taille_cm: 178, poids_kg: 78.5, activite: "actif", objectifs: ["force"], nutrition: "ia" } },
+      { db, userId: USER },
+    );
+    expect(r.profil?.jours).toEqual([1, 3, 5]); // conservé
+    expect(r.rythme).toEqual({ salle: 3, boxe: 0 });
+    expect(r.onboarding?.etape).toBe(6);
+    const { parametresNutrition } = await import("../src/nutrition");
+    const n = await parametresNutrition(db, USER);
+    expect(n.cible_kcal).toBe(2530); // force seule : maintien
+    expect(n.proteines_g).toBe(157);
+  });
+});

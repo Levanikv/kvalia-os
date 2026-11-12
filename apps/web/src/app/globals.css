@@ -3,12 +3,16 @@
   Design system : Figma « Kvalia Design System » → packages/ui (tokens.css chargé dans layout.tsx).
   Le pont généré expose les rôles sémantiques à Tailwind : bg-surface-default, text-fg-secondary, border-line-default,
   bg-action-primary + text-fg-on-brand, text-fg-brand, bg-feedback-success-subtle, shadow-card… (voir packages/ui/DESIGN_SYSTEM.md).
+  v3 : fonds de page = bg-surface-page ; cartes, lignes, champs = bg-surface-container-* ; icônes = text-icon-* ;
+  séparateurs pleins = bg-divider-*. Les anciennes classes (bg-surface-canvas, bg-surface-default…) restent des alias.
 */
 @import "@kvalia/ui/tailwind.css";
+/* Composants du design system (classes .kv-*), mêmes règles que le DS « KVALIA Design System » v3. */
+@import "./kvalia-ds.css" layer(components);
 
 /* Échelle de rayons Tailwind = rôles du DS, dans l'ordre croissant (noms Figma : radius/tag…sheet). */
 @theme inline {
-  --radius-sm: var(--radius-tag); /* 10 */
+  --radius-sm: var(--radius-lg); /* 12 — radius/tag est devenu une pilule en v3 */
   --radius-md: var(--radius-input); /* 16 */
   --radius-lg: var(--radius-tile); /* 24 */
   --radius-xl: var(--radius-card); /* 28 */
@@ -22,10 +26,7 @@
   --header-h: 56px;
 }
 
-/* Sport : identité sombre quel que soit le thème système (règle produit, cf. ModuleFrame / data-module). */
-[data-module="sport"] {
-  color-scheme: dark;
-}
+/* Sport suit le thème système (maquettes v3 : clair « chalk », sombre la nuit) ; l'onboarding force le sombre (data-theme="dark"). */
 
 html {
   font-family: var(--font-sans);
@@ -34,7 +35,7 @@ html {
 }
 
 body {
-  background: var(--surface-canvas);
+  background: var(--surface-page);
   color: var(--text-primary);
   min-height: 100dvh;
 }
@@ -75,9 +76,9 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Contenu d'une mini-app : laisse la place à la tab bar */
+/* Contenu d'une mini-app : laisse la place à la barre flottante */
 .contenu {
-  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px);
+  padding-bottom: calc(var(--page-scroll-bottom) + env(safe-area-inset-bottom));
 }
 
 /* Boutons et lignes : surfaces tactiles ≥ 44px */

@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { executer, ParametresSport } from "@kvalia/core";
+import { ciblesDepuisProfil, executer, ParametresSport } from "@kvalia/core";
 import { session } from "@/lib/session";
 
 /** Toutes les actions passent par `executer` : même règle que l'agent (packages/core). */
@@ -68,4 +68,32 @@ export async function remplacerAction(exerciceSeanceId: string, nouvelExerciceId
   revalidatePath("/sport");
   revalidatePath("/sport/programme");
   return r;
+}
+
+// ---------- Onboarding (première connexion) ----------
+type Profil = NonNullable<ParametresSport["profil"]>;
+
+/** Enregistre les réponses données jusqu'ici et l'étape où reprendre (« Continuer »). */
+export async function sauverOnboarding(profil: Profil, etape: number) {
+  const { supabase, user } = await session();
+  await executer("regler_sport", { profil, onboarding: { etape } }, { db: supabase, userId: user.id });
+}
+
+/** « Plus tard » : on garde les réponses et l'étape, la Home Sport propose de reprendre. */
+export async function passerOnboarding(profil: Profil, etape: number) {
+  const { supabase, user } = await session();
+  await executer("regler_sport", { profil, onboarding: { etape, passe: true } }, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+}
+
+/** Dernière réponse : on fige le profil, puis on génère le programme (même outil que l'agent). */
+export async function terminerOnboarding(profil: Profil, etape: number) {
+  const { supabase, user } = await session();
+  const params = await executer("regler_sport", { profil, onboarding: { etape, termine: true, passe: false } }, { db: supabase, userId: user.id });
+  const r = await executer("generer_programme", {}, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+  revalidatePath("/sport/programme");
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+  return { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, cibles: ciblesDepuisProfil(params.profil) };
 }

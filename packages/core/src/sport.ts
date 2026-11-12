@@ -12,6 +12,43 @@ import type { Tables } from "./database.types";
 export const ObjectifSport = z.enum(["hypertrophie", "force", "perte_de_gras", "endurance"]);
 export const Niveau = z.enum(["beginner", "intermediate", "advanced"]);
 
+// ---------- Profil d'onboarding (première connexion) ----------
+/** Réponses de l'onboarding muscu : qui tu es, ce que tu vises, quand et où tu t'entraînes. Tout est optionnel (reprise possible). */
+export const ObjectifMuscu = z.enum(["force", "masse", "seche", "explosivite", "endurance", "sante"]);
+export const Activite = z.enum(["assis", "actif", "tres_actif"]);
+export const Lieu = z.enum(["salle", "maison", "les_deux"]);
+export const TypeSalle = z.enum(["complete", "basique"]);
+export const MaterielMaison = z.enum(["halteres", "barre", "kettlebell", "elastiques", "traction", "banc"]);
+export const Douleur = z.enum(["epaule", "poignet", "genou", "dos", "nuque"]);
+export const ChoixNutrition = z.enum(["ia", "saisie", "plus_tard"]);
+export const ProfilSport = z
+  .object({
+    sexe: z.enum(["homme", "femme"]),
+    age: z.number().int().min(14).max(90),
+    taille_cm: z.number().int().min(140).max(220),
+    poids_kg: z.number().min(40).max(180),
+    activite: Activite,
+    objectifs: z.array(ObjectifMuscu),
+    poids_cible_kg: z.number().min(40).max(180),
+    seances_semaine: z.number().int().min(1).max(7),
+    /** Jours d'entraînement, 0 = dimanche … 6 = samedi (comme `jours_salle`). */
+    jours: z.array(z.number().int().min(0).max(6)),
+    duree_min: z.number().int().min(30).max(120),
+    lieu: Lieu,
+    salle: TypeSalle,
+    materiel_maison: z.array(MaterielMaison),
+    /** Événement à préparer (« Test de force », « Été »…) ; absent = pas d'échéance. */
+    evenement: z.string().nullable(),
+    echeance_semaines: z.number().int().min(4).max(40),
+    niveau: Niveau,
+    douleurs: z.array(Douleur),
+    nutrition: ChoixNutrition,
+  })
+  .partial();
+export type ProfilSport = z.infer<typeof ProfilSport>;
+/** Avancement de l'onboarding : l'étape où reprendre, et s'il est terminé ou passé (« Plus tard »). */
+export const OnboardingSport = z.object({ etape: z.number().int().min(0).max(20), termine: z.boolean(), passe: z.boolean() }).partial();
+
 export const ParametresSport = z.object({
   rythme: z
     .object({
@@ -31,6 +68,9 @@ export const ParametresSport = z.object({
   /** Poids de secours si aucune pesée. */
   poids_kg: z.number().positive().optional(),
   effort_s_par_serie: z.number().int().default(40),
+  /** Réponses de l'onboarding (première connexion) — voir `appliquerProfil`. */
+  profil: ProfilSport.optional(),
+  onboarding: OnboardingSport.optional(),
 });
 export type ParametresSport = z.infer<typeof ParametresSport>;
 export const PARAMETRES_SPORT_DEFAUT: ParametresSport = ParametresSport.parse({});
@@ -97,6 +137,86 @@ export const LIBELLES = {
   niveau: { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" } as Record<string, string>,
   focus: { hypertrophie: "Hypertrophie", force: "Force", mixte: "Mixte", deload: "Décharge" } as Record<string, string>,
 };
+
+// ---------- Onboarding → paramètres ----------
+const MATERIEL_SALLE: Record<z.infer<typeof TypeSalle>, string[]> = {
+  complete: ["barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "weighted"],
+  basique: ["dumbbell", "cable", "leverage machine", "body weight"],
+};
+const MATERIEL_MAISON_REF: Record<z.infer<typeof MaterielMaison>, string[]> = {
+  halteres: ["dumbbell"],
+  barre: ["barbell", "ez barbell"],
+  kettlebell: ["kettlebell"],
+  elastiques: ["band"],
+  traction: ["body weight"],
+  banc: [],
+};
+/** L'objectif du générateur : le premier choisi dans l'ordre de l'écran (Force, Prise de muscle, Sèche…). */
+const OBJECTIF_GENERATEUR: Record<z.infer<typeof ObjectifMuscu>, ParametresSport["objectif"]> = {
+  force: "force",
+  masse: "hypertrophie",
+  seche: "perte_de_gras",
+  explosivite: "force",
+  endurance: "endurance",
+  sante: "hypertrophie",
+};
+
+/**
+ * Traduit les réponses de l'onboarding en paramètres du générateur. Ne touche qu'aux champs renseignés :
+ * rythme (salle seulement, pas de boxe), jours, durée, objectif, niveau, nombre de semaines (échéance, bornée 4–24),
+ * matériel (salle + maison), poids de secours.
+ */
+export function appliquerProfil(params: ParametresSport, profil: ProfilSport | undefined): ParametresSport {
+  if (!profil) return params;
+  const p: ParametresSport = { ...params, rythme: { ...params.rythme } };
+  if (profil.seances_semaine != null) p.rythme = { salle: Math.min(6, profil.seances_semaine), boxe: 0 };
+  if (profil.jours?.length) {
+    p.jours_salle = [...profil.jours].sort((a, b) => a - b);
+    p.jours_boxe = [];
+  }
+  if (profil.duree_min != null) p.duree_min = profil.duree_min;
+  const premier = ObjectifMuscu.options.find((o) => profil.objectifs?.includes(o));
+  if (premier) p.objectif = OBJECTIF_GENERATEUR[premier];
+  if (profil.niveau) p.niveau = profil.niveau;
+  if (profil.echeance_semaines != null) p.semaines = Math.max(4, Math.min(24, profil.echeance_semaines));
+  if (profil.lieu) {
+    const set = new Set<string>(["body weight"]);
+    if (profil.lieu !== "maison") for (const m of MATERIEL_SALLE[profil.salle ?? "complete"]) set.add(m);
+    if (profil.lieu !== "salle") for (const m of profil.materiel_maison ?? []) for (const r of MATERIEL_MAISON_REF[m]) set.add(r);
+    p.materiel = [...set];
+  }
+  if (profil.poids_kg != null) p.poids_kg = profil.poids_kg;
+  return p;
+}
+
+/** Poids visé par défaut : −3,5 kg en sèche, +3 kg en prise de muscle, sinon maintien (arrondi au ½ kg). */
+export function poidsCibleParDefaut(profil: Pick<ProfilSport, "poids_kg" | "objectifs">): number | null {
+  if (profil.poids_kg == null) return null;
+  const o = profil.objectifs ?? [];
+  const delta = o.includes("seche") ? -3.5 : o.includes("masse") ? 3 : 0;
+  return Math.round((profil.poids_kg + delta) * 2) / 2;
+}
+
+/**
+ * Cibles énergétiques depuis le profil (Mifflin-St Jeor × activité, ajusté à l'objectif de poids) :
+ * kcal un jour de repos, kcal un jour de séance (+ durée × 5,7), protéines (2 g/kg du poids de référence).
+ * `null` tant qu'il manque sexe, âge, taille, poids ou activité.
+ */
+export function ciblesDepuisProfil(profil: ProfilSport | undefined): { kcal_repos: number; kcal_seance: number; proteines_g: number } | null {
+  if (!profil?.sexe || profil.age == null || profil.taille_cm == null || profil.poids_kg == null || !profil.activite) return null;
+  const kg = profil.poids_kg;
+  const cible = profil.poids_cible_kg ?? poidsCibleParDefaut(profil) ?? kg;
+  const ecart = cible - kg;
+  const bmr = 10 * kg + 6.25 * profil.taille_cm - 5 * profil.age + (profil.sexe === "homme" ? 5 : -161);
+  const base = bmr * { assis: 1.3, actif: 1.45, tres_actif: 1.6 }[profil.activite];
+  const ajust = ecart < -0.4 ? 0.85 : ecart > 0.4 ? 1.08 : 1;
+  const arrondi = (x: number) => Math.round(x / 10) * 10;
+  return {
+    kcal_repos: arrondi(base * ajust),
+    kcal_seance: arrondi(base * ajust + (profil.duree_min ?? 60) * 5.7),
+    proteines_g: Math.round(2 * Math.max(cible, kg - 5)),
+  };
+}
 
 // ---------- Calories ----------
 export const MET_SEANCE: Record<string, number> = {

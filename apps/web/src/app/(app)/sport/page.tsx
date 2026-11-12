@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { bilanJour, LIBELLES, parametresSport, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
-import { EntreeCarte } from "./EntreeCarte";
 import { enteteJour } from "./entete";
 import { HeroSeance } from "./HeroSeance";
 import { decaler, jourDepuis, kcalPrevues, libelleFocus, libelleType, seancesPourJour } from "./lib";
@@ -41,6 +41,9 @@ export default async function Page({ searchParams }: Props) {
     bilanJour(supabase, user.id, jour),
   ]);
   const { programme, pos } = entete;
+  // Première ouverture de Sport : ni programme, ni onboarding terminé ou passé → onboarding muscu.
+  const ob = params.onboarding;
+  if (!programme && !ob?.termine && !ob?.passe) redirect("/sport/bienvenue");
   const { poids } = await poidsActuel(supabase, user.id, params);
   const prochaine =
     seances.length === 0
@@ -56,177 +59,165 @@ export default async function Page({ searchParams }: Props) {
   const kcalSemaine = faitesSemaine.reduce((a, s) => a + Number(s.kcal ?? 0), 0);
   const focusJour = seances.find((s) => s.type !== "boxe")?.focus ?? seances[0]?.focus ?? null;
 
+  const titreDate = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  const surTitre = dansProgramme
+    ? `Sport · bloc ${libelleFocus(focusJour)?.toLowerCase() ?? pos.bloc} S${pos.semaine}/${pos.total ?? "?"}`
+    : programme && pos?.avant
+      ? "Sport · programme à venir"
+      : "Sport";
+  const etapesOnboarding = 13;
+
   return (
-    <ModuleFrame module="sport" titre="Sport" sousTitre={entete.sousTitre} action={entete.action} barre={entete.barre}>
+    <ModuleFrame module="sport" surTitre={surTitre} titre={titreDate.charAt(0).toUpperCase() + titreDate.slice(1)} action={entete.action} barre={entete.barre}>
       <RealtimeRefresh tables={["seances", "exercices_seance"]} />
 
-      {/* Programme suivi */}
-      {programme && pos && (
-        <Link
-          href="/sport/programme"
-          className="relative mt-1 block overflow-hidden rounded-lg border border-line-default bg-surface-default px-4 py-3 active:opacity-90"
-        >
-          <div className="absolute inset-y-0 left-0 w-1 bg-action-primary" aria-hidden />
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-tertiary">Programme suivi</p>
-              <p className="truncate text-sm font-semibold">{programme.nom}</p>
-              <p className="truncate text-xs text-fg-secondary">
-                {pos.avant
-                  ? `Commence le ${new Date(pos.debut + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}`
-                  : pos.apres
-                    ? "Programme terminé — génère le suivant"
-                    : [`Bloc ${pos.bloc}`, libelleFocus(focusJour), rythme?.niveau ? LIBELLES.niveau[rythme.niveau] : null].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-            {dansProgramme && (
-              <div className="shrink-0 text-right">
-                <p className="text-2xl font-semibold leading-none tracking-tight">
-                  S{pos.semaine}
-                  <span className="text-sm font-normal text-fg-tertiary">/{pos.total ?? "?"}</span>
+      <div className="flex flex-col gap-[var(--stack-lg)]">
+        {/* Onboarding passé (« Plus tard ») : la Home propose de reprendre là où on s'est arrêté. */}
+        {!programme && ob?.passe && !ob.termine && (
+          <Link
+            href="/sport/bienvenue?reprendre=1"
+            data-module="sport"
+            data-theme="dark"
+            className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised"
+          >
+            <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
+              <div className="flex items-baseline justify-between">
+                <span className="type-display-lg">
+                  {String(Math.max(0, (ob.etape ?? 1) - 1)).padStart(2, "0")}/{etapesOnboarding}
+                </span>
+                <span className="kv-mono">≈ {Math.max(1, Math.round((etapesOnboarding - (ob.etape ?? 1) + 1) * 0.2))} min</span>
+              </div>
+              <div className="kv-progress-track" aria-hidden>
+                <div className="kv-progress-fill bg-action-primary" style={{ width: `${(Math.max(0, (ob.etape ?? 1) - 1) / etapesOnboarding) * 100}%` }} />
+              </div>
+              <div>
+                <p className="type-title-lg">Ton plan attend ta réponse.</p>
+                <p className="mt-[var(--stack-xs)] type-body-sm text-fg-secondary">
+                  Sans profil, pas de séances ni de charges. On reprend là où tu t’es arrêté.
                 </p>
               </div>
-            )}
-            <Icon name="chevron_right" size={18} className="shrink-0 text-fg-tertiary" />
-          </div>
-          {dansProgramme && pos.total && (
-            <div className="mt-2.5 flex gap-0.5" aria-hidden>
-              {Array.from({ length: pos.total }, (_, i) => (
-                <span
-                  key={i}
-                  className={`h-1 flex-1 rounded-full ${i + 1 < pos.semaine ? "bg-action-primary" : i + 1 === pos.semaine ? "bg-action-primary/60" : "bg-surface-sunken"}`}
-                />
-              ))}
+              <span className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+                <span className="kv-btn-label">Reprendre</span>
+                <span className="kv-btn-end">
+                  <Icon name="arrow_forward" size={22} />
+                </span>
+              </span>
             </div>
-          )}
-        </Link>
-      )}
-
-      {/* Séance(s) du jour */}
-      <section className="mt-4">
-        {seances.length > 1 && (
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Double séance</h2>
-            <p className="text-xs text-fg-secondary">{seances.map((s) => (s.type === "boxe" ? "Boxe" : "Muscu")).join(" + ")}</p>
-          </div>
+          </Link>
         )}
-        <div className="space-y-3">
-          {seances.map((s, i) => (
-            <HeroSeance
-              key={s.id}
-              seance={s}
-              kcalPrevues={kcalPrevues(s, poids)}
-              estAujourdhui={jour === auj}
-              semaineNo={dansProgramme ? pos.semaine : null}
-              totalSemaines={pos?.total ?? null}
-              rang={seances.length > 1 ? `${i + 1}/${seances.length}` : null}
-            />
-          ))}
-        </div>
 
-        {seances.length === 0 &&
-          (programme ? (
-            <div className="rounded-lg border border-line-default bg-surface-default p-5">
-              <div className="flex items-center gap-2 text-fg-secondary">
-                <Icon name="self_improvement" size={22} />
-                <span className="text-sm font-medium">Repos</span>
-              </div>
-              <p className="mt-2 text-2xl font-semibold tracking-tight">Récupération active</p>
-              <p className="mt-1 text-sm text-fg-secondary">Marche, mobilité, sommeil. Les muscles se construisent aujourd’hui.</p>
-              {prochaine && (
-                <Link
-                  href={`/sport?jour=${prochaine.jour}`}
-                  className="mt-4 flex items-center justify-between rounded-md bg-surface-sunken px-3 py-2.5 text-sm"
-                >
-                  <span>
-                    Prochaine : <strong>{prochaine.titre}</strong> ·{" "}
-                    {new Date(prochaine.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}
-                  </span>
-                  <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-line-default p-5">
-              <p className="text-2xl font-semibold tracking-tight">Pas encore de programme</p>
-              <p className="mt-1 text-sm text-fg-secondary">Objectif, rythme, matériel : l’agent construit tes semaines en blocs de 4.</p>
+        {/* Séance(s) du jour */}
+        {seances.map((s, i) => (
+          <HeroSeance
+            key={s.id}
+            seance={s}
+            kcalPrevues={kcalPrevues(s, poids)}
+            estAujourdhui={jour === auj}
+            semaineNo={dansProgramme ? pos.semaine : null}
+            totalSemaines={pos?.total ?? null}
+            rang={seances.length > 1 ? `${i + 1}/${seances.length}` : null}
+          />
+        ))}
+
+        {seances.length === 0 && programme && (
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-lg)] shadow-card">
+            <span className="kv-tag kv-tag-neutral self-start">Repos</span>
+            <p className="type-title-lg">Récupération active</p>
+            <p className="type-body-sm text-fg-secondary">Marche, mobilité, sommeil. Les muscles se construisent aujourd’hui.</p>
+            {prochaine && (
               <Link
-                href="/sport/programme/nouveau"
-                className="tap mt-4 flex items-center justify-center gap-2 rounded-full bg-action-primary px-5 font-semibold text-fg-on-brand"
+                href={`/sport?jour=${prochaine.jour}`}
+                className="tap mt-[var(--stack-xs)] flex items-center justify-between gap-[var(--inline-md)] rounded-[var(--radius-input)] bg-surface-container-sunken px-[var(--inset-sm)] type-body-sm"
               >
-                <Icon name="auto_awesome" size={20} /> Créer mon programme
+                <span className="truncate">
+                  Prochaine : <strong>{prochaine.titre}</strong> ·{" "}
+                  {new Date(prochaine.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}
+                </span>
+                <Icon name="chevron_right" size={18} className="text-icon-tertiary" />
               </Link>
+            )}
+          </section>
+        )}
+
+        {!programme && ob?.termine && (
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)]">
+            <p className="type-title-lg">Pas de programme actif</p>
+            <p className="type-body-sm text-fg-secondary">Ton profil est prêt : l’agent recrée tes semaines en blocs de 4.</p>
+            <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg kv-btn-block mt-[var(--stack-xs)]">
+              <Icon name="auto_awesome" size={20} /> <span className="kv-btn-label">Créer mon programme</span>
+            </Link>
+          </section>
+        )}
+
+        {/* La semaine */}
+        {semaineSeances.length > 0 && (
+          <section className="rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+            <div className="flex items-baseline justify-between">
+              <h2 className="kv-overline">{dansProgramme ? `Semaine ${pos.semaine}` : "Cette semaine"}</h2>
+              <p className="kv-mono">
+                {faitesSemaine.length}/{semaineSeances.length} séances · {kcalSemaine.toLocaleString("fr-FR")} kcal
+              </p>
             </div>
-          ))}
-      </section>
+            <ol className="mt-[var(--stack-md)] grid grid-cols-7 gap-[var(--inline-xs)]">
+              {JOURS_COURTS.map((l, i) => {
+                const j = decaler(lundi, i);
+                const ss = semaineSeances.filter((s) => s.jour === j);
+                const actif = j === jour;
+                const faite = ss.length > 0 && ss.every((s) => s.etat === "faite");
+                return (
+                  <li key={j}>
+                    <Link
+                      href={`/sport?jour=${j}`}
+                      scroll={false}
+                      aria-current={actif ? "date" : undefined}
+                      aria-label={`${new Date(j + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })} : ${ss.length ? (faite ? "séance faite" : "séance prévue") : "repos"}`}
+                      className="flex flex-col items-center gap-[var(--stack-xs)]"
+                    >
+                      <span
+                        className={`flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] ${
+                          ss.length === 0
+                            ? "border border-dashed border-line-strong"
+                            : faite
+                              ? "bg-feedback-success text-icon-inverse"
+                              : "bg-action-primary text-icon-on-brand"
+                        } ${actif ? "ring-2 ring-focus-ring ring-offset-2 ring-offset-surface-container-default" : ""}`}
+                      >
+                        {faite && <Icon name="check" size={18} />}
+                      </span>
+                      <span className={`kv-mono ${j === auj ? "text-fg-brand" : ""}`}>{l}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        )}
 
-      {/* La semaine */}
-      {semaineSeances.length > 0 && (
-        <section className="mt-5 rounded-lg border border-line-default bg-surface-default p-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold">{dansProgramme ? `Semaine ${pos.semaine}` : "Cette semaine"}</h2>
-            <p className="text-xs text-fg-secondary">
-              {faitesSemaine.length}/{semaineSeances.length} séances · {kcalSemaine.toLocaleString("fr-FR")} kcal
-            </p>
-          </div>
-          <ol className="mt-3 grid grid-cols-7 gap-1">
-            {JOURS_COURTS.map((l, i) => {
-              const j = decaler(lundi, i);
-              const ss = semaineSeances.filter((s) => s.jour === j).sort((a, b) => (a.type === "boxe" ? 1 : 0) - (b.type === "boxe" ? 1 : 0));
-              const actif = j === jour;
-              return (
-                <li key={j}>
-                  <Link
-                    href={`/sport?jour=${j}`}
-                    scroll={false}
-                    aria-current={actif ? "date" : undefined}
-                    className={`flex min-h-16 flex-col items-center gap-1 rounded-md py-1.5 ${actif ? "bg-surface-brand-subtle ring-1 ring-action-primary/50" : ""}`}
-                  >
-                    <span className={`text-[10px] font-medium ${j === auj ? "text-fg-brand" : "text-fg-tertiary"}`}>{l}</span>
-                    {ss.length === 0 ? (
-                      <span className="mt-1 h-1 w-1 rounded-full bg-surface-sunken" />
-                    ) : (
-                      ss.map((s) => (
-                        <Icon
-                          key={s.id}
-                          name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
-                          size={16}
-                          filled={s.etat === "faite"}
-                          className={s.etat === "faite" ? "text-feedback-success-text" : s.type === "boxe" ? "text-fg-accent" : "text-fg-brand"}
-                        />
-                      ))
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
+        {/* Historique et énergie */}
+        <section className="grid grid-cols-2 gap-[var(--inline-md)]">
+          <Link href="/sport/historique" className="kv-stat">
+            <span className="kv-overline">Historique · {moisLabel}</span>
+            <span className="kv-stat-row">
+              <span className="kv-stat-value">{(faitesMois ?? []).length}</span>
+              <span className="kv-mono">séance{(faitesMois ?? []).length > 1 ? "s" : ""}</span>
+            </span>
+            <span className="kv-mono">{kcalMois.toLocaleString("fr-FR")} kcal</span>
+          </Link>
+          <Link href={`/nutrition?jour=${jour}`} className="kv-stat" data-module="nutrition">
+            <span className="kv-overline">Énergie · cible</span>
+            <span className="kv-stat-row">
+              <span className="kv-stat-value">{bilan.cible.toLocaleString("fr-FR")}</span>
+              <span className="kv-mono">kcal</span>
+            </span>
+            <span className="kv-mono">{bilan.brule > 0 ? `dont +${bilan.brule} sport` : "Cible du jour"}</span>
+          </Link>
         </section>
-      )}
-
-      {/* Historique et énergie */}
-      <section className="mt-3 grid grid-cols-2 gap-3">
-        <EntreeCarte
-          href="/sport/historique"
-          icone="history"
-          titre="Historique"
-          detail={`${(faitesMois ?? []).length} séance${(faitesMois ?? []).length > 1 ? "s" : ""}`}
-          sous={`${kcalMois.toLocaleString("fr-FR")} kcal en ${moisLabel}`}
-        />
-        <EntreeCarte
-          href={`/nutrition?jour=${jour}`}
-          icone="local_fire_department"
-          titre="Énergie"
-          module="nutrition"
-          detail={`${bilan.cible.toLocaleString("fr-FR")} kcal`}
-          sous={bilan.brule > 0 ? `Cible du jour, dont +${bilan.brule} sport` : "Cible du jour"}
-        />
-      </section>
-      {seances.length > 0 && (
-        <p className="mt-3 text-center text-xs text-fg-tertiary">
-          {seances.map((s) => s.titre ?? libelleType(s.type)).join(" · ")} — {params.duree_min} min visées
-        </p>
-      )}
+        {seances.length > 0 && (
+          <p className="kv-mono text-center">
+            {seances.map((s) => s.titre ?? libelleType(s.type)).join(" · ")} — {params.duree_min} min visées
+          </p>
+        )}
+      </div>
     </ModuleFrame>
   );
 }

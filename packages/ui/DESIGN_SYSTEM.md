@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| Export Figma (source) | `packages/ui/tokens/figma-variables.json` — 560 variables, 16 text styles, 9 effect styles |
+| Export Figma (source) | `packages/ui/tokens/figma-variables.json` — 1 089 variables, 68 text styles, 16 effect styles (v3) |
 | Script d'export | `packages/ui/figma/export-variables.js` (à exécuter dans Figma) |
 | Build | `pnpm --filter @kvalia/ui tokens` · CI : `tokens:check` · `tokens:strict` (contraste bloquant) |
 | CSS | `@kvalia/ui/tokens.css` · Tailwind v4 : `@kvalia/ui/tailwind.css` |
@@ -35,11 +35,13 @@ Le build échoue si : un alias est cassé, deux variables ont le même nom CSS, 
 ```
 01 Primitives ─────────────── valeurs brutes (rampes 0→900, tailles, rayons, durées…)   1 mode
       │
-02 Brand ──────────────────── palette d'une mini-app                                    7 modes
+02 Brand ──────────────────── groupes Light/ et Dark/ : un token par rôle sémantique,    7 modes
+                              alias direct d'une primitive (plus de rampes primary/accent…)
       │                       Nutrition · Sport · Quotidien · Finances · Entreprise · Documents · Objectifs
       ▼
-03 Semantic · Color ───────── rôles couleur (surface, text, border, action, feedback,   Light / Dark
-                              focus, overlay, data, elevation)
+03 Semantic · Color ───────── surface (pages), surface-container (cartes…), text, icon,   Light / Dark
+                              border, divider, action, feedback, focus, overlay, data,
+                              nutrition (app), elevation, effect (géométrie des ombres)
 03 Semantic · Typography ──── 16 rôles typo (famille, taille, interligne, graisse, approche)
 03 Semantic · Layout ──────── page, section (stack / inset), control, layer, breakpoint
 03 Semantic · Shape ───────── radius, border-width, opacity, blur
@@ -56,12 +58,23 @@ Le build échoue si : un alias est cassé, deux variables ont le même nom CSS, 
 | 03 Semantic · Shape | Value | 21 | ✅ |
 | 03 Semantic · Motion | Value | 11 | ✅ |
 
-### 2.1 Les palettes Brand
+### 2.1 Les marques (02 Brand, v3)
 
-Chaque mini-app définit trois teintes (rampes 0 → 900), avec les mêmes neutres et statuts partout :
+Chaque mini-app est un mode de **02 Brand** avec deux groupes, `Light/…` et `Dark/…`, qui portent **les mêmes noms que la sémantique** (`Light/action/primary`, `Dark/surface/page`…) et pointent chacun vers une primitive. `03 Semantic · Color` aliase `Light/X` en mode Light et `Dark/X` en mode Dark. Code : `--brand-light-<rôle>`, `--brand-dark-<rôle>` (jamais consommés par l'UI).
 
-| Mini-app | `data-brand` | primary (actions) | accent (2ᵉ teinte) | tertiary (illustrations) | Texte sur primary |
-|---|---|---|---|---|---|
+| Mini-app | `data-brand` | Page (clair) | Action principale clair / sombre | Texte sur action |
+|---|---|---|---|---|
+| Nutrition *(défaut)* | `nutrition` | oat-50 | sage-600 / sage-300 | oat-0 · sage-900 |
+| Sport | `sport` | chalk-50 | orange-400 | orange-900 |
+| Quotidien | `quotidien` | neutral-50 | green-400 | green-900 |
+| Finances | `finances` | neutral-50 | blue-400 | blue-900 |
+| Entreprise | `entreprise` | neutral-50 | violet-400 | **blanc** |
+| Documents | `documents` | neutral-50 | brass-400 | brass-900 |
+| Objectifs | `objectifs` | neutral-50 | pink-400 | pink-900 |
+
+Primitives : 17 rampes 0→900 (`neutral`, `orange`, `red`, `amber`, `green`, `blue`, `violet`, `brass`, `pink`, `chalk`, `volt`, `sage`, `oat`, `clay`, `butter`, `lilac`, `mist`) + pas translucides `--<teinte>-<pas>-aNN` + `--black`. Les opacités Figma sont en % (0–100) et converties en 0–1 par le build.
+
+---|---|---|---|---|---|
 | Nutrition *(défaut)* | `nutrition` | amber | green | orange | amber-900 |
 | Sport | `sport` | orange | red | amber | orange-900 |
 | Quotidien | `quotidien` | green | blue | amber | green-900 |
@@ -85,7 +98,7 @@ Chaque mini-app définit trois teintes (rampes 0 → 900), avec les mêmes neutr
 
 - `data-module` et `data-brand` sont équivalents ; l'app utilise `data-module` (convention du registre `packages/ui`).
 - Les modules **sans mode Brand dans Figma** (`home`, `reglages`, `capture`) héritent de la palette du parent, donc du défaut. Pour leur donner une identité : ajouter un mode dans **02 Brand** puis resynchroniser.
-- **Sport est toujours sombre** (règle produit, dans `apps/web/src/app/globals.css` : `[data-module="sport"] { color-scheme: dark }`).
+- **Sport suit le thème système** depuis la v3 (maquettes « Sport light » en chalk / orange / volt). L'onboarding et les cartes héros forcent le sombre : `data-module="sport" data-theme="dark"` sur le bloc.
 - Les axes sont imbricables : un widget Finances dans la Home porte `data-module="finances"`.
 
 Mécanique : la couche Brand est redéfinie par `[data-brand]` / `[data-module]`, et toute la couche sémantique est redéclarée sur `:root, [data-brand], [data-module]` pour que `var()` se résolve avec la palette la plus proche. Le thème passe par `light-dark()`, résolu selon le `color-scheme` le plus proche.
@@ -102,9 +115,13 @@ Unités : tailles, espacements, rayons, flous → `px` ; durées → `ms` ; grai
 
 | Groupe Figma | Classe | Exemple |
 |---|---|---|
-| `surface/*` | `bg-surface-*` | `bg-surface-canvas` (page), `bg-surface-default` (cartes), `bg-surface-sunken` (puits) |
-| `text/*` | `text-fg-*` | `text-fg-primary`, `text-fg-secondary`, `text-fg-tertiary`, `text-fg-brand` |
+| `surface/*` | `bg-surface-*` | `bg-surface-page` (fond de page **uniquement**), `bg-surface-page-gradient-from/to` |
+| `surface-container/*` | `bg-surface-container-*` | `bg-surface-container-default` (cartes), `-sunken` (puits), `-raised`, `-glass`, `-inverse`, `-brand-subtle` |
+| `text/*` | `text-fg-*` | `text-fg-primary`, `text-fg-secondary`, `text-fg-tertiary`, `text-fg-brand`, `text-fg-action` |
+| `icon/*` | `text-icon-*` | `text-icon-primary`, `text-icon-on-brand`, `text-icon-action` |
 | `border/*` | `border-line-*` | `border-line-default`, `divide-line-subtle` |
+| `divider/*` | `bg-divider-*` | séparateurs dessinés en remplissage (traits de progression) |
+| `nutrition/*` | `*-nutrition-*` | `bg-nutrition-data-protein`, `bg-nutrition-surface-meal-1` |
 | `action/*` | `bg-action-*` | `bg-action-primary text-fg-on-brand` |
 | `feedback/*` | `*-feedback-*` | `bg-feedback-danger-subtle text-feedback-danger-text` |
 | `focus/*`, `overlay/*`, `data/*` | `*-focus-*`, `*-overlay-*`, `*-data-*` | `bg-data-protein` |
@@ -117,7 +134,7 @@ Espacements, durées et rayons d'un seul coin : variables du DS (`rounded-t-[var
 
 Constantes du shell, hors Figma (`globals.css`) : `--tabbar-h` = `--control-xl` (64 px), `--header-h` = 56 px.
 
-Séances de **boxe** : 2ᵉ teinte du module (`text-fg-accent`, `bg-surface-accent` — rouge dans Sport), pour rester distinctes des séances normales (orange `action-primary`).
+Anciennes classes v2 (`bg-surface-canvas`, `bg-surface-default`, `bg-surface-sunken`, `bg-surface-brand-subtle`, `bg-data-protein`…) : alias générés vers les nouveaux rôles (`LEGACY` dans `scripts/build-tokens.mjs`), le temps de migrer les autres apps.
 
 ### 3.4 Migration depuis les tokens v0
 

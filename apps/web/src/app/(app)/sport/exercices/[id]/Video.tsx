@@ -12,7 +12,7 @@ export function Video({ src, srcF, poster, posterF }: Props) {
   const affiche = femme && posterF ? posterF : poster;
 
   return (
-    <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-black sm:mx-0 sm:rounded-lg">
+    <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-surface-container-inverse sm:mx-0 sm:rounded-lg">
       {url && !erreur ? (
         <video
           key={url}
@@ -34,7 +34,7 @@ export function Video({ src, srcF, poster, posterF }: Props) {
         </div>
       )}
       {src && srcF && (
-        <div className="absolute bottom-3 right-3 flex overflow-hidden rounded-full bg-black/60 text-xs font-medium text-white backdrop-blur">
+        <div className="absolute bottom-3 right-3 flex overflow-hidden rounded-full bg-action-glass type-label-md text-fg-primary backdrop-blur">
           <button type="button" onClick={() => setFemme(false)} className={`px-3 py-1.5 ${!femme ? "bg-white/25" : ""}`}>
             H
           </button>

@@ -84,6 +84,7 @@ function floatUnit(v) {
   if (/weight|opacity|^layer\//i.test(n)) return "";
   return "px"; // size, line-height, space, radius, border-width, blur, breakpoint
 }
+const isOpacity = (v) => v.scopes.includes("OPACITY") || /(^|\/)opacity\//i.test(v.name);
 const FONT_STACK = {
   Geist: `"Geist", var(--font-geist-sans, ui-sans-serif), system-ui, -apple-system, "Segoe UI", sans-serif`,
   "Geist Mono": `"Geist Mono", var(--font-geist-mono, ui-monospace), SFMono-Regular, Menlo, monospace`,
@@ -109,6 +110,8 @@ function cssValue(v, val) {
         return size ? `${+(val / size).toFixed(4)}em` : `${val}px`;
       }
       if (val === 9999 && unit === "px") return "9999px";
+      // Figma stocke les opacités en pourcentage (0–100) ; CSS attend 0–1.
+      if (isOpacity(v)) return `${+(val / 100).toFixed(4)}`;
       return `${val}${unit}`;
     }
   }
@@ -125,12 +128,34 @@ const shadowCss = (s) =>
   s.effects
     .filter((e) => e.type.endsWith("SHADOW"))
     .map((e) => {
-      const color = e.bound?.color ? `var(${vars.get(aliasKey(e.bound.color)).css})` : e.color;
-      return `${e.type === "INNER_SHADOW" ? "inset " : ""}${e.x}px ${e.y}px ${e.blur}px ${e.spread}px ${color}`;
+      const b = (k, raw) => (e.bound?.[k] ? `var(${vars.get(aliasKey(e.bound[k])).css})` : raw);
+      const color = b("color", e.color);
+      return `${e.type === "INNER_SHADOW" ? "inset " : ""}${b("offsetX", `${e.x}px`)} ${b("offsetY", `${e.y}px`)} ${b("radius", `${e.blur}px`)} ${b("spread", `${e.spread}px`)} ${color}`;
     })
     .join(", ") || "none";
 const roleOf = (t) => slug(t.name.split("/").pop());
 
+const LEGACY = {
+  "--surface-canvas": "--surface-page",
+  "--surface-ground": "--surface-page",
+  "--surface-ground-from": "--surface-page-gradient-from",
+  "--surface-ground-to": "--surface-page-gradient-to",
+  "--surface-default": "--surface-container-default",
+  "--surface-raised": "--surface-container-raised",
+  "--surface-sunken": "--surface-container-sunken",
+  "--surface-glass": "--surface-container-glass",
+  "--surface-inverse": "--surface-container-inverse",
+  "--surface-brand": "--surface-container-brand",
+  "--surface-brand-subtle": "--surface-container-brand-subtle",
+  "--surface-brand-muted": "--surface-container-brand-subtle",
+  "--surface-accent": "--surface-container-accent",
+  "--surface-accent-subtle": "--surface-container-accent-subtle",
+  "--data-protein": "--nutrition-data-protein",
+  "--data-carbs": "--nutrition-data-carbs",
+  "--data-fat": "--nutrition-data-fat",
+  "--data-fiber": "--nutrition-data-fiber",
+};
+const darkFloats = [];
 function buildCss() {
   const L = [];
   const list = (role) => [...vars.values()].filter((v) => v.coll.role === role);
@@ -167,17 +192,37 @@ function buildCss() {
     for (const v of [...vars.values()].filter((v) => v.coll === c)) {
       if (c.role === "theme") {
         const [l, d] = [cssValue(v, v.values.Light), cssValue(v, v.values.Dark)];
-        L.push(decl(v, l === d ? l : `light-dark(${l}, ${d})`));
+        // light-dark() n'accepte que des couleurs : les nombres (géométrie des ombres) passent par le bloc sombre plus bas.
+        L.push(decl(v, l === d || v.type !== "color" ? l : `light-dark(${l}, ${d})`));
+        if (v.type !== "color" && l !== d) darkFloats.push(decl(v, d, "    "));
       } else L.push(decl(v, cssValue(v, v.values[c.modes[0]])));
     }
   }
   L.push(`  /* Effect styles */`);
   for (const s of SRC.effectStyles) L.push(`  ${effectName(s)}: ${shadowCss(s)};`);
+  L.push(`  /* Anciens noms (v2), conservés le temps de la migration de l'app — ne pas utiliser dans du nouveau code */`);
+  for (const [old, neu] of Object.entries(LEGACY)) if (!byCss.has(old) && byCss.has(neu)) L.push(`  ${old}: var(${neu});`);
   L.push(`}\n`);
+  if (darkFloats.length) {
+    const sel = (pre) => [`${pre}`, `${pre} [data-brand]`, `${pre} [data-module]`].join(",\n");
+    L.push(
+      `/* Valeurs numériques du mode sombre (light-dark() ne gère que les couleurs) */\n${sel('[data-theme="dark"]')} {\n${darkFloats.map((d) => d.slice(2)).join("\n")}\n}`,
+    );
+    L.push(`@media (prefers-color-scheme: dark) {\n  ${sel(':root:not([data-theme="light"])').replace(/\n/g, "\n  ")} {\n${darkFloats.join("\n")}\n  }\n}\n`);
+  }
 
   L.push(`/* 5 · TYPOGRAPHIE — une classe par text style Figma : .type-<rôle> */`);
   for (const t of SRC.textStyles) {
-    const p = (k) => `var(${vars.get(aliasKey(t.bound[k])).css})`;
+    const WEIGHT = { Thin: 100, ExtraLight: 200, Light: 300, Regular: 400, Medium: 500, SemiBold: 600, Bold: 700, ExtraBold: 800, Black: 900 };
+    const fallback = {
+      fontFamily: FONT_STACK[t.fontName.family] ?? `"${t.fontName.family}", sans-serif`,
+      fontSize: "inherit",
+      lineHeight: "normal",
+      fontWeight: WEIGHT[t.fontName.style.replace(/\s/g, "")] ?? 400,
+      letterSpacing: "0",
+    };
+    const p = (k) => (t.bound[k] ? `var(${vars.get(aliasKey(t.bound[k])).css})` : fallback[k]);
+    if (!t.bound.fontSize) continue; // style d'extraction sans taille liée : pas de classe
     const extra = [
       t.textCase === "UPPER" ? "  text-transform: uppercase;" : "",
       /tabular/i.test(t.description) ? "  font-variant-numeric: tabular-nums;" : "",
@@ -195,7 +240,20 @@ function buildCss() {
 // ---------------------------------------------------------------------------
 // 4. Tailwind v4
 // ---------------------------------------------------------------------------
-const TW_PREFIX = { surface: "surface", text: "fg", border: "line", action: "action", feedback: "feedback", focus: "focus", overlay: "overlay", data: "data" };
+const TW_PREFIX = {
+  surface: "surface",
+  "surface-container": "surface-container",
+  text: "fg",
+  icon: "icon",
+  border: "line",
+  divider: "divider",
+  action: "action",
+  feedback: "feedback",
+  focus: "focus",
+  overlay: "overlay",
+  data: "data",
+  nutrition: "nutrition",
+};
 function buildTailwind() {
   const L = [`/* KVALIA OS — pont Tailwind v4. FICHIER GÉNÉRÉ. Importer après "tailwindcss" ; tokens.css doit être chargé. */`, `@theme inline {`];
   for (const v of [...vars.values()].filter((v) => v.coll.role === "theme" && v.type === "color")) {
@@ -203,6 +261,8 @@ function buildTailwind() {
     if (!TW_PREFIX[g]) continue;
     L.push(`  --color-${TW_PREFIX[g]}-${rest.join("-")}: var(${v.css});`);
   }
+  // Anciennes classes (v2) → nouveaux rôles, le temps de migrer l'app (bg-surface-canvas → bg-surface-page…).
+  for (const [old, neu] of Object.entries(LEGACY)) if (byCss.has(neu)) L.push(`  --color-${old.slice(2)}: var(${neu});`);
   // Préfixe distinct des noms DS (--shadow-1…) pour éviter toute référence circulaire.
   for (const s of SRC.effectStyles)
     L.push(
@@ -240,8 +300,8 @@ function buildTs() {
   const brands = BRANDS.map((b) => ({
     key: slug(b),
     label: b,
-    primary: resolve(`${brandColl.index}:Color/primary/400`, { ...DEFAULT, brand: b }),
-    onPrimary: resolve(`${brandColl.index}:Color/primary/on`, { ...DEFAULT, brand: b }),
+    primary: resolve(`${brandColl.index}:Light/action/primary`, { ...DEFAULT, brand: b }),
+    onPrimary: resolve(`${brandColl.index}:Light/action/on-primary`, { ...DEFAULT, brand: b }),
   }));
   const semantic = [...vars.values()].filter((v) => v.coll.role !== "primitives" && v.coll.role !== "brand").map((v) => v.css);
   const effects = SRC.effectStyles.map(effectName);
@@ -261,7 +321,7 @@ export type TypeRole = (typeof typeRoles)[number];
 export const tokenNames = ${tsLiteral([...semantic, ...effects])} as const;
 export type TokenName = (typeof tokenNames)[number];
 
-/** \`cssVar("--surface-canvas")\` → \`"var(--surface-canvas)"\`. */
+/** \`cssVar("--surface-page")\` → \`"var(--surface-page)"\`. */
 export const cssVar = (name: TokenName, fallback?: string) => (fallback ? \`var(\${name}, \${fallback})\` : \`var(\${name})\`);
 /** \`typeClass("title-md")\` → \`"type-title-md"\`. */
 export const typeClass = (role: TypeRole) => \`type-\${role}\` as const;
@@ -287,26 +347,26 @@ const ratio = (a, b) => {
   const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
   return (x + 0.05) / (y + 0.05);
 };
-const SURF = ["surface/canvas", "surface/default", "surface/raised"];
+const SURF = ["surface/page", "surface-container/default", "surface-container/raised"];
 const PAIRS = [
   ...["text/primary", "text/secondary", "text/tertiary", "text/brand", "text/link"].flatMap((f) => SURF.map((s) => [f, s, 4.5])),
-  ["text/brand", "surface/brand-subtle", 4.5],
-  ["text/brand", "surface/brand-muted", 4.5],
+  ["text/brand", "surface-container/brand-subtle", 4.5],
   ["text/on-brand", "action/primary", 4.5],
   ["text/on-brand", "action/primary-hover", 4.5],
   ["text/on-brand", "action/primary-pressed", 4.5],
-  ["text/on-brand", "surface/brand", 4.5],
-  ["text/inverse", "surface/inverse", 4.5],
+  ["text/on-brand", "surface-container/brand", 4.5],
+  ["icon/on-brand", "action/primary", 3],
+  ["text/inverse", "surface-container/inverse", 4.5],
   ["text/inverse", "action/secondary", 4.5],
-  ["text/primary", "surface/glass", 4.5],
+  ["text/primary", "surface-container/glass", 4.5],
   ["text/primary", "action/tertiary", 4.5],
   ...["success", "warning", "danger", "info"].flatMap((k) => [
-    [`feedback/${k}-text`, "surface/default", 4.5],
+    [`feedback/${k}-text`, "surface-container/default", 4.5],
     [`feedback/${k}-text`, `feedback/${k}-subtle`, 4.5],
   ]),
-  ["focus/ring", "surface/canvas", 3],
-  ["focus/ring", "surface/default", 3],
-  ["border/strong", "surface/default", 3, "info"],
+  ["focus/ring", "surface/page", 3],
+  ["focus/ring", "surface-container/default", 3],
+  ["border/strong", "surface-container/default", 3, "info"],
 ];
 function buildContrast() {
   const themeColl = colls.find((c) => c.role === "theme");
@@ -315,7 +375,7 @@ function buildContrast() {
   for (const brand of BRANDS)
     for (const theme of ["Light", "Dark"]) {
       const ctx = { brand, theme };
-      const canvas = rgba(resolve(key("surface/canvas"), ctx));
+      const canvas = rgba(resolve(key("surface/page"), ctx));
       for (const [f, b, min, level] of PAIRS) {
         if (!vars.has(key(f)) || !vars.has(key(b))) continue;
         const bg = over(rgba(resolve(key(b), ctx)), canvas);
@@ -330,7 +390,7 @@ function buildContrast() {
     ``,
     `Généré par \`scripts/build-tokens.mjs\` depuis l'export Figma. ${rows.length} vérifications (${BRANDS.length} mini-apps × 2 thèmes). **Sous le seuil : ${failing.length}** · indicatif sous le seuil (⚠️) : ${rows.filter((r) => r.info && !r.ok).length}.`,
     ``,
-    `Seuils : texte 4.5:1 (WCAG 1.4.3 AA), focus 3:1 (1.4.11). \`border/strong\` est indicatif (bordures décoratives). Couleurs translucides composées sur \`surface/canvas\`. \`--strict\` rend ces échecs bloquants.`,
+    `Seuils : texte 4.5:1 (WCAG 1.4.3 AA), focus 3:1 (1.4.11). \`border/strong\` est indicatif (bordures décoratives). Couleurs translucides composées sur \`surface/page\`. \`--strict\` rend ces échecs bloquants.`,
     ``,
   ];
   if (failing.length) {

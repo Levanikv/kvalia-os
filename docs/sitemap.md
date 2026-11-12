@@ -12,17 +12,19 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /quotidien/taches             Tâches (dues, à venir, faites)
 │   └── /quotidien/habitudes          Habitudes du jour + séries
 ├── /sport                Mini-app Sport (sombre)
+│   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 12–13 questions
+│   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : objectifs, lieu, matériel…)
+│   │                                 → génération → plan prêt. « Plus tard » → reprise depuis la Home (?reprendre=1)
 │   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), programme suivi,
 │   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
-│   ├── /sport/seance/[id]            Séance : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
+│   ├── /sport/seance/[id]            Séance (plein écran) : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
 │   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
 │   ├── /sport/programme              Programme actif : hero (anneau, semaine n / N, chiffres), frise des phases,
 │   │                                 séances de la semaine en carrousel, semaine type, toutes les semaines
-│   ├── /sport/programme/nouveau      Créer / régénérer, plein écran en étapes : objectif → niveau → semaine
-│   │                                 → séance → matériel → aperçu → génération (sans barre ni « + »)
+│   ├── /sport/programme/nouveau      Créer / régénérer → redirige vers l'onboarding pré-rempli (/sport/bienvenue?revoir=1)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition (clair)
 │   ├── /nutrition                    Journal du jour (anneau, 3 barres, repas) · ?jour=YYYY-MM-DD
@@ -68,7 +70,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 - **Barre inférieure par application** (`onglets` dans le registre, composant `ModuleBar`) : les entrées principales de l'app courante, à un tap. Sport & Nutrition : **Jour · Programme · Exercices · Nutrition**. Quotidien : Courses · Tâches · Habitudes. Finances : Vue · Transactions · Budgets · Comptes. Entreprise : Pilotage · Factures · Charges · Échéances · Simuler. Home : Aujourd'hui · Objectifs · Documents. Réglages : Réglages · Sport · Nutrition · Journal. L'onglet actif = le préfixe d'URL le plus long qui correspond (`/sport/seance/x` → Jour).
 - **Sport & Nutrition** : une seule application, deux modules (préfixes `/sport` et `/nutrition`), chacun avec son accent et son identité (Sport sombre, Nutrition clair). **L'en-tête est le même** sur les deux (`sport/entete.tsx`) : pastille du jour (Aujourd'hui / Demain / Il y a n jours), date courte, « Semaine n / N » du programme (sinon semaine ISO), bouton « Auj. » quand on s'est déplacé. La **bande de jours** est partagée : scrollable, le jour sélectionné centré, un point par séance (deux = double séance), `?jour=YYYY-MM-DD` conservé en passant de l'un à l'autre.
 - **Plusieurs séances par jour** : un jour peut porter muscu + boxe (cocher le même jour dans les deux). Ordre d'affichage : salle puis boxe.
-- **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche.
+- **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche. Onboarding Sport : `/sport` redirige vers `/sport/bienvenue` tant qu'il n'y a ni programme ni onboarding terminé ou passé.
+- **Barre inférieure** (v3) : « Tab bar skeleton » du design system — pilule flottante d'icônes (onglets de l'app) + bouton « + » à côté.
 - **Feuilles modales** (`BottomSheet`, façon iOS : voile, poignée, zone sûre, Échap) pour tout ce qui est contextuel : menu apps, Terminer la séance (ressenti), détail d'un exercice (charge, reps, remplacer), équivalents. Pas de modale centrée.
 - **Header de mini-app** : burger (ou flèche retour sur un écran de détail), titre + sous-titre (date, semaine), avatar à droite → Réglages, ou une action contextuelle.
 - **Finances vs Entreprise** : Finances = comptes perso ; Entreprise = tout ce qui touche la SASU (comptes pro, factures, charges, échéances, simulateur, conseils). Une transaction appartient à l'un ou à l'autre (`perimetre`), jamais aux deux.

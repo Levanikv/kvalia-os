@@ -22,12 +22,13 @@ type Seance = {
 };
 type Props = { seance: Seance; exercices: ExoLigne[]; kcalPrevues: number; poids: { valeur: number; source: string } };
 
+// Ressenti 1–5 : des mots, pas d'emoji (règle du design system : jamais d'emoji comme icône).
 const RESSENTIS = [
-  { v: 1, e: "😮‍💨", l: "Épuisé" },
-  { v: 2, e: "😓", l: "Dur" },
-  { v: 3, e: "🙂", l: "Correct" },
-  { v: 4, e: "💪", l: "Bien" },
-  { v: 5, e: "🔥", l: "Au top" },
+  { v: 1, l: "Épuisé" },
+  { v: 2, l: "Dur" },
+  { v: 3, l: "Correct" },
+  { v: 4, l: "Bien" },
+  { v: 5, l: "Au top" },
 ];
 
 export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
@@ -67,114 +68,113 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
     });
   }
 
+  const seriesTotal = exos.reduce((x, e) => x + e.series, 0);
+  const seriesFaites = exos.filter((e) => e.fait).reduce((x, e) => x + e.series, 0);
+  const repos = (s: number | null) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : null);
+
   return (
-    <div className="pt-2">
-      {/* Bandeau kcal / progression */}
-      <div className="rounded-lg border border-line-default bg-surface-default p-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-fg-tertiary">{faite ? "Brûlées" : "Brûlées jusqu’ici"}</p>
-            <p className="text-3xl font-semibold tracking-tight">
-              {kcal}
-              <span className="text-base font-normal text-fg-secondary"> / {faite ? kcal : kcalPrevues} kcal</span>
-            </p>
-          </div>
-          <div className="text-right text-xs text-fg-secondary">
-            <p>{seance.duree_min ?? "—"} min</p>
-            {exos.length > 0 && (
-              <p>
-                {faits}/{exos.length} exercices
-              </p>
-            )}
-          </div>
+    <div className="flex flex-col gap-[var(--stack-lg)]">
+      {/* Calories et progression */}
+      <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+        <div className="flex items-end justify-between gap-[var(--inline-md)]">
+          <p className="flex items-baseline gap-[var(--inline-sm)]">
+            <span className="type-display-lg">{kcal}</span>
+            <span className="kv-mono">kcal {faite ? "brûlées" : "brûlées"}</span>
+          </p>
+          <p className="kv-mono">≈ {faite ? kcal : kcalPrevues} prévues</p>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken">
-          <div className={`h-full transition-all ${faite ? "bg-feedback-success" : "bg-action-primary"}`} style={{ width: `${progression * 100}%` }} />
+        <div className="kv-progress-track" aria-hidden>
+          <div className={`kv-progress-fill ${faite ? "bg-feedback-success" : "bg-action-primary"}`} style={{ width: `${progression * 100}%` }} />
         </div>
-        <p className="mt-2 text-[11px] text-fg-tertiary">
-          Estimation MET × {poids.valeur} kg{poids.source === "defaut" ? " (poids par défaut — renseigne-le dans les réglages)" : ""}.
+        <p className="flex justify-between kv-mono">
+          <span>
+            {faits} / {exos.length} exercices
+          </span>
+          <span>
+            {seriesFaites} / {seriesTotal} séries
+          </span>
         </p>
-      </div>
+        {poids.source === "defaut" && <p className="kv-mono">Estimation sur 80 kg : renseigne ton poids dans les réglages.</p>}
+      </section>
 
-      {seance.notes && <p className="mt-4 rounded-lg bg-surface-brand-subtle px-4 py-3 text-sm">{seance.notes}</p>}
+      {seance.notes && (
+        <p className="rounded-[var(--radius-input)] bg-surface-container-brand-subtle px-[var(--inset-md)] py-[var(--inset-sm)] type-body-sm">{seance.notes}</p>
+      )}
 
-      {/* Exercices */}
+      {/* Exercices (design system : Sport/Exercise row) */}
       {exos.length > 0 && (
-        <ol className="mt-4 overflow-hidden rounded-lg border border-line-default bg-surface-default">
+        <ol className="flex flex-col gap-[var(--stack-sm)]">
           {exos.map((e, i) => (
-            <li key={e.id} className="flex items-stretch border-b border-line-default last:border-b-0">
-              <Link
-                href={`/sport/exercices/${e.exercice_id}?seance=${seance.id}`}
-                aria-label={`Vidéo : ${e.nom}`}
-                className="flex shrink-0 items-center py-2.5 pl-3 active:opacity-80"
-              >
-                <div className="relative h-14 w-14 overflow-hidden rounded-md bg-surface-sunken">
-                  {e.image && <img src={e.image} alt="" className="h-full w-full object-cover" loading="lazy" />}
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
-                    <Icon name="play_arrow" size={22} filled />
-                  </span>
-                </div>
+            <li key={e.id} className={`kv-exo ${e.fait ? "is-done" : ""}`}>
+              <Link href={`/sport/exercices/${e.exercice_id}?seance=${seance.id}`} aria-label={`Vidéo : ${e.nom}`} className="kv-exo-thumb overflow-hidden">
+                {e.image && <img src={e.image} alt="" className="h-full w-full object-cover" loading="lazy" />}
+                <span className="kv-exo-play" aria-hidden>
+                  <Icon name="play_arrow" size={16} filled />
+                </span>
               </Link>
-              <button
-                type="button"
-                onClick={() => setOuvert(e.id)}
-                className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2.5 text-left active:opacity-80"
-              >
-                <p className={`truncate font-medium ${e.fait ? "text-fg-tertiary line-through" : ""}`}>
-                  {i + 1}. {e.nom}
-                </p>
-                <p className="text-xs text-fg-secondary">
-                  {e.series} × {e.reps_faites ?? e.reps}
-                  {e.charge_kg !== null ? (
-                    <span className="ml-1.5 rounded-full bg-action-primary/20 px-1.5 py-px text-[11px] font-semibold text-fg-brand">{e.charge_kg} kg</span>
-                  ) : e.derniere ? (
-                    <span className="ml-1.5 text-fg-tertiary">· dernière fois {e.derniere.charge_kg} kg</span>
-                  ) : null}
-                </p>
-                <p className="text-[11px] text-fg-tertiary">
-                  {libellePartie(e.partie)} · {e.kcal} kcal{e.substitut ? " · remplacé" : ""}
-                  {e.repos_s ? ` · repos ${e.repos_s} s` : ""}
-                </p>
+              <button type="button" onClick={() => setOuvert(e.id)} className="kv-exo-main" aria-label={`Détails : ${e.nom}`}>
+                <span className="kv-exo-cap">
+                  {String(i + 1).padStart(2, "0")} · {libellePartie(e.partie)}
+                  {e.substitut ? " · remplacé" : ""}
+                </span>
+                <span className="kv-exo-title truncate">{e.nom}</span>
+                <span className="kv-exo-meta">
+                  {[
+                    `${e.series} × ${e.reps_faites ?? e.reps}`,
+                    e.charge_kg !== null ? `${e.charge_kg} kg` : e.derniere ? `dernière ${e.derniere.charge_kg} kg` : null,
+                    repos(e.repos_s),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => toggle(e)}
                 disabled={faite}
-                aria-label={e.fait ? "Décocher" : "Fait"}
-                className="tap flex w-16 shrink-0 items-center justify-center active:opacity-70 disabled:opacity-60"
+                aria-pressed={e.fait}
+                aria-label={`${e.fait ? "Annuler" : "Terminer"} : ${e.nom}`}
+                className={`kv-row-check ${e.fait ? "is-on" : ""}`}
               >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${e.fait ? "border-feedback-success bg-feedback-success text-fg-inverse" : "border-line-default"}`}
-                >
-                  {e.fait && <Icon name="check" size={20} />}
-                </span>
+                <Icon name="check" size={20} />
               </button>
             </li>
           ))}
         </ol>
       )}
-      {exos.length > 0 && (
-        <p className="mt-2 px-1 text-[11px] text-fg-tertiary">
-          Tape le nom pour noter la charge ou remplacer l’exercice, la vignette pour la vidéo, le rond pour valider.
-        </p>
-      )}
+      {exos.length > 0 && !faite && <p className="kv-mono">Le nom ouvre la charge et le remplacement, la vignette la vidéo, le rond valide.</p>}
 
-      {/* Résumé si faite */}
+      {/* Résumé si faite (maquette « Fin de séance ») */}
       {faite && (
-        <div className="mt-4 rounded-lg border border-feedback-success/40 bg-feedback-success/10 p-4">
-          <p className="flex items-center gap-2 font-semibold">
-            <Icon name="task_alt" size={22} className="text-feedback-success-text" filled /> Séance terminée
-          </p>
-          <p className="mt-1 text-sm text-fg-secondary">
-            {seance.kcal} kcal · {seance.duree_min} min
-            {seance.ressenti ? ` · ressenti ${RESSENTIS.find((r) => r.v === seance.ressenti)?.e ?? seance.ressenti}` : ""}
+        <section className="flex flex-col gap-[var(--stack-md)]">
+          <span className="kv-tag kv-tag-success self-start">
+            Séance terminée
             {seance.faite_le ? ` · ${new Date(seance.faite_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : ""}
-          </p>
-          <Link href={`/nutrition?jour=${seance.jour}`} className="mt-3 flex items-center justify-between rounded-md bg-surface-default px-3 py-2.5 text-sm">
+          </span>
+          <div className="grid grid-cols-2 gap-[var(--inline-md)]">
+            {[
+              ["Calories", String(seance.kcal), "kcal"],
+              ["Durée", String(seance.duree_min ?? "—"), "min"],
+              ["Séries", String(seriesTotal), ""],
+              ["Ressenti", RESSENTIS.find((r) => r.v === seance.ressenti)?.l ?? "—", ""],
+            ].map(([k, v, u]) => (
+              <div key={k} className="kv-stat">
+                <span className="kv-overline">{k}</span>
+                <span className="kv-stat-row">
+                  <span className="kv-stat-value">{v}</span>
+                  {u && <span className="kv-mono">{u}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+          <Link
+            href={`/nutrition?jour=${seance.jour}`}
+            className="tap flex items-center justify-between gap-[var(--inline-md)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default px-[var(--inset-md)] type-body-sm"
+          >
             <span>Cible nutrition du jour ajustée de +{seance.kcal} kcal</span>
-            <Icon name="chevron_right" size={18} className="text-fg-tertiary" />
+            <Icon name="chevron_right" size={18} className="text-icon-tertiary" />
           </Link>
-        </div>
+        </section>
       )}
 
       {/* Feuille exercice (charge, reps, remplacer) */}
@@ -191,14 +191,13 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
 
       {/* Barre d'action */}
       {!faite && (
-        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-20 px-4 pb-3">
+        <div className="fixed inset-x-0 bottom-0 z-20 px-[var(--page-gutter)] pb-[calc(var(--stack-lg)+env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-lg">
-            <button
-              type="button"
-              onClick={() => setFin(true)}
-              className="tap flex w-full items-center justify-center gap-2 rounded-full bg-action-primary font-semibold text-fg-on-brand shadow-lg"
-            >
-              <Icon name="flag" size={22} filled /> {exos.length > 0 && faits < exos.length ? `Terminer (${faits}/${exos.length})` : "Terminer la séance"}
+            <button type="button" onClick={() => setFin(true)} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
+              <Icon name={faits === 0 && seance.etat === "prevue" ? "play_arrow" : "flag"} size={22} filled />
+              <span className="kv-btn-label">
+                {exos.length > 0 && faits < exos.length ? `Terminer la séance · ${faits}/${exos.length}` : "Terminer la séance"}
+              </span>
             </button>
           </div>
         </div>
@@ -206,16 +205,18 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
 
       {/* Feuille Terminer */}
       <BottomSheet ouvert={fin} onFermer={() => setFin(false)} titre="Comment c’était ?" module="sport">
-        <div className="flex justify-between">
+        <div className="grid grid-cols-5 gap-[var(--inline-xs)]" role="radiogroup" aria-label="Ressenti">
           {RESSENTIS.map((r) => (
             <button
               key={r.v}
               type="button"
+              role="radio"
+              aria-checked={ressenti === r.v}
               onClick={() => setRessenti(r.v)}
-              className={`flex w-14 flex-col items-center gap-1 rounded-lg py-2 text-2xl ${ressenti === r.v ? "bg-action-primary/20 ring-2 ring-action-primary" : "bg-surface-default"}`}
+              className={`flex flex-col items-center gap-[var(--stack-2xs)] rounded-[var(--radius-input)] py-[var(--control-inset-sm)] ${ressenti === r.v ? "bg-surface-container-inverse text-fg-inverse" : "border border-line-default text-fg-secondary"}`}
             >
-              <span>{r.e}</span>
-              <span className="text-[10px] text-fg-secondary">{r.l}</span>
+              <span className="type-numeric-md">{r.v}</span>
+              <span className="kv-mono text-inherit">{r.l}</span>
             </button>
           ))}
         </div>
@@ -223,29 +224,24 @@ export function Checklist({ seance, exercices, kcalPrevues, poids }: Props) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Une note ? (charge, douleur, PR…)"
-          className="mt-4 w-full rounded-md border border-line-default bg-surface-default px-3 py-2.5 text-sm outline-none focus:border-action-primary"
+          className="mt-[var(--stack-lg)] h-[var(--control-lg)] w-full rounded-[var(--radius-input)] border border-line-default bg-surface-container-default px-[var(--inset-md)] type-body-md outline-none focus:border-focus-ring"
         />
-        <div className="mt-4 rounded-md bg-surface-default px-3 py-2.5 text-sm text-fg-secondary">
+        <div className="mt-[var(--stack-md)] rounded-[var(--radius-input)] bg-surface-container-sunken px-[var(--inset-md)] py-[var(--inset-sm)] type-body-sm text-fg-secondary">
           <p>
             <strong className="text-fg-primary">{kcalFaites > 0 ? kcalFaites : kcalPrevues} kcal</strong> seront ajoutées à ta cible nutrition du jour.
           </p>
           {exos.length > 0 && faits < exos.length && <p className="mt-1">Les {exos.length - faits} exercices restants seront comptés comme faits.</p>}
         </div>
-        <div className="mt-4 flex gap-2">
-          <button type="button" onClick={() => setFin(false)} className="tap flex-1 rounded-full bg-surface-default font-medium">
+        <div className="mt-[var(--stack-lg)] flex gap-[var(--inline-md)]">
+          <button type="button" onClick={() => setFin(false)} className="kv-btn kv-btn-outline kv-btn-lg flex-1">
             Annuler
           </button>
-          <button
-            type="button"
-            onClick={valider}
-            disabled={enCours}
-            className="tap flex-1 rounded-full bg-action-primary font-semibold text-fg-on-brand disabled:opacity-60"
-          >
-            {enCours ? "…" : "Terminer la séance"}
+          <button type="button" onClick={valider} disabled={enCours} className="kv-btn kv-btn-primary kv-btn-lg flex-1">
+            {enCours ? "…" : "Enregistrer"}
           </button>
         </div>
       </BottomSheet>
-      <div className="h-20" />
+      <div className="h-[var(--page-scroll-bottom)]" />
     </div>
   );
 }

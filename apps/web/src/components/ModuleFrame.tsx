@@ -15,6 +15,8 @@ type Props = {
   gauche?: ReactNode;
   /** Barre sous le header (filtres, bande de jours). */
   barre?: ReactNode;
+  /** Surtitre mono au-dessus du titre (« Sport · bloc force S3/8 »). Avec lui, le titre passe en grand (display). */
+  surTitre?: ReactNode;
   children: ReactNode;
 };
 
@@ -22,23 +24,24 @@ type Props = {
  * Cadre d'une mini-app : pose `data-module` (accent, thème), header avec menu apps + titre + avatar, contenu.
  * La barre inférieure de l'application et le bouton « + » vivent dans le layout (app), en dehors du cadre.
  */
-export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, children }: Props) {
+export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, surTitre, children }: Props) {
   const m = module(key);
   const initiale = await initialeUtilisateur();
   return (
-    <div data-module={key} className="min-h-dvh bg-surface-canvas text-fg-primary">
-      <header className="sticky top-0 z-30 bg-surface-canvas/85 pt-safe backdrop-blur-md">
-        <div className="mx-auto flex h-[var(--header-h)] max-w-lg items-center gap-2 px-3">
+    <div data-module={key} className="kv-ground relative min-h-dvh overflow-clip bg-surface-page text-fg-primary">
+      <header className="sticky top-0 z-30 bg-surface-page/85 pt-safe backdrop-blur-md">
+        <div className={`mx-auto flex max-w-lg gap-2 px-3 ${surTitre ? "items-end py-[var(--stack-sm)]" : "h-[var(--header-h)] items-center"}`}>
           {gauche ?? <MenuApps />}
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-semibold tracking-tight">{titre ?? m.titre}</h1>
-            {sousTitre && <div className="truncate text-xs text-fg-secondary">{sousTitre}</div>}
+            {surTitre && <div className="kv-overline truncate text-fg-brand">{surTitre}</div>}
+            <h1 className={`truncate ${surTitre ? "type-display-md" : "type-title-md"}`}>{titre ?? m.titre}</h1>
+            {sousTitre && <div className="truncate type-body-sm text-fg-secondary">{sousTitre}</div>}
           </div>
           {action ?? (
             <Link
               href="/reglages"
               aria-label="Réglages et compte"
-              className="tap flex h-10 w-10 items-center justify-center rounded-full bg-surface-brand-subtle text-sm font-semibold text-fg-brand"
+              className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle type-label-md text-fg-brand"
             >
               {initiale}
             </Link>
@@ -46,7 +49,7 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
         </div>
         {barre && <div className="mx-auto max-w-lg pb-2">{barre}</div>}
       </header>
-      <main className="contenu mx-auto max-w-lg px-4 pt-2">{children}</main>
+      <main className="kv-ground-content contenu mx-auto max-w-lg px-[var(--page-gutter)] pt-[var(--stack-sm)]">{children}</main>
     </div>
   );
 }

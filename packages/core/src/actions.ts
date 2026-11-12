@@ -7,6 +7,8 @@ import type { VueJour } from "./schemas";
 import type { ToolInput, ToolName, ToolOutput } from "./tools";
 import {
   ParametresSport,
+  appliquerProfil,
+  ciblesDepuisProfil,
   cocherExercice,
   enregistrerParametresSport,
   equivalents,
@@ -19,6 +21,7 @@ import {
   seancePrincipale,
   terminerSeance,
 } from "./sport";
+import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
 import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 
@@ -224,7 +227,18 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "regler_sport": {
       const e = entree as ToolInput<"regler_sport">;
       const actuels = await parametresSport(ctx.db, ctx.userId);
-      const fusion = ParametresSport.parse({ ...actuels, ...e, rythme: { ...actuels.rythme, ...(e.rythme ?? {}) } });
+      const profil = e.profil ? { ...(actuels.profil ?? {}), ...e.profil } : actuels.profil;
+      const onboarding = e.onboarding ? { ...(actuels.onboarding ?? {}), ...e.onboarding } : actuels.onboarding;
+      let fusion = ParametresSport.parse({ ...actuels, ...e, rythme: { ...actuels.rythme, ...(e.rythme ?? {}) }, profil, onboarding });
+      // Des réponses d'onboarding arrivent : elles pilotent le programme, et la nutrition si l'utilisateur l'a choisi.
+      if (e.profil) {
+        fusion = appliquerProfil(fusion, fusion.profil);
+        const cibles = ciblesDepuisProfil(fusion.profil);
+        if (cibles && (fusion.profil?.nutrition === "ia" || fusion.profil?.nutrition === "saisie")) {
+          const n = await parametresNutrition(ctx.db, ctx.userId);
+          await enregistrerParametresNutrition(ctx.db, ctx.userId, { ...n, cible_kcal: cibles.kcal_repos, proteines_g: cibles.proteines_g });
+        }
+      }
       await enregistrerParametresSport(ctx.db, ctx.userId, fusion);
       return fusion as ToolOutput<T>;
     }

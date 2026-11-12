@@ -111,7 +111,7 @@ export const tools = {
 
   regler_sport: {
     description:
-      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Ne régénère pas le programme : appeler generer_programme ensuite.",
+      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.",
     input: ParametresSport.partial(),
     output: ParametresSport,
   },

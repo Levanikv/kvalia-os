@@ -130,7 +130,7 @@ export function ongletPour(key: ModuleKey): ModuleKey {
 }
 
 /** Parcours plein écran (création de programme…) : ni barre inférieure ni bouton « + ». */
-export const ECRANS_PLEIN_ECRAN: readonly string[] = ["/sport/programme/nouveau"];
+export const ECRANS_PLEIN_ECRAN: readonly string[] = ["/sport/programme/nouveau", "/sport/bienvenue", "/sport/seance"];
 export function estPleinEcran(chemin: string): boolean {
   return ECRANS_PLEIN_ECRAN.some((p) => chemin === p || chemin.startsWith(p + "/"));
 }

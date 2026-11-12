@@ -1,19 +1,19 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { estPleinEcran } from "@kvalia/ui";
+import { barrePour, estPleinEcran, moduleDepuisChemin } from "@kvalia/ui";
 import { Icon } from "./Icon";
 
-/** Bouton « + » flottant : capture rapide (texte, micro). Masqué sur la page de capture et les parcours plein écran. */
+/** Bouton « + » flottant de secours : seulement quand l'app n'a pas de barre (la barre porte déjà le « + »). */
 export function Fab() {
   const pathname = usePathname();
-  if (pathname.startsWith("/capture") || estPleinEcran(pathname)) return null;
+  if (pathname.startsWith("/capture") || estPleinEcran(pathname) || barrePour(moduleDepuisChemin(pathname)).length > 0) return null;
   return (
     <Link
       href="/capture"
       aria-label="Capture rapide"
-      className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-action-primary text-fg-on-brand shadow-lg shadow-black/20 transition-transform active:scale-95"
-      style={{ bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)" }}
+      className="kv-iconbtn kv-iconbtn-primary kv-iconbtn-lg fixed right-[var(--page-gutter)] z-50"
+      style={{ bottom: "calc(var(--page-tabbar-offset) + env(safe-area-inset-bottom))" }}
     >
       <Icon name="add" size={28} />
     </Link>

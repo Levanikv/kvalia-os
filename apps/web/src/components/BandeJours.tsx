@@ -39,7 +39,7 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
 
   return (
     <nav aria-label="Jours">
-      <ul ref={ref} className="bande-jours flex gap-1 overflow-x-auto px-4 py-1">
+      <ul ref={ref} className="bande-jours flex gap-[var(--inline-md)] overflow-x-auto px-[var(--page-gutter)] py-[var(--stack-xs)]">
         {jours.map((j) => {
           const m = marques[j];
           const actif = j === jour;
@@ -53,17 +53,21 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
                 aria-current={actif ? "date" : undefined}
                 aria-label={`${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}${m?.length ? ` · ${m.length} séance${m.length > 1 ? "s" : ""}` : ""}`}
                 scroll={false}
-                className={`tap relative flex w-12 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors ${actif ? "bg-action-primary text-fg-on-brand" : estAuj ? "bg-surface-brand-subtle" : ""}`}
+                className={`relative flex h-[66px] w-[var(--date-pill-w)] flex-col items-center justify-center gap-[var(--stack-2xs)] rounded-[var(--radius-control)] transition-colors ${actif ? "bg-action-primary text-fg-on-brand shadow-brand-glow" : "border border-line-subtle bg-surface-container-default"} ${!actif && estAuj ? "border-[length:var(--border-width-strong)] border-focus-ring" : ""}`}
               >
-                <span className={`text-[10px] uppercase ${actif ? "text-fg-on-brand/80" : "text-fg-tertiary"}`}>
-                  {premierDuMois ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : d.toLocaleDateString("fr-FR", { weekday: "narrow" })}
+                <span className={`font-mono text-[10px] uppercase tracking-[0.08em] ${actif ? "text-fg-on-brand" : "text-fg-tertiary"}`}>
+                  {premierDuMois
+                    ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")
+                    : estAuj
+                      ? "Auj"
+                      : d.toLocaleDateString("fr-FR", { weekday: "narrow" })}
                 </span>
-                <span className={`text-base font-semibold leading-tight ${!actif && estAuj ? "text-fg-brand" : ""}`}>{d.getDate()}</span>
+                <span className={`type-title-md ${!actif && estAuj ? "text-fg-brand" : ""}`}>{d.getDate()}</span>
                 <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
                   {(m ?? []).slice(0, 3).map((x, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${x.etat === "faite" ? (actif ? "bg-fg-on-brand" : "bg-feedback-success") : x.type === "boxe" ? (actif ? "bg-fg-on-brand/80" : "bg-surface-accent") : actif ? "bg-fg-on-brand/70" : "bg-action-primary"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${actif ? "bg-surface-container-on-brand" : x.etat === "faite" ? "bg-feedback-success" : x.type === "boxe" ? "bg-surface-container-accent" : "bg-action-primary"}`}
                     />
                   ))}
                 </span>

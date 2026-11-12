@@ -49,10 +49,10 @@ export default async function Page({ params }: Props) {
     substitut: e.substitut_de !== null,
   }));
 
-  const sousTitre = [
+  const surTitre = [
+    libelleFocus(seance.focus) ? `Bloc ${libelleFocus(seance.focus)?.toLowerCase()}` : null,
+    pos && !pos.avant && !pos.apres ? `S${pos.semaine}${pos.total ? `/${pos.total}` : ""}` : null,
     dateLongue(seance.jour),
-    pos && !pos.avant && !pos.apres ? `Semaine ${pos.semaine}${pos.total ? ` / ${pos.total}` : ""}` : null,
-    libelleFocus(seance.focus),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -60,11 +60,11 @@ export default async function Page({ params }: Props) {
   return (
     <ModuleFrame
       module="sport"
+      surTitre={surTitre}
       titre={seance.titre ?? libelleType(seance.type)}
-      sousTitre={sousTitre}
       gauche={
-        <Link href={`/sport?jour=${seance.jour}`} className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour">
-          <Icon name="arrow_back" size={24} />
+        <Link href={`/sport?jour=${seance.jour}`} className="kv-iconbtn kv-iconbtn-glass self-center" aria-label="Retour">
+          <Icon name="chevron_left" size={24} />
         </Link>
       }
     >

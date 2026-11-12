@@ -84,9 +84,7 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
             >
               <div className="relative aspect-[4/3] bg-surface-sunken">
                 {e.image_url && <img src={e.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />}
-                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
-                  {LIBELLES.partie[e.partie_corps ?? ""] ?? e.partie_corps}
-                </span>
+                <span className="kv-tag kv-tag-neutral absolute bottom-1.5 left-1.5">{LIBELLES.partie[e.partie_corps ?? ""] ?? e.partie_corps}</span>
               </div>
               <div className="p-2.5">
                 <p className="truncate text-sm font-medium">{e.affiche}</p>
