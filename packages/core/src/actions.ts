@@ -22,6 +22,7 @@ import {
   terminerSeance,
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
+import { tableauSport } from "./tableau";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
 import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 
@@ -249,6 +250,11 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
       const params = e.parametres ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } }) : base;
       if (e.parametres) await enregistrerParametresSport(ctx.db, ctx.userId, params);
       return (await genererProgramme(ctx.db, ctx.userId, params, e.debut)) as ToolOutput<T>;
+    }
+
+    case "tableau_sport": {
+      const e = entree as ToolInput<"tableau_sport">;
+      return (await tableauSport(ctx.db, ctx.userId, e.jour ?? aujourdhuiIso())) as ToolOutput<T>;
     }
 
     case "seance_du_jour": {

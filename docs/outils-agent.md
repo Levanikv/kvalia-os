@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-19 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+20 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -143,6 +143,24 @@ Génère un programme complet (N semaines, blocs de 4 : progression puis déchar
 - `debut` : string
 - `fin` : string
 - `avertissements` : liste de string
+
+## `tableau_sport`
+
+Le tableau de bord Sport d'un jour (aujourd'hui par défaut) : niveau et XP (100 XP par séance faite), objectif de la semaine (séances faites / prévues), série de semaines complètes, rang de la séance du jour dans le programme, 3 records du programme (charge max, progression, courbe), conseil du coach, poids et volume soulevé. Lecture seule.
+
+**Entrée**
+- `jour` : string (date) (optionnel)
+
+**Sortie**
+- `jour` : string
+- `progression` : objet { niveau, nom, xp, xp_restant, prochain }
+- `semaine` : objet { debut, fin, prevues, faites, restantes, xp_a_gagner, tonnage_kg, tonnage_precedente_kg }
+- `serie_semaines` : nombre
+- `rang` : objet { seance_id, rang, total } | null
+- `records` : liste de objet { exercice_id, nom, nom_fr, charge_kg, progression_kg, semaines, serie }
+- `coach` : objet { message, detail }
+- `poids` : objet { actuel, serie }
+- `tonnage_total_t` : nombre
 
 ## `seance_du_jour`
 

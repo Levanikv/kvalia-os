@@ -5,6 +5,7 @@
  * Navigation (v1.1) : un menu « apps » (burger, en haut à gauche) liste les applications ; chaque application
  * a sa propre barre inférieure (`onglets`) qui expose ses entrées. Sport et Nutrition forment une seule application.
  */
+/** `icon` : ligature Material Symbols, ou `ds:<nom>` pour une icône du design system (Figma Icon/*). */
 export type Onglet = { href: string; label: string; icon: string };
 
 /** Design system (généré depuis Figma « Kvalia Design System ») : brands, typeRoles, cssVar, typeClass… */
@@ -49,10 +50,11 @@ export const onglets: Record<ModuleKey, readonly Onglet[]> = {
     { href: "/quotidien/habitudes", label: "Habitudes", icon: "repeat" },
   ],
   sport: [
-    { href: "/sport", label: "Jour", icon: "fitness_center" },
-    { href: "/sport/programme", label: "Programme", icon: "calendar_view_week" },
-    { href: "/sport/exercices", label: "Exercices", icon: "play_circle" },
-    { href: "/nutrition", label: "Nutrition", icon: "restaurant" },
+    // Icônes du design system (préfixe « ds: », maquette Sport/Tab bar) ; les autres apps utilisent encore Material Symbols.
+    { href: "/sport", label: "Jour", icon: "ds:sport" },
+    { href: "/sport/programme", label: "Programme", icon: "ds:target" },
+    { href: "/sport/exercices", label: "Exercices", icon: "ds:play" },
+    { href: "/nutrition", label: "Nutrition", icon: "ds:nutrition" },
   ],
   nutrition: [], // = sport (voir barrePour)
   finances: [

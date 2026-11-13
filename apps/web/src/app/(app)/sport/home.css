@@ -1,0 +1,346 @@
+/*
+  Home Sport — maquette Figma « 21 · Home Sport · v3 (app) » (dérivée de « Home mix »), au pixel.
+  Uniquement des tokens du design system ; les cotes sans token (52 px d'onglet, 260 px de jauge…) viennent de la maquette.
+*/
+.hs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap);
+  padding-top: max(var(--page-safe-top), env(safe-area-inset-top));
+  padding-bottom: calc(var(--page-scroll-bottom) + env(safe-area-inset-bottom));
+}
+
+/* Typo hors rôles canoniques (styles Figma non liés à des variables) */
+.hs-mono-wide {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 13px;
+}
+.hs-mono-caps {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.hs-mono-strong {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+}
+.hs-date-day {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 23px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.hs-btn-xl {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.hs-control {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 600;
+}
+
+/* En-tête */
+.hs-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--stack-none); /* maquette : le bouton menu (44) touche le bloc titre */
+  padding: 0 var(--page-gutter-wide) 0 var(--inline-md);
+}
+.hs-header-titre {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-xs);
+}
+.hs-niveau {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--inline-sm);
+}
+.hs-niveau-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-sm);
+  height: 28px;
+  padding: 0 var(--control-inset-sm) 0 var(--inset-2xs);
+  border-radius: var(--radius-control);
+  background: var(--surface-container-accent);
+  color: var(--text-primary);
+}
+.hs-niveau-num {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-avatar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-container-inverse);
+  color: var(--text-highlight);
+}
+
+/* Bande de jours (Date pill) */
+.hs-jours {
+  display: flex;
+  gap: var(--inline-md);
+  padding: var(--stack-2xs) var(--page-gutter-wide);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hs-jours::-webkit-scrollbar {
+  display: none;
+}
+.hs-pill {
+  flex: none;
+  width: var(--date-pill-w);
+  height: 66px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--stack-2xs);
+  padding: 0 var(--control-inset-xs);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--surface-container-glass) 78%, transparent);
+  border: var(--border-width-default) solid var(--border-default);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  color: var(--text-primary);
+}
+.hs-pill-l {
+  color: var(--text-tertiary);
+}
+.hs-pill.is-passe .hs-date-day {
+  color: var(--text-tertiary);
+}
+.hs-pill.is-auj {
+  border-color: var(--border-action-pressed);
+}
+.hs-pill.is-auj .hs-pill-l {
+  color: var(--text-brand);
+}
+.hs-pill.is-on {
+  background: var(--surface-container-brand);
+  border-color: transparent;
+  color: var(--text-on-brand);
+}
+.hs-pill.is-on .hs-pill-l,
+.hs-pill.is-on .hs-date-day {
+  color: var(--text-on-brand);
+}
+.hs-points {
+  display: flex;
+  gap: var(--stack-2xs);
+  height: 5px;
+}
+.hs-point {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-avatar);
+}
+
+/* Cartes */
+.hs-section {
+  padding: 0 var(--page-gutter);
+}
+.hs-ticket {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-md);
+  padding: var(--inset-md);
+  border-radius: var(--radius-card-hero);
+  background: var(--surface-container-base);
+  color: var(--text-primary);
+  box-shadow: var(--elevation-custom-y22-b44);
+}
+.hs-ticket-decor {
+  position: absolute;
+  left: 158px;
+  top: -80px;
+  width: 260px;
+  height: 260px;
+  border-radius: var(--radius-avatar);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--action-primary) 55%, transparent), transparent);
+  pointer-events: none;
+}
+.hs-ticket > *:not(.hs-ticket-decor) {
+  position: relative;
+}
+.hs-perf {
+  margin: 0 calc(-1 * var(--inset-md));
+  border-top: var(--border-width-default) dashed var(--border-default);
+}
+.hs-perf-dash {
+  height: 1px;
+  margin: 0 calc(-1 * var(--inset-md));
+  background-image: repeating-linear-gradient(to right, var(--border-default) 0 3px, transparent 3px 6px);
+}
+.hs-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--inline-md);
+}
+.hs-chiffre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-2xs);
+  min-width: 0;
+}
+.hs-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--inline-md);
+  height: var(--control-xl);
+  padding: 0 var(--inset-xs) 0 var(--inset-xl);
+  border-radius: var(--radius-control);
+  background: var(--surface-container-brand);
+  color: var(--text-on-brand);
+  box-shadow: var(--elevation-brand-glow);
+}
+.hs-cta.is-calme {
+  background: var(--action-tertiary);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+.hs-cta-fin {
+  width: var(--control-item-lg);
+  height: var(--control-item-lg);
+  border-radius: var(--radius-avatar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--action-on-primary);
+  color: var(--icon-action);
+}
+
+.hs-objectif {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-md);
+  padding: var(--inset-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-container-accent);
+  color: var(--text-primary);
+}
+.hs-segments {
+  display: grid;
+  gap: var(--inline-xs);
+  height: 10px;
+}
+.hs-segment {
+  border-radius: var(--radius-control);
+  background: var(--surface-container-inverse);
+}
+.hs-segment.is-reste {
+  opacity: var(--opacity-noise-light);
+}
+
+.hs-energie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-md);
+  padding: var(--inset-md);
+  border-radius: var(--radius-card-hero);
+  background: var(--surface-container-base);
+  color: var(--text-primary);
+  box-shadow: var(--elevation-custom-y22-b44-2);
+}
+.hs-jauge {
+  position: relative;
+  width: 260px;
+  height: 140px;
+  align-self: center;
+}
+.hs-jauge-centre {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hs-pastille {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-avatar);
+  flex: none;
+}
+
+.hs-corps {
+  box-sizing: border-box;
+  height: 80px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-radius: var(--radius-tile);
+  background: var(--surface-container-default);
+  border: var(--border-width-default) solid var(--border-subtle);
+  box-shadow: var(--elevation-card);
+  overflow: hidden;
+}
+.hs-corps > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-xs);
+  padding: var(--inset-sm) var(--inset-md);
+  min-width: 0;
+}
+.hs-corps > div + div {
+  border-left: var(--border-width-default) solid var(--border-subtle);
+}
+.hs-piste {
+  height: 8px;
+  border-radius: var(--radius-control);
+  background: var(--surface-container-sunken);
+  overflow: hidden;
+}
+.hs-piste > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-control);
+  background: var(--surface-container-brand);
+}
+
+.hs-records {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--inset-md);
+  border-radius: var(--radius-card);
+  background: var(--surface-container-default);
+  border: var(--border-width-default) solid var(--border-subtle);
+  box-shadow: var(--elevation-card);
+}
+.hs-record {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-md);
+  padding: var(--inset-sm) 0;
+}
+.hs-record + .hs-record {
+  border-top: var(--border-width-default) solid var(--border-subtle);
+}
+
+.hs-coach {
+  display: flex;
+  gap: var(--inline-md);
+  padding: 0 var(--page-gutter-wide);
+}

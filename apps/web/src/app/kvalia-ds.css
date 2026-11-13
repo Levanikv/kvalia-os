@@ -925,8 +925,9 @@ div.kv-row-main {
   box-shadow: var(--elevation-floating);
 }
 .kv-tab {
-  width: var(--control-item-lg);
-  height: var(--control-item-lg);
+  /* 52 px : remplit la barre (control-xl − 2 × control-inset-xs), comme Tab bar/Onglet dans Figma */
+  width: calc(var(--control-xl) - 2 * var(--control-inset-xs));
+  height: calc(var(--control-xl) - 2 * var(--control-inset-xs));
   border-radius: var(--radius-avatar);
   border: 0;
   cursor: pointer;
@@ -947,7 +948,7 @@ div.kv-row-main {
 /* ---------- TabBar skeleton: auto width when an app passes its own tabs ---------- */
 .kv-tabbar-auto {
   width: auto;
-  gap: var(--inline-xs);
+  gap: 0;
 }
 
 /* ---------- WheelPicker (vertical wheel for metrics: age, height, weight, weeks) ---------- */
@@ -1197,4 +1198,14 @@ div.kv-row-main {
   font-size: 11px;
   line-height: 14px;
   color: var(--text-secondary);
+}
+
+/* ---------- Fondu sous la barre d'app (maquette Home Sport) ---------- */
+.kv-barre-fondu {
+  height: calc(110px + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--surface-page) 0%, transparent) 0%,
+    color-mix(in srgb, var(--surface-page) 92%, transparent) 70%
+  );
 }

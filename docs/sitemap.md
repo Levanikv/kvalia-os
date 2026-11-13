@@ -15,8 +15,9 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 12–13 questions
 │   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : objectifs, lieu, matériel…)
 │   │                                 → génération → plan prêt. « Plus tard » → reprise depuis la Home (?reprendre=1)
-│   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), programme suivi,
-│   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
+│   ├── /sport                        Vue Jour (défaut) = maquette Figma « 21 · Home Sport · v3 » : menu apps, bloc + date,
+│   │                                 niveau (XP), jours, séance du jour, objectif de la semaine, énergie (double jauge),
+│   │                                 corps (protéines, poids, volume), records, coach — données : outil tableau_sport
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
 │   ├── /sport/seance/[id]            Séance (plein écran) : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
 │   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel

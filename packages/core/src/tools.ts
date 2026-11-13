@@ -133,6 +133,42 @@ export const tools = {
     }),
   },
 
+  tableau_sport: {
+    description:
+      "Le tableau de bord Sport d'un jour (aujourd'hui par défaut) : niveau et XP (100 XP par séance faite), objectif de la semaine (séances faites / prévues), série de semaines complètes, rang de la séance du jour dans le programme, 3 records du programme (charge max, progression, courbe), conseil du coach, poids et volume soulevé. Lecture seule.",
+    input: z.object({ jour: z.string().date().optional() }),
+    output: z.object({
+      jour: z.string(),
+      progression: z.object({ niveau: z.number(), nom: z.string(), xp: z.number(), xp_restant: z.number(), prochain: z.number() }),
+      semaine: z.object({
+        debut: z.string(),
+        fin: z.string(),
+        prevues: z.number(),
+        faites: z.number(),
+        restantes: z.number(),
+        xp_a_gagner: z.number(),
+        tonnage_kg: z.number(),
+        tonnage_precedente_kg: z.number(),
+      }),
+      serie_semaines: z.number(),
+      rang: z.object({ seance_id: z.string(), rang: z.number(), total: z.number() }).nullable(),
+      records: z.array(
+        z.object({
+          exercice_id: z.string(),
+          nom: z.string(),
+          nom_fr: z.string().nullable(),
+          charge_kg: z.number(),
+          progression_kg: z.number(),
+          semaines: z.number(),
+          serie: z.array(z.number()),
+        }),
+      ),
+      coach: z.object({ message: z.string(), detail: z.string() }),
+      poids: z.object({ actuel: z.number().nullable(), serie: z.array(z.number()) }),
+      tonnage_total_t: z.number(),
+    }),
+  },
+
   seance_du_jour: {
     description:
       "Les séances prévues pour un jour (aujourd'hui par défaut) avec leurs exercices, prescriptions, kcal prévues et cochées. Un jour peut avoir deux séances (ex. muscu + boxe) : `seances` les liste toutes (salle d'abord) ; `seance` est la principale (la première pas encore faite).",

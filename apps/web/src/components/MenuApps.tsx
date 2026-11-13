@@ -5,9 +5,11 @@ import { useState } from "react";
 import { appPour, menuApps, module, moduleDepuisChemin } from "@kvalia/ui";
 import { BottomSheet } from "./BottomSheet";
 import { Icon } from "./Icon";
+import { IconeDs } from "./kv/IconeDs";
 
 /** Menu « apps » (burger) : liste des applications, l'actuelle surlignée. S'ouvre en feuille depuis le bas. */
-export function MenuApps() {
+/** `ds` : bouton du design system (Icon button Ghost + Icon/menu), utilisé par la Home Sport. */
+export function MenuApps({ ds }: { ds?: boolean } = {}) {
   const [ouvert, setOuvert] = useState(false);
   const pathname = usePathname();
   const courante = appPour(moduleDepuisChemin(pathname));
@@ -19,9 +21,9 @@ export function MenuApps() {
         onClick={() => setOuvert(true)}
         aria-label="Applications"
         aria-haspopup="dialog"
-        className="tap flex w-10 items-center justify-center rounded-full text-fg-primary"
+        className={ds ? "kv-iconbtn kv-iconbtn-ghost" : "tap flex w-10 items-center justify-center rounded-full text-fg-primary"}
       >
-        <Icon name="menu" size={26} />
+        {ds ? <IconeDs nom="menu" /> : <Icon name="menu" size={26} />}
       </button>
       <BottomSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre="Applications">
         <ul className="grid grid-cols-2 gap-2 pb-2">
