@@ -1,4 +1,4 @@
-import { parametresSport, reponsesDepuisParametres } from "@kvalia/core";
+import { chargerModeles, parametresSport, reponsesDepuisParametres } from "@kvalia/core";
 import { aujourdhui, session } from "@/lib/session";
 import { decaler } from "../../lib";
 import { Parcours } from "./Parcours";
@@ -17,6 +17,7 @@ export default async function Page({ searchParams }: Props) {
     parametresSport(supabase, user.id),
     supabase.from("programmes").select("id").eq("actif", true).maybeSingle(),
   ]);
+  const modeles = Object.values(await chargerModeles(supabase, user.id));
   const auj = aujourdhui();
   const jourSemaine = new Date(auj + "T12:00:00Z").getUTCDay();
   const lundiProchain = decaler(auj, jourSemaine === 1 ? 0 : (8 - jourSemaine) % 7);
@@ -24,5 +25,15 @@ export default async function Page({ searchParams }: Props) {
   // Modifier : tout pré-rempli depuis le programme actuel. Nouveau : mêmes jours / durée, échéance remise à 12 semaines.
   const actuelles = reponsesDepuisParametres(params);
   const initiales = mode === "modifier" ? actuelles : { ...actuelles, semaines: 12 };
-  return <Parcours mode={mode} initiales={initiales} base={params} aujourdhui={auj} lundiProchain={lundiProchain} remplace={!!prog} />;
+  return (
+    <Parcours
+      mode={mode}
+      initiales={initiales}
+      base={params}
+      aujourdhui={auj}
+      lundiProchain={lundiProchain}
+      remplace={!!prog}
+      modeles={modeles.map((m) => ({ id: m.id, nom: m.nom, type: m.type }))}
+    />
+  );
 }

@@ -1,6 +1,15 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { ciblesDepuisProfil, executer, ParametresSport, parametresDepuisReponses, parametresSport, ReponsesProgramme } from "@kvalia/core";
+import {
+  ciblesDepuisProfil,
+  executer,
+  ModeleSeanceEntree,
+  ModificationProgramme,
+  ParametresSport,
+  parametresDepuisReponses,
+  parametresSport,
+  ReponsesProgramme,
+} from "@kvalia/core";
 import { session } from "@/lib/session";
 
 /** Toutes les actions passent par `executer` : même règle que l'agent (packages/core). */
@@ -162,4 +171,48 @@ export async function terminerOnboarding(profil: Profil, etape: number) {
   revalidatePath("/nutrition");
   revalidatePath("/");
   return { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, cibles: ciblesDepuisProfil(params.profil) };
+}
+
+// ---------- Modifier le programme / Mes séances (outils du noyau, comme l'agent) ----------
+
+function revaliderSport() {
+  revalidatePath("/sport");
+  revalidatePath("/sport/programme");
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+}
+
+export async function modifierProgrammeAction(brut: unknown) {
+  const { supabase, user } = await session();
+  const r = await executer("modifier_programme", ModificationProgramme.parse(brut), { db: supabase, userId: user.id });
+  revaliderSport();
+  return r;
+}
+
+export async function creerSeancePersoAction(brut: unknown) {
+  const { supabase, user } = await session();
+  const r = await executer("creer_seance_perso", ModeleSeanceEntree.parse(brut), { db: supabase, userId: user.id });
+  revalidatePath("/sport/programme");
+  return r;
+}
+
+export async function modifierSeancePersoAction(id: string, brut: unknown) {
+  const { supabase, user } = await session();
+  const r = await executer("modifier_seance_perso", { ...ModeleSeanceEntree.parse(brut), id }, { db: supabase, userId: user.id });
+  revaliderSport();
+  return r;
+}
+
+export async function supprimerSeancePersoAction(id: string) {
+  const { supabase, user } = await session();
+  const r = await executer("supprimer_seance_perso", { id }, { db: supabase, userId: user.id });
+  revaliderSport();
+  return r;
+}
+
+export async function planifierSeancePersoAction(e: { modele_id: string; jour_semaine?: number; date?: string; a_partir_de?: string }) {
+  const { supabase, user } = await session();
+  const r = await executer("planifier_seance_perso", e, { db: supabase, userId: user.id });
+  revaliderSport();
+  return r;
 }

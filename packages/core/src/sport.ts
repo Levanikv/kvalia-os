@@ -69,6 +69,11 @@ export const ParametresSport = z.object({
   /** Poids de secours si aucune pesée. */
   poids_kg: z.number().positive().optional(),
   effort_s_par_serie: z.number().int().default(40),
+  /**
+   * Séances personnalisées (« Mes séances ») posées sur un jour de la semaine : ce jour-là le programme
+   * utilise ce modèle au lieu d'une séance générée. Un jour perso compte comme un jour de salle.
+   */
+  seances_perso: z.array(z.object({ jour: z.number().int().min(0).max(6), modele_id: z.string().uuid() })).default([]),
   /** Réponses de l'onboarding (première connexion) — voir `appliquerProfil`. */
   profil: ProfilSport.optional(),
   onboarding: OnboardingSport.optional(),
@@ -198,6 +203,8 @@ export const ReponsesProgramme = z.object({
   semaines: z.number().int().min(4).max(24),
   jours: z.array(z.number().int().min(0).max(6)).min(1).max(6),
   duree_min: z.number().int().min(30).max(120),
+  /** Jours où l'on veut une de ses séances perso plutôt qu'une séance générée. */
+  perso: z.array(z.object({ jour: z.number().int().min(0).max(6), modele_id: z.string().uuid() })).default([]),
 });
 export type ReponsesProgramme = z.infer<typeof ReponsesProgramme>;
 
@@ -214,16 +221,22 @@ const OBJECTIF_INVERSE: Record<ParametresSport["objectif"], z.infer<typeof Objec
  */
 export function parametresDepuisReponses(base: ParametresSport, r: ReponsesProgramme): ParametresSport {
   const jours = [...new Set(r.jours)].sort((a, b) => a - b);
-  return ParametresSport.parse(
-    appliquerProfil(base, { objectifs: [r.objectif], echeance_semaines: r.semaines, jours, seances_semaine: jours.length, duree_min: r.duree_min }),
-  );
+  const p = appliquerProfil(base, { objectifs: [r.objectif], echeance_semaines: r.semaines, jours, seances_semaine: jours.length, duree_min: r.duree_min });
+  return ParametresSport.parse({ ...p, seances_perso: (r.perso ?? []).filter((x) => jours.includes(x.jour)) });
 }
 
 /** Réponses pré-remplies depuis les paramètres actuels (« Modifier le programme »). */
 export function reponsesDepuisParametres(p: ParametresSport): ReponsesProgramme {
   const objectif = p.profil?.objectifs?.[0] ?? OBJECTIF_INVERSE[p.objectif];
   const jours = [...new Set(p.jours_salle)].sort((a, b) => a - b).slice(0, Math.max(1, p.rythme.salle));
-  return { objectif, semaines: p.semaines, jours: jours.length ? jours : [1, 3, 5], duree_min: Math.min(120, Math.max(30, p.duree_min)) };
+  const js = jours.length ? jours : [1, 3, 5];
+  return {
+    objectif,
+    semaines: p.semaines,
+    jours: js,
+    duree_min: Math.min(120, Math.max(30, p.duree_min)),
+    perso: p.seances_perso.filter((x) => js.includes(x.jour)),
+  };
 }
 
 /**
@@ -549,7 +562,10 @@ function prescription(params: ParametresSport, bloc: number, semaineDansBloc: nu
   return iso ? { series: 3, reps: "10-12", repos_s: 60, focus } : { series: 3 + progression, reps: "6-10", repos_s: 120, focus };
 }
 
-export type SeancePlanifiee = { genre: "salle"; modele: string; index: number; type: string; titre: string } | { genre: "boxe"; type: "boxe"; titre: string };
+export type SeancePlanifiee =
+  | { genre: "salle"; modele: string; index: number; type: string; titre: string }
+  | { genre: "perso"; modele_id: string; type: string; titre: string }
+  | { genre: "boxe"; type: "boxe"; titre: string };
 export type PlanSemaine = {
   /** Séances par jour de la semaine (0 = dimanche … 6 = samedi), dans l'ordre où les faire : salle puis boxe. */
   jours: SeancePlanifiee[][];
@@ -567,13 +583,15 @@ export const TITRE_BOXE = "Boxe — sac, shadow, corde";
  * Un jour peut porter deux séances (salle + boxe) : c'est voulu, pas une erreur.
  * Sert au générateur et à l'aperçu de l'écran de régénération.
  */
-export function planSemaine(params: ParametresSport): PlanSemaine {
+export function planSemaine(params: ParametresSport, modeles: Record<string, { nom: string; type: string }> = {}): PlanSemaine {
   const avertissements: string[] = [];
   const unique = (l: number[]) => [...new Set(l)].sort((a, b) => a - b);
-  const joursSalle = unique(params.jours_salle).slice(0, params.rythme.salle);
+  // Jours perso (modèle connu) : retirés du split généré, mais comptés comme salle.
+  const perso = new Map(params.seances_perso.filter((x) => modeles[x.modele_id] || Object.keys(modeles).length === 0).map((x) => [x.jour, x.modele_id]));
+  const joursTous = unique([...params.jours_salle, ...perso.keys()]).slice(0, Math.max(params.rythme.salle, perso.size));
+  const joursSalle = joursTous.filter((j) => !perso.has(j));
   const joursBoxe = unique(params.jours_boxe).slice(0, params.rythme.boxe);
-  if (joursSalle.length < params.rythme.salle)
-    avertissements.push(`Seulement ${joursSalle.length} jour(s) de salle cochés pour ${params.rythme.salle} séances.`);
+  if (joursTous.length < params.rythme.salle) avertissements.push(`Seulement ${joursTous.length} jour(s) de salle cochés pour ${params.rythme.salle} séances.`);
   if (joursBoxe.length < params.rythme.boxe) avertissements.push(`Seulement ${joursBoxe.length} jour(s) de boxe cochés pour ${params.rythme.boxe} séances.`);
   const split = splitPour(joursSalle.length);
   const jours: SeancePlanifiee[][] = Array.from({ length: 7 }, () => []);
@@ -581,9 +599,14 @@ export function planSemaine(params: ParametresSport): PlanSemaine {
     const m = MODELES[split[index]];
     jours[j].push({ genre: "salle", modele: split[index], index, type: m.type, titre: m.titre });
   });
+  for (const [j, modele_id] of perso) {
+    if (!joursTous.includes(j)) continue;
+    const m = modeles[modele_id];
+    jours[j].push({ genre: "perso", modele_id, type: m?.type ?? "full", titre: m?.nom ?? "Ma séance" });
+  }
   for (const j of joursBoxe) jours[j].push({ genre: "boxe", type: "boxe", titre: TITRE_BOXE });
-  const doubles = joursBoxe.filter((j) => joursSalle.includes(j));
-  return { jours, nb_salle: joursSalle.length, nb_boxe: joursBoxe.length, doubles, avertissements };
+  const doubles = joursBoxe.filter((j) => joursTous.includes(j));
+  return { jours, nb_salle: joursTous.length, nb_boxe: joursBoxe.length, doubles, avertissements };
 }
 
 export type ProgrammeGenere = { programme_id: string; nb_seances: number; nb_exercices: number; debut: string; fin: string; avertissements: string[] };
@@ -656,8 +679,36 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     .single();
   if (errProg) throw errProg;
 
-  const plan = planSemaine(params);
+  const r = await planifierSeances(db, userId, { id: prog.id, debut: debutJour }, params, refs, debutJour, dejaFait);
+  avertissements.push(...r.avertissements);
+  return { programme_id: prog.id, nb_seances: r.nb_seances, nb_exercices: r.nb_exercices, debut: debutJour, fin: iso(fin), avertissements };
+}
+
+/**
+ * Pose les séances d'un programme à partir de `depuis` (inclus) jusqu'à la fin : séances générées, séances perso
+ * (modèles) et boxe, semaine par semaine depuis le début du programme (blocs, décharges). Les créneaux déjà
+ * occupés (`dejaFait` : « jour|salle » ou « jour|boxe ») ne sont pas doublés.
+ */
+async function planifierSeances(
+  db: KvaliaClient,
+  userId: string,
+  prog: { id: string; debut: string },
+  params: ParametresSport,
+  refs: Ref[],
+  depuis: string,
+  dejaFait: Set<string>,
+): Promise<{ nb_seances: number; nb_exercices: number; avertissements: string[] }> {
+  const avertissements: string[] = [];
+  const modeles = await chargerModeles(
+    db,
+    userId,
+    params.seances_perso.map((x) => x.modele_id),
+  );
+  const plan = planSemaine(params, Object.fromEntries(Object.entries(modeles).map(([id, m]) => [id, { nom: m.nom, type: m.type }])));
   avertissements.push(...plan.avertissements);
+  const refsParId = new Map(refs.map((x) => [x.id, x]));
+  const debut = new Date(prog.debut + "T12:00:00");
+  const iso = (x: Date) => x.toISOString().slice(0, 10);
   const seancesAInserer: Array<Record<string, unknown>> = [];
   const exosParSeance: Array<Array<Record<string, unknown>>> = [];
   const { poids } = await poidsActuel(db, userId, params);
@@ -670,9 +721,29 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     for (let j = 0; j < 7; j++) {
       const jourDate = new Date(lundi);
       jourDate.setDate(lundi.getDate() + j);
+      if (iso(jourDate) < depuis) continue;
       for (const prevue of plan.jours[jourDate.getDay()]) {
-        if (dejaFait.has(`${iso(jourDate)}|${prevue.genre}`)) continue;
-        if (prevue.genre === "salle") {
+        if (dejaFait.has(`${iso(jourDate)}|${prevue.genre === "boxe" ? "boxe" : "salle"}`)) continue;
+        if (prevue.genre === "perso") {
+          const m = modeles[prevue.modele_id];
+          if (!m) continue;
+          const inst = instancierModele(m, refsParId, params, semaineDansBloc === 4);
+          seancesAInserer.push({
+            user_id: userId,
+            programme_id: prog.id,
+            modele_id: m.id,
+            jour: iso(jourDate),
+            type: m.type,
+            titre: m.nom,
+            duree_min: inst.duree_min,
+            etat: "prevue",
+            bloc,
+            semaine: s + 1,
+            focus: semaineDansBloc === 4 ? "deload" : focusBloc(params.objectif, bloc),
+            notes: m.notes,
+          });
+          exosParSeance.push(inst.exos);
+        } else if (prevue.genre === "salle") {
           const idxSalle = prevue.index;
           const modele = MODELES[prevue.modele];
           const pris = new Set<string>();
@@ -753,7 +824,329 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     const { error } = await db.from("exercices_seance").insert(lignes.slice(i, i + 200) as never);
     if (error) throw error;
   }
-  return { programme_id: prog.id, nb_seances: seances?.length ?? 0, nb_exercices: lignes.length, debut: debutJour, fin: iso(fin), avertissements };
+  return { nb_seances: seances?.length ?? 0, nb_exercices: lignes.length, avertissements };
+}
+
+// ---------- Mes séances (modèles personnalisés) ----------
+
+export const ExerciceModele = z.object({
+  exercice_id: z.string().min(1),
+  series: z.number().int().min(1).max(10).default(3),
+  reps: z.string().min(1).max(12).default("10"),
+  repos_s: z.number().int().min(0).max(600).default(90),
+  charge_kg: z.number().min(0).max(500).nullable().optional(),
+});
+export const ModeleSeanceEntree = z.object({
+  nom: z.string().trim().min(1).max(60),
+  type: z.enum(["full", "upper", "lower", "push", "pull", "legs", "hiit", "cardio", "maison"]).default("full"),
+  notes: z.string().max(500).nullable().optional(),
+  exercices: z.array(ExerciceModele).min(1).max(20),
+});
+export type ModeleSeanceEntree = z.infer<typeof ModeleSeanceEntree>;
+export type ModeleSeance = {
+  id: string;
+  nom: string;
+  type: Tables<"seances">["type"];
+  notes: string | null;
+  exercices: Array<{ exercice_id: string; ordre: number; series: number; reps: string; repos_s: number; charge_kg: number | null }>;
+};
+
+/** Modèles de l'utilisateur (tous, ou ceux listés), avec leurs exercices dans l'ordre. */
+export async function chargerModeles(db: KvaliaClient, userId: string, ids?: string[]): Promise<Record<string, ModeleSeance>> {
+  if (ids && ids.length === 0) return {};
+  let q = db.from("modeles_seance").select("id, nom, type, notes").eq("user_id", userId);
+  if (ids) q = q.in("id", [...new Set(ids)]);
+  const { data: modeles, error } = await q.order("created_at");
+  if (error) throw error;
+  if (!modeles?.length) return {};
+  const { data: exos, error: errExos } = await db
+    .from("modeles_seance_exercices")
+    .select("modele_id, exercice_id, ordre, series, reps, repos_s, charge_kg")
+    .eq("user_id", userId)
+    .in(
+      "modele_id",
+      modeles.map((m) => m.id),
+    );
+  if (errExos) throw errExos;
+  const out: Record<string, ModeleSeance> = {};
+  for (const m of modeles)
+    out[m.id] = {
+      ...m,
+      exercices: (exos ?? [])
+        .filter((e) => e.modele_id === m.id)
+        .sort((a, b) => a.ordre - b.ordre)
+        .map((e) => ({
+          exercice_id: e.exercice_id,
+          ordre: e.ordre,
+          series: e.series,
+          reps: e.reps,
+          repos_s: e.repos_s,
+          charge_kg: e.charge_kg === null ? null : Number(e.charge_kg),
+        })),
+    };
+  return out;
+}
+
+/** Durée estimée d'une séance perso (échauffement + séries × (effort + repos) + transitions), en minutes. */
+export function dureeModele(exos: Array<{ series: number; repos_s: number }>, effortS = 40): number {
+  const s = exos.reduce((a, e) => a + e.series * (effortS + e.repos_s), 0);
+  return Math.round((ECHAUFFEMENT_S + s + exos.length * TRANSITION_S) / 60);
+}
+
+/** Lignes d'exercices d'une séance tirée d'un modèle ; en semaine de décharge, une série de moins (min. 1). */
+function instancierModele(m: ModeleSeance, refs: Map<string, Ref>, params: ParametresSport, decharge: boolean) {
+  const exos = m.exercices.map((e, ordre) => {
+    const series = decharge ? Math.max(1, e.series - 1) : e.series;
+    const dureeS = series * (params.effort_s_par_serie + e.repos_s);
+    return {
+      exercice_id: e.exercice_id,
+      ordre,
+      series,
+      reps: e.reps,
+      repos_s: e.repos_s,
+      duree_s: dureeS,
+      charge_kg: e.charge_kg,
+      _met: Number(refs.get(e.exercice_id)?.met ?? 5),
+      _iso: false,
+    } as Record<string, unknown>;
+  });
+  return {
+    exos,
+    duree_min: dureeModele(
+      m.exercices.map((e) => ({ series: decharge ? Math.max(1, e.series - 1) : e.series, repos_s: e.repos_s })),
+      params.effort_s_par_serie,
+    ),
+  };
+}
+
+async function ecrireExercicesModele(db: KvaliaClient, userId: string, modeleId: string, exercices: ModeleSeanceEntree["exercices"]) {
+  const { error: errSuppr } = await db.from("modeles_seance_exercices").delete().eq("modele_id", modeleId).eq("user_id", userId);
+  if (errSuppr) throw errSuppr;
+  const { error } = await db.from("modeles_seance_exercices").insert(
+    exercices.map((e, ordre) => ({
+      user_id: userId,
+      modele_id: modeleId,
+      exercice_id: e.exercice_id,
+      ordre,
+      series: e.series,
+      reps: e.reps,
+      repos_s: e.repos_s,
+      charge_kg: e.charge_kg ?? null,
+    })),
+  );
+  if (error) throw error;
+}
+
+/** Crée une séance perso (nom, type, exercices avec séries / reps / repos / charge). */
+export async function creerModeleSeance(db: KvaliaClient, userId: string, brut: ModeleSeanceEntree) {
+  const e = ModeleSeanceEntree.parse(brut);
+  const { data, error } = await db
+    .from("modeles_seance")
+    .insert({ user_id: userId, nom: e.nom, type: e.type, notes: e.notes ?? null })
+    .select("id")
+    .single();
+  if (error) throw error;
+  await ecrireExercicesModele(db, userId, data.id, e.exercices);
+  return { id: data.id, nom: e.nom, nb_exercices: e.exercices.length, duree_min: dureeModele(e.exercices) };
+}
+
+/**
+ * Modifie une séance perso. Les séances déjà planifiées à partir d'aujourd'hui (non faites) qui viennent de ce
+ * modèle sont mises à jour (nom, exercices) ; l'historique ne bouge pas.
+ */
+export async function modifierModeleSeance(db: KvaliaClient, userId: string, id: string, brut: ModeleSeanceEntree) {
+  const e = ModeleSeanceEntree.parse(brut);
+  const { error } = await db
+    .from("modeles_seance")
+    .update({ nom: e.nom, type: e.type, notes: e.notes ?? null, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+  await ecrireExercicesModele(db, userId, id, e.exercices);
+  // Séances à venir tirées de ce modèle : on les rafraîchit.
+  const { data: aVenir } = await db
+    .from("seances")
+    .select("id, semaine")
+    .eq("user_id", userId)
+    .eq("modele_id", id)
+    .eq("etat", "prevue")
+    .gte("jour", aujourdhuiIso());
+  const modele = (await chargerModeles(db, userId, [id]))[id];
+  if (modele && aVenir?.length) {
+    const params = await parametresSport(db, userId);
+    const { poids } = await poidsActuel(db, userId, params);
+    const refs = await refsPour(
+      db,
+      modele.exercices.map((x) => x.exercice_id),
+    );
+    for (const se of aVenir) {
+      const inst = instancierModele(modele, refs, params, (se.semaine ?? 1) % 4 === 0);
+      await db.from("seances").update({ titre: modele.nom, type: modele.type, duree_min: inst.duree_min, notes: modele.notes }).eq("id", se.id);
+      await remplacerExercicesSeance(db, userId, se.id, inst.exos, poids);
+    }
+  }
+  return { id, nom: e.nom, nb_exercices: e.exercices.length, seances_mises_a_jour: aVenir?.length ?? 0 };
+}
+
+/** Supprime une séance perso : retirée de la semaine type ; ses séances à venir non faites sont supprimées (régénérées). */
+export async function supprimerModeleSeance(db: KvaliaClient, userId: string, id: string) {
+  const params = await parametresSport(db, userId);
+  const avait = params.seances_perso.some((x) => x.modele_id === id);
+  const { error } = await db.from("modeles_seance").delete().eq("id", id).eq("user_id", userId);
+  if (error) throw error;
+  if (avait) {
+    // Ses jours redeviennent des séances générées (le jour reste un jour de salle).
+    await modifierProgramme(db, userId, { seances_perso: params.seances_perso.filter((x) => x.modele_id !== id) });
+  }
+  return { id, supprime: true };
+}
+
+async function refsPour(db: KvaliaClient, ids: string[]) {
+  if (!ids.length) return new Map<string, Ref>();
+  const { data, error } = await db
+    .from("exercices_ref")
+    .select("*")
+    .in("id", [...new Set(ids)]);
+  if (error) throw error;
+  return new Map(((data ?? []) as Ref[]).map((x) => [x.id, x]));
+}
+
+async function remplacerExercicesSeance(db: KvaliaClient, userId: string, seanceId: string, exos: Array<Record<string, unknown>>, poids: number) {
+  const { error: errSuppr } = await db.from("exercices_seance").delete().eq("seance_id", seanceId).eq("user_id", userId);
+  if (errSuppr) throw errSuppr;
+  const lignes = exos.map((e) => {
+    const { _met, _iso, ...reste } = e;
+    return { ...reste, user_id: userId, seance_id: seanceId, kcal: kcalPour(Number(_met), poids, Number(e.duree_s)) };
+  });
+  if (lignes.length) {
+    const { error } = await db.from("exercices_seance").insert(lignes as never);
+    if (error) throw error;
+  }
+}
+
+/**
+ * Ajoute une séance perso au planning :
+ * - `jour_semaine` (0 = dim. … 6 = sam.) : chaque semaine du programme actif, à partir de `a_partir_de`
+ *   (aujourd'hui par défaut) — c'est une modification de la semaine type ;
+ * - `date` : une seule fois ce jour-là (remplace la séance de salle non faite prévue ce jour, s'il y en a une).
+ */
+export async function planifierModeleSeance(
+  db: KvaliaClient,
+  userId: string,
+  e: { modele_id: string; jour_semaine?: number; date?: string; a_partir_de?: string },
+) {
+  const modele = (await chargerModeles(db, userId, [e.modele_id]))[e.modele_id];
+  if (!modele) throw new Error("Séance perso introuvable.");
+  if (e.jour_semaine !== undefined) {
+    const params = await parametresSport(db, userId);
+    const perso = [...params.seances_perso.filter((x) => x.jour !== e.jour_semaine), { jour: e.jour_semaine, modele_id: e.modele_id }];
+    const r = await modifierProgramme(db, userId, {
+      seances_perso: perso,
+      jours_salle: [...new Set([...params.jours_salle, e.jour_semaine])],
+      a_partir_de: e.a_partir_de,
+    });
+    return { mode: "chaque_semaine" as const, jour_semaine: e.jour_semaine, nb_seances: r.nb_seances, depuis: r.depuis };
+  }
+  if (!e.date) throw new Error("Indique un jour de la semaine ou une date.");
+  if (e.date < aujourdhuiIso()) throw new Error("On ne planifie pas une séance dans le passé.");
+  const params = await parametresSport(db, userId);
+  const { poids } = await poidsActuel(db, userId, params);
+  const { data: prog } = await db.from("programmes").select("id, debut, fin").eq("user_id", userId).eq("actif", true).maybeSingle();
+  const dansProg = prog && e.date >= prog.debut && (!prog.fin || e.date <= prog.fin) ? prog : null;
+  const { data: existantes } = await db.from("seances").select("id, type, etat, semaine, bloc").eq("user_id", userId).eq("jour", e.date);
+  const aRemplacer = (existantes ?? []).filter((x) => x.type !== "boxe" && x.etat === "prevue").map((x) => x.id);
+  if (aRemplacer.length) await db.from("seances").delete().in("id", aRemplacer);
+  const semaine = dansProg ? Math.floor((new Date(e.date).getTime() - new Date(dansProg.debut).getTime()) / (7 * 86400000)) + 1 : null;
+  const inst = instancierModele(
+    modele,
+    await refsPour(
+      db,
+      modele.exercices.map((x) => x.exercice_id),
+    ),
+    params,
+    semaine !== null && semaine % 4 === 0,
+  );
+  const { data: se, error } = await db
+    .from("seances")
+    .insert({
+      user_id: userId,
+      programme_id: dansProg?.id ?? null,
+      modele_id: modele.id,
+      jour: e.date,
+      type: modele.type,
+      titre: modele.nom,
+      duree_min: inst.duree_min,
+      etat: "prevue",
+      semaine,
+      bloc: semaine ? Math.ceil(semaine / 4) : null,
+      notes: modele.notes,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  await remplacerExercicesSeance(db, userId, se.id, inst.exos, poids);
+  return { mode: "une_fois" as const, seance_id: se.id, jour: e.date, remplace: aRemplacer.length };
+}
+
+export const ModificationProgramme = z.object({
+  jours_salle: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  duree_min: z.number().int().min(20).max(150).optional(),
+  semaines: z.number().int().min(4).max(24).optional(),
+  seances_perso: z.array(z.object({ jour: z.number().int().min(0).max(6), modele_id: z.string().uuid() })).optional(),
+  a_partir_de: z.string().date().optional(),
+});
+export type ModificationProgramme = z.infer<typeof ModificationProgramme>;
+
+/**
+ * Modifie le programme actif sans en créer un nouveau : jours de salle, durée, nombre de semaines, séances perso
+ * par jour. Les séances non démarrées à partir de `a_partir_de` (aujourd'hui par défaut, jamais avant) sont
+ * reposées avec les nouveaux réglages ; les semaines, blocs et phases restent ceux du programme ; les séances
+ * faites ou en cours ne bougent pas.
+ */
+export async function modifierProgramme(db: KvaliaClient, userId: string, brut: ModificationProgramme) {
+  const m = ModificationProgramme.parse(brut);
+  const { data: prog, error } = await db.from("programmes").select("id, debut, fin, rythme").eq("user_id", userId).eq("actif", true).maybeSingle();
+  if (error) throw error;
+  if (!prog) throw new Error("Pas de programme actif à modifier : crée-en un.");
+  const base = await parametresSport(db, userId);
+  const perso = m.seances_perso ?? base.seances_perso;
+  const joursSalle = m.jours_salle ? [...new Set(m.jours_salle)].sort((a, b) => a - b) : base.jours_salle;
+  const params = ParametresSport.parse({
+    ...base,
+    jours_salle: joursSalle,
+    rythme: { ...base.rythme, salle: Math.min(6, new Set([...joursSalle, ...perso.map((x) => x.jour)]).size) },
+    duree_min: m.duree_min ?? base.duree_min,
+    semaines: m.semaines ?? base.semaines,
+    seances_perso: perso,
+  });
+  const auj = aujourdhuiIso();
+  const depuis = m.a_partir_de && m.a_partir_de > auj ? m.a_partir_de : auj;
+  const fin = decalerJour(prog.debut, params.semaines * 7 - 1);
+
+  const { error: errSuppr } = await db.from("seances").delete().eq("programme_id", prog.id).in("etat", ["prevue", "sautee"]).gte("jour", depuis);
+  if (errSuppr) throw errSuppr;
+  const { data: restantes } = await db.from("seances").select("jour, type").eq("user_id", userId).gte("jour", depuis).in("etat", ["faite", "en_cours"]);
+  const dejaFait = new Set((restantes ?? []).map((x) => `${x.jour}|${x.type === "boxe" ? "boxe" : "salle"}`));
+  const { data: refsData, error: errRefs } = await db.from("exercices_ref").select("*");
+  if (errRefs) throw errRefs;
+  const r = await planifierSeances(db, userId, { id: prog.id, debut: prog.debut }, params, (refsData ?? []) as Ref[], depuis, dejaFait);
+
+  await enregistrerParametresSport(db, userId, params);
+  const { error: errProg } = await db
+    .from("programmes")
+    .update({
+      fin,
+      rythme: {
+        ...((prog.rythme as Record<string, unknown>) ?? {}),
+        salle: params.rythme.salle,
+        jours_salle: params.jours_salle,
+        duree_min: params.duree_min,
+        seances_perso: params.seances_perso,
+      },
+    })
+    .eq("id", prog.id);
+  if (errProg) throw errProg;
+  return { programme_id: prog.id, depuis, fin, nb_seances: r.nb_seances, avertissements: r.avertissements };
 }
 
 // ---------- Suivi d'une séance ----------

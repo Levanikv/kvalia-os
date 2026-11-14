@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { Ligne, Priorite, Tache, VueJour } from "./schemas";
-import { ParametresSport } from "./sport";
+import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -267,6 +267,71 @@ export const tools = {
     output: z.object({ remplaces: z.number(), ancien: z.string(), nouveau: z.string(), nom: z.string(), portee: z.enum(["seance", "programme"]) }),
   },
 
+  // ---------- Mes séances (séances perso) et modifier le programme ----------
+  lister_seances_perso: {
+    description:
+      "Liste les séances personnalisées de l'utilisateur (« Mes séances ») : nom, type, exercices (id du référentiel, séries, reps, repos, charge), et les jours de la semaine où elles sont posées dans le programme.",
+    input: z.object({}),
+    output: z.array(
+      z.object({
+        id: z.string().uuid(),
+        nom: z.string(),
+        type: z.string(),
+        notes: z.string().nullable(),
+        jours_semaine: z.array(z.number()),
+        exercices: z.array(z.object({ exercice_id: z.string(), series: z.number(), reps: z.string(), repos_s: z.number(), charge_kg: z.number().nullable() })),
+      }),
+    ),
+  },
+
+  creer_seance_perso: {
+    description:
+      "Crée une séance personnalisée réutilisable (« Mes séances ») : nom, type (full, upper, lower, push, pull, legs, hiit, cardio, maison) et exercices du référentiel dans l'ordre (séries, reps, repos en s, charge facultative). Elle n'est pas planifiée : pour la mettre au programme, appeler planifier_seance_perso.",
+    input: ModeleSeanceEntree,
+    output: z.object({ id: z.string().uuid(), nom: z.string(), nb_exercices: z.number(), duree_min: z.number() }),
+  },
+
+  modifier_seance_perso: {
+    description:
+      "Modifie une séance personnalisée (remplace nom, type et toute la liste d'exercices). Ses séances déjà planifiées à venir et non faites sont mises à jour ; l'historique ne bouge pas.",
+    input: ModeleSeanceEntree.extend({ id: z.string().uuid() }),
+    output: z.object({ id: z.string().uuid(), nom: z.string(), nb_exercices: z.number(), seances_mises_a_jour: z.number() }),
+  },
+
+  supprimer_seance_perso: {
+    description:
+      "Supprime une séance personnalisée. Si elle était posée sur un jour de la semaine du programme, ce jour repasse en séance générée à partir d'aujourd'hui. Confirmer avant.",
+    input: z.object({ id: z.string().uuid() }),
+    output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
+  },
+
+  planifier_seance_perso: {
+    description:
+      "Met une séance personnalisée au planning : soit chaque semaine un jour donné (jour_semaine 0 = dimanche … 6 = samedi) à partir d'a_partir_de (aujourd'hui par défaut) dans le programme actif — elle remplace la séance générée ce jour-là ; soit une seule fois à une date (remplace la séance de salle non faite prévue ce jour). Demander « chaque semaine ou une fois ? » si ce n'est pas dit.",
+    input: z.object({
+      modele_id: z.string().uuid(),
+      jour_semaine: z.number().int().min(0).max(6).optional(),
+      date: z.string().date().optional(),
+      a_partir_de: z.string().date().optional(),
+    }),
+    output: z.object({
+      mode: z.enum(["chaque_semaine", "une_fois"]),
+      jour_semaine: z.number().optional(),
+      nb_seances: z.number().optional(),
+      depuis: z.string().optional(),
+      seance_id: z.string().uuid().optional(),
+      jour: z.string().optional(),
+      remplace: z.number().optional(),
+    }),
+  },
+
+  modifier_programme: {
+    description:
+      "Modifie le programme actif sans en créer un nouveau : jours de salle (0 = dimanche … 6 = samedi), durée des séances, nombre de semaines (la fin suit), séances perso posées par jour de semaine. Les séances non démarrées à partir d'a_partir_de (aujourd'hui par défaut, jamais avant) sont reposées ; semaines, blocs et phases restent ceux du programme ; faites et en cours ne bougent pas. Pour changer d'objectif, c'est generer_programme. Confirmer avant.",
+    input: ModificationProgramme,
+    output: z.object({ programme_id: z.string().uuid(), depuis: z.string(), fin: z.string(), nb_seances: z.number(), avertissements: z.array(z.string()) }),
+  },
+
   // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
   connecter_tiime: {
     description:
@@ -335,5 +400,7 @@ export type ToolOutput<T extends ToolName> = z.infer<(typeof tools)[T]["output"]
 /** Outils dont l'exécution exige une confirmation explicite de l'utilisateur (actions irréversibles ou vers l'extérieur). */
 export const toolsAvecConfirmation: ReadonlySet<string> = new Set([
   "generer_programme",
+  "modifier_programme",
+  "supprimer_seance_perso",
   // phase 1+ : "valider_courses", "envoyer_document", "creer_evenement"
 ]);

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
-import { LIBELLES, parametresNutrition, parametresSport, phasesProgramme, poidsActuel } from "@kvalia/core";
+import { chargerModeles, dureeModele, LIBELLES, parametresNutrition, parametresSport, phasesProgramme, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
@@ -31,6 +31,7 @@ export default async function Page() {
     .eq("programme_id", prog.id)
     .order("jour");
   const seances = trierParJour(brutes ?? []);
+  const [modeles, reglages] = await Promise.all([chargerModeles(supabase, user.id), parametresSport(supabase, user.id)]);
   const r = (prog.rythme ?? {}) as Rythme;
   const pos = positionProgramme(prog, auj);
   const nbSemaines = pos?.total ?? Math.max(1, ...seances.map((s) => s.semaine ?? 1));
@@ -209,6 +210,8 @@ export default async function Page() {
           </ul>
         </section>
 
+        <MesSeances modeles={Object.values(modeles)} perso={reglages.seances_perso} />
+
         {/* Entrées : nouveau programme, modifier */}
         <div className="flex flex-col gap-[var(--stack-sm)]">
           <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
@@ -217,7 +220,7 @@ export default async function Page() {
               <Icon name="arrow_forward" size={22} />
             </span>
           </Link>
-          <Link href="/sport/programme/nouveau?modifier=1" className="kv-btn kv-btn-tertiary kv-btn-lg kv-btn-block">
+          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-tertiary kv-btn-lg kv-btn-block">
             <Icon name="tune" size={20} />
             <span className="kv-btn-label">Modifier le programme</span>
           </Link>
@@ -229,7 +232,7 @@ export default async function Page() {
 
 /** Maquette 02 · Onglet Programmes vide : construire son programme, comment ça marche, ce que l'IA sait déjà. */
 async function sansProgramme(supabase: Db, userId: string) {
-  const params = await parametresSport(supabase, userId);
+  const [params, modeles] = await Promise.all([parametresSport(supabase, userId), chargerModeles(supabase, userId)]);
   const [{ poids, source }, nutrition] = await Promise.all([poidsActuel(supabase, userId, params), parametresNutrition(supabase, userId)]);
   const connu = [
     source !== "defaut" ? `${String(poids).replace(".", ",")} kg` : null,
@@ -304,5 +307,65 @@ async function sansProgramme(supabase: Db, userId: string) {
         )}
       </div>
     </ModuleFrame>
+  );
+}
+
+const NOMS_JOURS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+/** « Mes séances » : séances perso enregistrées (et où elles sont au programme), créer une séance. */
+function MesSeances({
+  modeles,
+  perso,
+}: {
+  modeles: Array<{ id: string; nom: string; exercices: Array<{ series: number; repos_s: number }> }>;
+  perso: Array<{ jour: number; modele_id: string }>;
+}) {
+  return (
+    <section className="flex flex-col gap-[var(--stack-sm)]">
+      <div className="flex items-baseline justify-between px-[var(--inline-xs)]">
+        <h2 className="type-title-lg">Mes séances</h2>
+        <Link href="/sport/ma-seance/nouvelle" className="flex items-center gap-[var(--inline-xs)] type-label-md text-fg-link">
+          <Icon name="add" size={18} /> Créer
+        </Link>
+      </div>
+      {modeles.length === 0 ? (
+        <Link
+          href="/sport/ma-seance/nouvelle"
+          className="flex items-center gap-[var(--inline-lg)] rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-md)]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
+            <Icon name="add" size={22} />
+          </span>
+          <span>
+            <span className="block type-title-sm">Crée ta propre séance</span>
+            <span className="block type-body-sm text-fg-secondary">
+              Tes exercices, tes séries : enregistre-la, mets-la au programme un jour fixe ou une fois.
+            </span>
+          </span>
+        </Link>
+      ) : (
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+          {modeles.map((m) => {
+            const jours = perso.filter((x) => x.modele_id === m.id).map((x) => NOMS_JOURS[x.jour]);
+            return (
+              <li key={m.id} className="border-b border-line-subtle last:border-b-0">
+                <Link href={`/sport/ma-seance/${m.id}`} className="tap flex items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-action-primary text-fg-on-brand">
+                    <Icon name="fitness_center" size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate type-title-sm">{m.nom}</span>
+                    <span className="block kv-mono">
+                      {m.exercices.length} exercices · ≈ {dureeModele(m.exercices)} min{jours.length ? ` · chaque ${jours.join(", ")}` : ""}
+                    </span>
+                  </span>
+                  <Icon name="chevron_right" size={20} className="text-icon-tertiary" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

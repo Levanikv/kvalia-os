@@ -32,9 +32,15 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
 │   ├── /sport/programme              Programme actif (maquette 14) : carte du programme (objectif, rythme, semaine n / N,
 │   │                                 fin), phases, semaine type, avancement, toutes les semaines ; « Nouveau programme »
-│   │                                 et « Modifier le programme ». Sans programme : « Construis ton programme » (maquette 02)
-│   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → échéance → rythme + premier
-│   │                                 jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
+│   │                                 et « Modifier le programme », « Mes séances ». Sans programme : « Construis ton
+│   │                                 programme » (maquette 02)
+│   ├── /sport/programme/modifier     Modifier le programme actif (plein écran) : semaine type jour par jour (repos, séance
+│   │                                 générée, une de mes séances), durée, nombre de semaines, à partir de quand
+│   ├── /sport/ma-seance/nouvelle     Créer une séance perso (plein écran) : nom, type, exercices (bibliothèque), séries,
+│   │                                 reps, repos, charge, ordre
+│   ├── /sport/ma-seance/[id]         Ma séance : modifier, « Au programme » (chaque semaine un jour ou une fois), supprimer
+│   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → échéance → rythme (jours,
+│   │                                 séance générée ou une de mes séances par jour, durée) + premier jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition (clair)

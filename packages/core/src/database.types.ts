@@ -770,6 +770,87 @@ export type Database = {
         }
         Relationships: []
       }
+      modeles_seance: {
+        Row: {
+          created_at: string
+          id: string
+          nom: string
+          notes: string | null
+          type: Database["public"]["Enums"]["seance_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom: string
+          notes?: string | null
+          type?: Database["public"]["Enums"]["seance_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom?: string
+          notes?: string | null
+          type?: Database["public"]["Enums"]["seance_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      modeles_seance_exercices: {
+        Row: {
+          charge_kg: number | null
+          exercice_id: string
+          id: string
+          modele_id: string
+          ordre: number
+          repos_s: number
+          reps: string
+          series: number
+          user_id: string
+        }
+        Insert: {
+          charge_kg?: number | null
+          exercice_id: string
+          id?: string
+          modele_id: string
+          ordre?: number
+          repos_s?: number
+          reps?: string
+          series?: number
+          user_id: string
+        }
+        Update: {
+          charge_kg?: number | null
+          exercice_id?: string
+          id?: string
+          modele_id?: string
+          ordre?: number
+          repos_s?: number
+          reps?: string
+          series?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modeles_seance_exercices_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices_ref"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modeles_seance_exercices_modele_id_fkey"
+            columns: ["modele_id"]
+            isOneToOne: false
+            referencedRelation: "modeles_seance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes_frais: {
         Row: {
           commentaire: string | null
@@ -1193,6 +1274,7 @@ export type Database = {
           id: string
           jour: string
           kcal: number | null
+          modele_id: string | null
           notes: string | null
           pause_cumul_s: number
           pause_le: string | null
@@ -1215,6 +1297,7 @@ export type Database = {
           id?: string
           jour: string
           kcal?: number | null
+          modele_id?: string | null
           notes?: string | null
           pause_cumul_s?: number
           pause_le?: string | null
@@ -1237,6 +1320,7 @@ export type Database = {
           id?: string
           jour?: string
           kcal?: number | null
+          modele_id?: string | null
           notes?: string | null
           pause_cumul_s?: number
           pause_le?: string | null
@@ -1249,6 +1333,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "seances_modele_id_fkey"
+            columns: ["modele_id"]
+            isOneToOne: false
+            referencedRelation: "modeles_seance"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "seances_programme_id_fkey"
             columns: ["programme_id"]

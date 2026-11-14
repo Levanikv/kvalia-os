@@ -16,6 +16,12 @@ import {
   parametresDepuisReponses,
   plagesPhases,
   reponsesDepuisParametres,
+  chargerModeles,
+  creerModeleSeance,
+  modifierModeleSeance,
+  modifierProgramme,
+  planifierModeleSeance,
+  supprimerModeleSeance,
   chronoSecondes,
   chronoSeance,
   defiSemaine,
@@ -509,7 +515,7 @@ describe("parcours « Nouveau programme » (onglet Programme)", () => {
   it("pré-remplit « Modifier » depuis les paramètres, aller-retour stable", () => {
     const base = ParametresSport.parse({ objectif: "hypertrophie", semaines: 8, jours_salle: [1, 2, 4, 5], rythme: { salle: 3, boxe: 0 }, duree_min: 60 });
     const r = reponsesDepuisParametres(base);
-    expect(r).toEqual({ objectif: "masse", semaines: 8, jours: [1, 2, 4], duree_min: 60 });
+    expect(r).toEqual({ objectif: "masse", semaines: 8, jours: [1, 2, 4], duree_min: 60, perso: [] });
     const p = parametresDepuisReponses(base, r);
     expect(reponsesDepuisParametres(p)).toEqual(r);
   });
@@ -520,5 +526,130 @@ describe("parcours « Nouveau programme » (onglet Programme)", () => {
     expect(g.map((x) => x.focus)).toEqual(["hypertrophie", "deload", "force", "mixte"]);
     expect(g.find((x) => x.focus === "deload")!.plages).toBe("S4 · S8 · S12");
     expect(g[0].plages).toBe("S1–3");
+  });
+});
+
+describe("Mes séances (modèles) et modifier le programme", () => {
+  // « Aujourd'hui » = mer. 11 nov. 2026, programme démarré le lun. 9 nov.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  const avecProgramme = async () => {
+    const db = fausseDb({
+      exercices_ref: refs,
+      programmes: [],
+      seances: [],
+      exercices_seance: [],
+      pesees: [],
+      profils: [{ id: USER, reglages: {} }],
+      modeles_seance: [],
+      modeles_seance_exercices: [],
+    });
+    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 3, boxe: 0 }, jours_salle: [1, 3, 5], jours_boxe: [] };
+    await executer("regler_sport", params, { db, userId: USER });
+    await genererProgramme(db, USER, params, "2026-11-09");
+    return db;
+  };
+  const exosRef = () => refs.filter((r) => r.equipement === "dumbbell").slice(0, 3);
+
+  it("crée une séance perso (exercices dans l'ordre, durée estimée) et la relit", async () => {
+    const db = await avecProgramme();
+    const [a, b] = exosRef();
+    const r = await creerModeleSeance(db, USER, {
+      nom: "Bras du jeudi",
+      type: "upper",
+      exercices: [
+        { exercice_id: a.id, series: 4, reps: "10", repos_s: 60 },
+        { exercice_id: b.id, series: 3, reps: "12", repos_s: 60, charge_kg: 12 },
+      ],
+    });
+    expect(r.duree_min).toBeGreaterThan(10);
+    const m = (await chargerModeles(db, USER))[r.id];
+    expect(m.nom).toBe("Bras du jeudi");
+    expect(m.exercices.map((x) => x.exercice_id)).toEqual([a.id, b.id]);
+    expect(m.exercices[1].charge_kg).toBe(12);
+  });
+
+  it("chaque jeudi à partir d'aujourd'hui : remplace les séances à venir ce jour-là, garde le passé, allège en décharge", async () => {
+    const db = await avecProgramme();
+    const [a, b] = exosRef();
+    const { id } = await creerModeleSeance(db, USER, {
+      nom: "Bras",
+      type: "upper",
+      exercices: [
+        { exercice_id: a.id, series: 4, reps: "10", repos_s: 60 },
+        { exercice_id: b.id, series: 3, reps: "12", repos_s: 60 },
+      ],
+    });
+    const lundi = db.tables.seances.find((s: any) => s.jour === "2026-11-09");
+    await planifierModeleSeance(db, USER, { modele_id: id, jour_semaine: 4 });
+    const jeudis = db.tables.seances.filter((s: any) => new Date(s.jour + "T12:00:00Z").getUTCDay() === 4);
+    expect(jeudis.length).toBe(12);
+    expect(jeudis.every((s: any) => s.modele_id === id && s.titre === "Bras")).toBe(true);
+    const s4 = jeudis.find((s: any) => s.semaine === 4);
+    const exos4 = db.tables.exercices_seance.filter((e: any) => e.seance_id === s4.id);
+    expect(exos4.map((e: any) => e.series)).toEqual([3, 2]);
+    expect(db.tables.seances.find((s: any) => s.id === lundi.id)).toBeDefined();
+    // Les lundis / mercredis / vendredis générés restent.
+    expect(
+      db.tables.seances.filter((s: any) => s.jour >= "2026-11-11" && [1, 3, 5].includes(new Date(s.jour + "T12:00:00Z").getUTCDay())).length,
+    ).toBeGreaterThan(30);
+  });
+
+  it("une seule fois à une date : remplace la séance de salle prévue ce jour-là", async () => {
+    const db = await avecProgramme();
+    const [a] = exosRef();
+    const { id } = await creerModeleSeance(db, USER, { nom: "Express", exercices: [{ exercice_id: a.id, series: 3, reps: "15", repos_s: 45 }] });
+    const r = await planifierModeleSeance(db, USER, { modele_id: id, date: "2026-11-13" });
+    expect(r.mode).toBe("une_fois");
+    const ceJour = db.tables.seances.filter((s: any) => s.jour === "2026-11-13");
+    expect(ceJour).toHaveLength(1);
+    expect(ceJour[0].modele_id).toBe(id);
+    await expect(planifierModeleSeance(db, USER, { modele_id: id, date: "2026-11-10" })).rejects.toThrow(/passé/);
+  });
+
+  it("modifier le programme : nouveaux jours et durée à partir d'une date, même programme, faites intactes, fin recalculée", async () => {
+    const db = await avecProgramme();
+    const prog = db.tables.programmes.find((p: any) => p.actif);
+    const lundi = db.tables.seances.find((s: any) => s.jour === "2026-11-09");
+    lundi.etat = "faite";
+    const r = await modifierProgramme(db, USER, { jours_salle: [2, 4], duree_min: 45, semaines: 8, a_partir_de: "2026-11-16" });
+    expect(r.programme_id).toBe(prog.id);
+    expect(r.depuis).toBe("2026-11-16");
+    expect(prog.fin).toBe("2027-01-03");
+    const apres = db.tables.seances.filter((s: any) => s.jour >= "2026-11-16");
+    expect(new Set(apres.map((s: any) => new Date(s.jour + "T12:00:00Z").getUTCDay()))).toEqual(new Set([2, 4]));
+    expect(apres.every((s: any) => s.programme_id === prog.id && s.jour <= "2027-01-03")).toBe(true);
+    // Avant le 16 : inchangé (dont la séance faite) ; la semaine 2 garde son numéro.
+    expect(db.tables.seances.find((s: any) => s.id === lundi.id).etat).toBe("faite");
+    expect(apres.find((s: any) => s.jour === "2026-11-17").semaine).toBe(2);
+    // Une date passée est ramenée à aujourd'hui.
+    expect((await modifierProgramme(db, USER, { a_partir_de: "2026-11-01" })).depuis).toBe("2026-11-11");
+  });
+
+  it("modifier une séance perso met à jour ses séances à venir ; la supprimer rend ses jours au générateur", async () => {
+    const db = await avecProgramme();
+    const [a, b, c] = exosRef();
+    const { id } = await creerModeleSeance(db, USER, { nom: "Bras", exercices: [{ exercice_id: a.id, series: 3, reps: "10", repos_s: 60 }] });
+    await planifierModeleSeance(db, USER, { modele_id: id, jour_semaine: 4 });
+    await modifierModeleSeance(db, USER, id, {
+      nom: "Bras v2",
+      type: "upper",
+      exercices: [
+        { exercice_id: b.id, series: 4, reps: "8", repos_s: 90 },
+        { exercice_id: c.id, series: 3, reps: "12", repos_s: 60 },
+      ],
+    });
+    const jeudi = db.tables.seances.find((s: any) => s.jour === "2026-11-12");
+    expect(jeudi.titre).toBe("Bras v2");
+    expect(db.tables.exercices_seance.filter((e: any) => e.seance_id === jeudi.id).map((e: any) => e.exercice_id)).toEqual([b.id, c.id]);
+    await supprimerModeleSeance(db, USER, id);
+    const jeudis = db.tables.seances.filter((s: any) => s.jour >= "2026-11-12" && new Date(s.jour + "T12:00:00Z").getUTCDay() === 4);
+    expect(jeudis.length).toBeGreaterThan(0);
+    expect(jeudis.every((s: any) => s.modele_id === null)).toBe(true);
   });
 });

@@ -40,6 +40,8 @@ type Props = {
   lundiProchain: string;
   /** Un programme est actif : il sera remplacé à partir du premier jour choisi. */
   remplace: boolean;
+  /** Mes séances : chaque jour de salle peut en prendre une au lieu d'une séance générée. */
+  modeles: Array<{ id: string; nom: string; type: string }>;
 };
 
 /**
@@ -47,7 +49,7 @@ type Props = {
  * de profil (niveau, lieu, douleurs, repères : déjà connus). Objectif → échéance → rythme et premier jour →
  * proposition (phases et semaine type calculées par le noyau) → génération → « C'est parti ».
  */
-export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, remplace }: Props) {
+export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, remplace, modeles }: Props) {
   const router = useRouter();
   const [, start] = useTransition();
   const [etape, setEtape] = useState(0);
@@ -67,7 +69,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
   }, [ecran]);
 
   const params = parametresDepuisReponses(base, { ...r, semaines: echeance ? r.semaines : 12 });
-  const plan = planSemaine(params);
+  const plan = planSemaine(params, Object.fromEntries(modeles.map((m) => [m.id, { nom: m.nom, type: m.type }])));
   const phases = phasesProgramme(params);
   const finIso = (() => {
     const d = new Date(debut + "T12:00:00Z");
@@ -204,6 +206,42 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                       {r.jours.length} séance{r.jours.length > 1 ? "s" : ""} de salle par semaine
                     </p>
                   </div>
+                  {modeles.length > 0 && r.jours.length > 0 && (
+                    <div className="flex flex-col gap-[var(--stack-sm)]">
+                      <h2 className="type-title-sm">Quelle séance chaque jour ?</h2>
+                      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+                        {JOURS.filter((j) => r.jours.includes(j.v)).map((j) => {
+                          const choisi = (r.perso ?? []).find((x) => x.jour === j.v)?.modele_id ?? "";
+                          return (
+                            <li
+                              key={j.v}
+                              className="flex items-center gap-[var(--inline-lg)] border-b border-line-subtle px-[var(--inset-md)] py-[var(--inset-xs)] last:border-b-0"
+                            >
+                              <span className="w-20 type-label-lg">{["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"][j.v]}</span>
+                              <select
+                                value={choisi}
+                                onChange={(e) =>
+                                  maj("perso", [
+                                    ...(r.perso ?? []).filter((x) => x.jour !== j.v),
+                                    ...(e.target.value ? [{ jour: j.v, modele_id: e.target.value }] : []),
+                                  ])
+                                }
+                                aria-label={`Séance du ${["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"][j.v]}`}
+                                className="tap min-w-0 flex-1 rounded-[var(--radius-input)] border border-line-default bg-surface-container-default px-[var(--inset-sm)] type-body-md"
+                              >
+                                <option value="">Séance générée (IA)</option>
+                                {modeles.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.nom}
+                                  </option>
+                                ))}
+                              </select>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-[var(--stack-sm)]">
                     <h2 className="type-title-sm">Durée d’une séance</h2>
                     <div className="kv-seg" role="radiogroup" aria-label="Durée">

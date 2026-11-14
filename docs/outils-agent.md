@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-22 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+28 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -93,6 +93,7 @@ Lit les paramètres du programme sportif (rythme salle/boxe, jours, durée, mat�
 - `semaines` : entier — défaut `12`
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
+- `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
 - `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel)
 
@@ -111,6 +112,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `semaines` : entier — défaut `12` (optionnel)
 - `poids_kg` : nombre (optionnel) (optionnel)
 - `effort_s_par_serie` : entier — défaut `40` (optionnel)
+- `seances_perso` : liste de objet { jour, modele_id } — défaut `[]` (optionnel)
 - `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel) (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel) (optionnel)
 
@@ -125,6 +127,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `semaines` : entier — défaut `12`
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
+- `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
 - `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel)
 
@@ -134,7 +137,7 @@ Génère un programme complet (N semaines, blocs de 4 : progression puis déchar
 
 **Entrée**
 - `debut` : string (date) (optionnel) — Premier jour (lundi conseillé ; aujourd'hui possible). Par défaut : lundi prochain. Les séances de l'ancien programme sont remplacées à partir de ce jour.
-- `parametres` : objet { rythme, jours_salle, jours_boxe, duree_min, materiel, objectif, niveau, semaines, poids_kg, effort_s_par_serie, profil, onboarding } (optionnel) — Surcharges ponctuelles ; sinon les réglages enregistrés.
+- `parametres` : objet { rythme, jours_salle, jours_boxe, duree_min, materiel, objectif, niveau, semaines, poids_kg, effort_s_par_serie, seances_perso, profil, onboarding } (optionnel) — Surcharges ponctuelles ; sinon les réglages enregistrés.
 
 **Sortie**
 - `programme_id` : string (uuid)
@@ -280,6 +283,97 @@ Remplace un exercice d'une séance par un autre (id du référentiel, voir equiv
 - `nouveau` : string
 - `nom` : string
 - `portee` : `seance` · `programme`
+
+## `lister_seances_perso`
+
+Liste les séances personnalisées de l'utilisateur (« Mes séances ») : nom, type, exercices (id du référentiel, séries, reps, repos, charge), et les jours de la semaine où elles sont posées dans le programme.
+
+**Entrée**
+- (aucune)
+
+**Sortie**
+- liste de objet { id, nom, type, notes, jours_semaine, exercices }
+
+## `creer_seance_perso`
+
+Crée une séance personnalisée réutilisable (« Mes séances ») : nom, type (full, upper, lower, push, pull, legs, hiit, cardio, maison) et exercices du référentiel dans l'ordre (séries, reps, repos en s, charge facultative). Elle n'est pas planifiée : pour la mettre au programme, appeler planifier_seance_perso.
+
+**Entrée**
+- `nom` : string (trim)
+- `type` : `full` · `upper` · `lower` · `push` · `pull` · `legs` · `hiit` · `cardio` · `maison` — défaut `"full"`
+- `notes` : string | null (optionnel)
+- `exercices` : liste de objet { exercice_id, series, reps, repos_s, charge_kg }
+
+**Sortie**
+- `id` : string (uuid)
+- `nom` : string
+- `nb_exercices` : nombre
+- `duree_min` : nombre
+
+## `modifier_seance_perso`
+
+Modifie une séance personnalisée (remplace nom, type et toute la liste d'exercices). Ses séances déjà planifiées à venir et non faites sont mises à jour ; l'historique ne bouge pas.
+
+**Entrée**
+- `nom` : string (trim)
+- `type` : `full` · `upper` · `lower` · `push` · `pull` · `legs` · `hiit` · `cardio` · `maison` — défaut `"full"`
+- `notes` : string | null (optionnel)
+- `exercices` : liste de objet { exercice_id, series, reps, repos_s, charge_kg }
+- `id` : string (uuid)
+
+**Sortie**
+- `id` : string (uuid)
+- `nom` : string
+- `nb_exercices` : nombre
+- `seances_mises_a_jour` : nombre
+
+## `supprimer_seance_perso` — à confirmer
+
+Supprime une séance personnalisée. Si elle était posée sur un jour de la semaine du programme, ce jour repasse en séance générée à partir d'aujourd'hui. Confirmer avant.
+
+**Entrée**
+- `id` : string (uuid)
+
+**Sortie**
+- `id` : string (uuid)
+- `supprime` : booléen
+
+## `planifier_seance_perso`
+
+Met une séance personnalisée au planning : soit chaque semaine un jour donné (jour_semaine 0 = dimanche … 6 = samedi) à partir d'a_partir_de (aujourd'hui par défaut) dans le programme actif — elle remplace la séance générée ce jour-là ; soit une seule fois à une date (remplace la séance de salle non faite prévue ce jour). Demander « chaque semaine ou une fois ? » si ce n'est pas dit.
+
+**Entrée**
+- `modele_id` : string (uuid)
+- `jour_semaine` : entier (optionnel)
+- `date` : string (date) (optionnel)
+- `a_partir_de` : string (date) (optionnel)
+
+**Sortie**
+- `mode` : `chaque_semaine` · `une_fois`
+- `jour_semaine` : nombre (optionnel)
+- `nb_seances` : nombre (optionnel)
+- `depuis` : string (optionnel)
+- `seance_id` : string (uuid) (optionnel)
+- `jour` : string (optionnel)
+- `remplace` : nombre (optionnel)
+
+## `modifier_programme` — à confirmer
+
+Modifie le programme actif sans en créer un nouveau : jours de salle (0 = dimanche … 6 = samedi), durée des séances, nombre de semaines (la fin suit), séances perso posées par jour de semaine. Les séances non démarrées à partir d'a_partir_de (aujourd'hui par défaut, jamais avant) sont reposées ; semaines, blocs et phases restent ceux du programme ; faites et en cours ne bougent pas. Pour changer d'objectif, c'est generer_programme. Confirmer avant.
+
+**Entrée**
+- `jours_salle` : liste de entier (optionnel)
+- `duree_min` : entier (optionnel)
+- `semaines` : entier (optionnel)
+- `seances_perso` : liste de objet { jour, modele_id } (optionnel)
+- `a_partir_de` : string (date) (optionnel)
+
+**Sortie**
+- `programme_id` : string (uuid)
+- `depuis` : string
+- `fin` : string
+- `nb_seances` : nombre
+- `avertissements` : liste de string
 
 ## `connecter_tiime`
 

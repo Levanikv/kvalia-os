@@ -24,6 +24,12 @@ import {
   demarrerSeance,
   chronoSeance,
   validerSerie,
+  chargerModeles,
+  creerModeleSeance,
+  modifierModeleSeance,
+  modifierProgramme,
+  planifierModeleSeance,
+  supprimerModeleSeance,
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
@@ -358,6 +364,40 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "remplacer_exercice": {
       const e = entree as ToolInput<"remplacer_exercice">;
       return (await remplacerExercice(ctx.db, ctx.userId, e.exercice_seance_id, e.nouvel_exercice_id, e.portee)) as ToolOutput<T>;
+    }
+
+    // ---------- Mes séances et modifier le programme ----------
+    case "lister_seances_perso": {
+      const [modeles, params] = await Promise.all([chargerModeles(ctx.db, ctx.userId), parametresSport(ctx.db, ctx.userId)]);
+      return Object.values(modeles).map((m) => ({
+        id: m.id,
+        nom: m.nom,
+        type: m.type,
+        notes: m.notes,
+        jours_semaine: params.seances_perso.filter((x) => x.modele_id === m.id).map((x) => x.jour),
+        exercices: m.exercices.map(({ ordre: _o, ...x }) => x),
+      })) as ToolOutput<T>;
+    }
+
+    case "creer_seance_perso": {
+      return (await creerModeleSeance(ctx.db, ctx.userId, entree as ToolInput<"creer_seance_perso">)) as ToolOutput<T>;
+    }
+
+    case "modifier_seance_perso": {
+      const { id, ...reste } = entree as ToolInput<"modifier_seance_perso">;
+      return (await modifierModeleSeance(ctx.db, ctx.userId, id, reste)) as ToolOutput<T>;
+    }
+
+    case "supprimer_seance_perso": {
+      return (await supprimerModeleSeance(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_seance_perso">).id)) as ToolOutput<T>;
+    }
+
+    case "planifier_seance_perso": {
+      return (await planifierModeleSeance(ctx.db, ctx.userId, entree as ToolInput<"planifier_seance_perso">)) as ToolOutput<T>;
+    }
+
+    case "modifier_programme": {
+      return (await modifierProgramme(ctx.db, ctx.userId, entree as ToolInput<"modifier_programme">)) as ToolOutput<T>;
     }
 
     // ---------- Entreprise (Tiime, lecture seule) ----------
