@@ -91,6 +91,7 @@ export default async function Page({ params }: Props) {
     pause_cumul_s: seance.pause_cumul_s ?? 0,
     faite_le: seance.faite_le,
     estAujourdhui: seance.jour === aujourdhui(),
+    estPassee: seance.jour < aujourdhui(),
   };
 
   return (

@@ -47,6 +47,8 @@ export type SeanceVue = {
   pause_cumul_s: number;
   faite_le: string | null;
   estAujourdhui: boolean;
+  /** Jour passé : une séance non démarrée ne peut plus l'être (règle du jour J). */
+  estPassee: boolean;
 };
 type Props = { seance: SeanceVue; exercices: ExoVue[] };
 
@@ -173,7 +175,8 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
       return (
         <button type="button" disabled className="kv-btn kv-btn-tertiary kv-btn-xl kv-btn-block">
           <span className="kv-btn-label">
-            Prévue {new Date(seance.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
+            {seance.estPassee ? "Non faite · " : "Prévue "}
+            {new Date(seance.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
           </span>
         </button>
       );

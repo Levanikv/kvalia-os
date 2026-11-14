@@ -82,4 +82,5 @@ Rotation du `MCP_TOKEN` : nouvelle valeur dans Railway, puis mettre à jour l'UR
 
 - Railway : `list-deployments` → `rollback` vers le dernier `SUCCESS`.
 - Supabase : sauvegardes quotidiennes du plan ; avant une migration destructive, `execute_sql` d'un `create table … as select` de secours.
-- Un programme sportif régénéré supprime les séances futures non faites : l'historique (séances faites) est conservé par construction.
+- Un programme sportif régénéré remplace les séances non faites de l'ancien **à partir de son premier jour** (celle du jour comprise si le nouveau démarre aujourd'hui) ; avant cette date l'ancien continue, et les séances faites sont conservées par construction (jamais doublées).
+- Une séance ne se démarre que le jour J (`peutDemarrer`) : démarrer, cocher, valider une série ou terminer une séance prévue un autre jour est refusé par le noyau.

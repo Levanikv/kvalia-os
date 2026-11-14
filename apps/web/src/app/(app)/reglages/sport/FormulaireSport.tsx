@@ -158,7 +158,10 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
         </label>
       </Section>
 
-      <Section titre="Génération" note="Le programme actif est remplacé : ses séances futures non faites sont supprimées, l’historique est conservé.">
+      <Section
+        titre="Génération"
+        note="Le programme actif s’arrête la veille du premier jour : à partir de cette date ses séances non faites sont remplacées (y compris celle du jour si tu démarres aujourd’hui) ; avant, il continue. Les séances faites restent."
+      >
         <label className="flex items-center justify-between gap-3">
           <span className="text-sm">Premier jour</span>
           <input
@@ -168,7 +171,7 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
             className="rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-sm outline-none focus:border-action-primary"
           />
         </label>
-        <p className="text-xs text-fg-tertiary">Vide = lundi prochain.</p>
+        <p className="text-xs text-fg-tertiary">Vide = lundi prochain. Aujourd’hui = la séance du jour est remplacée (sauf si elle est déjà faite).</p>
       </Section>
 
       {message && (

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { historiqueCharge } from "@kvalia/core";
+import { historiqueCharge, peutDemarrer } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
-import { session } from "@/lib/session";
+import { aujourdhui, session } from "@/lib/session";
 import { libelleMateriel, libellePartie, nomAffiche } from "../../lib";
 import { Video } from "./Video";
 import { BoutonFait } from "./BoutonFait";
@@ -30,7 +30,7 @@ export default async function Page({ params, searchParams }: Props) {
   if (seanceId) {
     const { data: lignes } = await supabase
       .from("exercices_seance")
-      .select("id, exercice_id, ordre, series, reps, repos_s, kcal, fait, seances!inner(etat)")
+      .select("id, exercice_id, ordre, series, reps, repos_s, kcal, fait, seances!inner(etat, jour)")
       .eq("seance_id", seanceId)
       .order("ordre");
     const idx = (lignes ?? []).findIndex((l) => l.exercice_id === id);
@@ -39,7 +39,11 @@ export default async function Page({ params, searchParams }: Props) {
       ctx = {
         ligne: { id: l.id, series: l.series, reps: l.reps, repos_s: l.repos_s, kcal: l.kcal === null ? null : Number(l.kcal), fait: l.fait },
         suivant: lignes![idx + 1]?.exercice_id ?? null,
-        seanceFaite: (l.seances as unknown as { etat: string }).etat === "faite",
+        // Faite, ou pas démarrable (autre jour que le jour J) : pas de « Fait » depuis la fiche.
+        seanceFaite: (() => {
+          const se = l.seances as unknown as { etat: string; jour: string };
+          return se.etat === "faite" || !peutDemarrer(se, aujourdhui());
+        })(),
       };
     }
   }

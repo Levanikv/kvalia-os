@@ -6,6 +6,7 @@
  */
 import { z } from "zod";
 import type { KvaliaClient } from "./supabase";
+import { aujourdhuiIso, decalerJour } from "./dates";
 import type { Tables } from "./database.types";
 
 // ---------- Paramètres (profils.reglages.sport) ----------
@@ -532,8 +533,9 @@ export function planSemaine(params: ParametresSport): PlanSemaine {
 export type ProgrammeGenere = { programme_id: string; nb_seances: number; nb_exercices: number; debut: string; fin: string; avertissements: string[] };
 
 /**
- * Génère un programme complet et le rend actif. L'ancien programme actif est désactivé et ses séances futures
- * non faites sont supprimées (les séances faites restent dans l'historique).
+ * Génère un programme complet et le rend actif. L'ancien programme actif s'arrête la veille du premier jour du
+ * nouveau : ses séances non faites à partir de ce jour sont remplacées (celle du jour comprise), avant il continue ;
+ * les séances faites restent dans l'historique et ne sont pas doublées.
  */
 export async function genererProgramme(db: KvaliaClient, userId: string, params: ParametresSport, debutIso?: string): Promise<ProgrammeGenere> {
   const avertissements: string[] = [];
@@ -542,24 +544,37 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
   const refs = (refsData ?? []) as Ref[];
   if (refs.length === 0) throw new Error("Bibliothèque d'exercices vide : lance le seed (pnpm --filter @kvalia/agent seed:exercices).");
 
-  // Début : lundi prochain par défaut (ou aujourd'hui si lundi)
-  const debut = debutIso ? new Date(debutIso + "T12:00:00") : new Date();
-  debut.setHours(12, 0, 0, 0);
+  // Début : lundi prochain par défaut (ou aujourd'hui si lundi) — jours calendaires de l'utilisateur, pas UTC.
+  let debutJour = debutIso ?? aujourdhuiIso();
   if (!debutIso) {
-    const d = debut.getDay();
-    const delta = d === 1 ? 0 : (8 - d) % 7;
-    debut.setDate(debut.getDate() + delta);
+    const d = new Date(debutJour + "T12:00:00Z").getUTCDay();
+    debutJour = decalerJour(debutJour, d === 1 ? 0 : (8 - d) % 7);
   }
+  const debut = new Date(debutJour + "T12:00:00");
   const fin = new Date(debut);
   fin.setDate(fin.getDate() + params.semaines * 7 - 1);
   const iso = (x: Date) => x.toISOString().slice(0, 10);
 
-  // Ancien programme actif
-  const { data: anciens } = await db.from("programmes").select("id").eq("user_id", userId).eq("actif", true);
+  // Ancien programme actif : il s'arrête la veille du nouveau. Ses séances à partir du début du nouveau
+  // (prévues, sautées ou en cours) sont remplacées ; avant cette date il continue ; les séances faites restent.
+  const { data: anciens } = await db.from("programmes").select("id, debut, fin").eq("user_id", userId).eq("actif", true);
   for (const a of anciens ?? []) {
-    await db.from("seances").delete().eq("programme_id", a.id).in("etat", ["prevue", "sautee"]).gte("jour", iso(new Date()));
-    await db.from("programmes").update({ actif: false }).eq("id", a.id);
+    const { error: errSuppr } = await db.from("seances").delete().eq("programme_id", a.id).in("etat", ["prevue", "sautee", "en_cours"]).gte("jour", debutJour);
+    if (errSuppr) throw errSuppr;
+    const veille = decalerJour(debutJour, -1);
+    const patch: { actif: boolean; fin?: string } = { actif: false };
+    if (a.debut <= veille && (!a.fin || a.fin > veille)) patch.fin = veille;
+    await db.from("programmes").update(patch).eq("id", a.id);
   }
+  // Séances déjà faites dans la période (ex. la séance du jour terminée) : on ne les double pas.
+  const { data: faitesPeriode } = await db
+    .from("seances")
+    .select("jour, type")
+    .eq("user_id", userId)
+    .eq("etat", "faite")
+    .gte("jour", debutJour)
+    .lte("jour", iso(fin));
+  const dejaFait = new Set((faitesPeriode ?? []).map((x) => `${x.jour}|${x.type === "boxe" ? "boxe" : "salle"}`));
 
   const { data: prog, error: errProg } = await db
     .from("programmes")
@@ -600,6 +615,7 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
       const jourDate = new Date(lundi);
       jourDate.setDate(lundi.getDate() + j);
       for (const prevue of plan.jours[jourDate.getDay()]) {
+        if (dejaFait.has(`${iso(jourDate)}|${prevue.genre}`)) continue;
         if (prevue.genre === "salle") {
           const idxSalle = prevue.index;
           const modele = MODELES[prevue.modele];
@@ -681,7 +697,7 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
     const { error } = await db.from("exercices_seance").insert(lignes.slice(i, i + 200) as never);
     if (error) throw error;
   }
-  return { programme_id: prog.id, nb_seances: seances?.length ?? 0, nb_exercices: lignes.length, debut: iso(debut), fin: iso(fin), avertissements };
+  return { programme_id: prog.id, nb_seances: seances?.length ?? 0, nb_exercices: lignes.length, debut: debutJour, fin: iso(fin), avertissements };
 }
 
 // ---------- Suivi d'une séance ----------
@@ -724,6 +740,17 @@ async function recalculerSeance(db: KvaliaClient, seanceId: string) {
 }
 
 export async function cocherExercice(db: KvaliaClient, userId: string, exerciceSeanceId: string, fait: boolean) {
+  if (fait) {
+    // Cocher démarre la séance : seulement le jour prévu.
+    const { data: avant, error: errAvant } = await db
+      .from("exercices_seance")
+      .select("id, seances!inner(jour, etat)")
+      .eq("id", exerciceSeanceId)
+      .eq("user_id", userId)
+      .single();
+    if (errAvant) throw errAvant;
+    exigerJourJ(avant.seances as unknown as { jour: string; etat: string });
+  }
   const { data: exo, error } = await db
     .from("exercices_seance")
     .update({ fait, fait_le: fait ? new Date().toISOString() : null })
@@ -760,6 +787,7 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
     .eq("user_id", userId)
     .single();
   if (error) throw error;
+  exigerJourJ(se);
   const exos = se.exercices_seance ?? [];
   const maintenant = new Date();
   const chronoMin = se.debut_le ? chronoSecondes({ ...se, faite_le: null }, maintenant) / 60 : null;
@@ -832,6 +860,21 @@ async function reprogrammerExercice(
 // ---------- Séance en direct : chrono, pause, séries ----------
 
 /**
+ * Une séance ne se démarre que le jour prévu (jour calendaire de l'utilisateur). Une séance déjà en cours
+ * (démarrée le jour J, finie après minuit) ou faite n'est pas concernée.
+ */
+export function peutDemarrer(se: { jour: string; etat: string }, aujourdhui = aujourdhuiIso()): boolean {
+  return se.etat === "en_cours" || se.etat === "faite" || se.jour === aujourdhui;
+}
+
+function exigerJourJ(se: { jour: string; etat: string }) {
+  if (!peutDemarrer(se)) {
+    const date = new Date(se.jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+    throw new Error(`Cette séance est prévue le ${date} : elle ne peut être démarrée que ce jour-là.`);
+  }
+}
+
+/**
  * Secondes de séance au chrono : depuis le départ, pauses déduites ; figé pendant une pause et à la fin.
  * Pure : l'app l'appelle chaque seconde côté client, l'agent pour dire « tu en es à 31 min ».
  */
@@ -884,9 +927,10 @@ export function defiSemaine(seances: Array<{ type: string; etat: string }>): { t
 
 /** « Démarrer la séance » : lance le chrono (sans rien cocher). Sans effet si elle tourne déjà ou est faite. */
 export async function demarrerSeance(db: KvaliaClient, userId: string, seanceId: string) {
-  const { data: se, error } = await db.from("seances").select("id, etat, debut_le").eq("id", seanceId).eq("user_id", userId).single();
+  const { data: se, error } = await db.from("seances").select("id, jour, etat, debut_le").eq("id", seanceId).eq("user_id", userId).single();
   if (error) throw error;
   if (se.etat === "faite" || se.debut_le) return { seance_id: se.id, etat: se.etat, debut_le: se.debut_le };
+  exigerJourJ(se);
   const debut_le = new Date().toISOString();
   const { error: errMaj } = await db.from("seances").update({ etat: "en_cours", debut_le, pause_le: null, pause_cumul_s: 0 }).eq("id", seanceId);
   if (errMaj) throw errMaj;
@@ -919,11 +963,12 @@ export async function chronoSeance(db: KvaliaClient, userId: string, seanceId: s
 export async function validerSerie(db: KvaliaClient, userId: string, exerciceSeanceId: string, maj: { reps?: number | null; charge_kg?: number | null } = {}) {
   const { data: e, error } = await db
     .from("exercices_seance")
-    .select("id, seance_id, series, reps, charge_kg, fait, realise")
+    .select("id, seance_id, series, reps, charge_kg, fait, realise, seances!inner(jour, etat)")
     .eq("id", exerciceSeanceId)
     .eq("user_id", userId)
     .single();
   if (error) throw error;
+  exigerJourJ(e.seances as unknown as { jour: string; etat: string });
   const realise: Realise = { ...((e.realise as Realise | null) ?? {}) };
   const series = [...(realise.series ?? [])];
   if (!e.fait && series.length < e.series) {

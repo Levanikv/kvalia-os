@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PARAMETRES_SPORT_DEFAUT,
   ParametresSport,
@@ -12,6 +12,7 @@ import {
   trierSeancesDuJour,
   remplacerExercice,
   terminerSeance,
+  peutDemarrer,
   chronoSecondes,
   chronoSeance,
   defiSemaine,
@@ -77,22 +78,49 @@ describe("genererProgramme", () => {
     for (const e of db.tables.exercices_seance) expect(["dumbbell", "body weight"]).toContain(parId.get(e.exercice_id)!.equipement);
   });
 
-  it("remplace le programme actif, supprime ses séances futures non faites et garde les passées", async () => {
-    // Horloge figée : « aujourd'hui » = mer. 11 nov. 2026, quelle que soit la date réelle du test.
+  it("un nouveau programme remplace l'ancien à partir de SA date de début : avant, l'ancien continue ; les faites restent", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-11T12:00:00Z"));
     try {
       const db = base();
       await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
       const premier = db.tables.programmes[0].id;
-      const passees = db.tables.seances.filter((s: any) => s.programme_id === premier && s.jour < "2026-11-11").map((s: any) => s.id);
-      expect(passees.length).toBeGreaterThan(0);
-      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 3, boxe: 0 }, jours_salle: [1, 3, 5], poids_kg: 80 }, "2027-03-01");
-      expect(db.tables.programmes.find((p: any) => p.id === premier).actif).toBe(false);
-      // Les séances passées restent dans l'historique ; toutes celles d'aujourd'hui et après sont supprimées.
+      const avantDebut = db.tables.seances.filter((s: any) => s.programme_id === premier && s.jour < "2026-11-23").map((s: any) => s.id);
+      expect(avantDebut.some((id: string) => db.tables.seances.find((s: any) => s.id === id).jour > "2026-11-11")).toBe(true);
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 3, boxe: 0 }, jours_salle: [1, 3, 5], poids_kg: 80 }, "2026-11-23");
+      const ancien = db.tables.programmes.find((p: any) => p.id === premier);
+      expect(ancien.actif).toBe(false);
+      expect(ancien.fin).toBe("2026-11-22");
+      // L'ancien garde tout ce qui précède le 23 (même les séances à venir d'ici là) et rien après.
       const restantes = db.tables.seances.filter((s: any) => s.programme_id === premier).map((s: any) => s.id);
-      expect(restantes.sort()).toEqual([...passees].sort());
+      expect(restantes.sort()).toEqual([...avantDebut].sort());
       expect(db.tables.programmes.filter((p: any) => p.actif)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("un programme qui démarre aujourd'hui écrase la séance du jour (même en cours) mais ne double pas une séance faite", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-09T10:00:00Z"));
+    try {
+      const db = base();
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+      const premier = db.tables.programmes[0].id;
+      const duJour = db.tables.seances.find((s: any) => s.jour === "2026-11-09" && s.type !== "boxe");
+      await demarrerSeance(db, USER, duJour.id);
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+      expect(db.tables.seances.find((s: any) => s.id === duJour.id)).toBeUndefined();
+      const nouvelles = db.tables.seances.filter((s: any) => s.jour === "2026-11-09" && s.type !== "boxe");
+      expect(nouvelles).toHaveLength(1);
+      expect(nouvelles[0].programme_id).not.toBe(premier);
+
+      // Séance du jour terminée puis nouveau programme : elle reste, et aucune séance de salle n'est ajoutée ce jour-là.
+      await terminerSeance(db, USER, nouvelles[0].id);
+      await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+      const ceJour = db.tables.seances.filter((s: any) => s.jour === "2026-11-09" && s.type !== "boxe");
+      expect(ceJour).toHaveLength(1);
+      expect(ceJour[0].etat).toBe("faite");
     } finally {
       vi.useRealTimers();
     }
@@ -100,6 +128,15 @@ describe("genererProgramme", () => {
 });
 
 describe("suivi d'une séance", () => {
+  // « Aujourd'hui » = lun. 9 nov. 2026 (jour des séances testées) : une séance ne se démarre que le jour J.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-09T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("cocher crédite les kcal et démarre la séance ; tout décocher la remet en prévue", async () => {
     const db = base();
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
@@ -128,6 +165,7 @@ describe("suivi d'une séance", () => {
     const db = base();
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
     const boxe = db.tables.seances.find((x: any) => x.type === "boxe");
+    vi.setSystemTime(new Date(boxe.jour + "T10:00:00Z"));
     const r = await terminerSeance(db, USER, boxe.id);
     expect(r.kcal).toBe(kcalPour(7.8, 80, 60 * 60));
   });
@@ -284,6 +322,15 @@ describe("onboarding → paramètres", () => {
 });
 
 describe("séance en direct (workflow Home → séance)", () => {
+  // « Aujourd'hui » = lun. 9 nov. 2026 (jour des séances testées) : une séance ne se démarre que le jour J.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-09T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const seanceDuLundi = async () => {
     const db = base();
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
@@ -404,5 +451,41 @@ describe("séance en direct (workflow Home → séance)", () => {
     const r = await executer("terminer_seance", { seance_id: s.id, rates: [] }, ctx);
     expect(r.rates).toEqual([]);
     expect(s.etat).toBe("faite");
+  });
+});
+
+describe("jour J : une séance ne se démarre que le jour prévu", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T10:00:00Z")); // mer. 11 nov.
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("peutDemarrer : jour J, ou déjà en cours / faite", () => {
+    expect(peutDemarrer({ jour: "2026-11-11", etat: "prevue" }, "2026-11-11")).toBe(true);
+    expect(peutDemarrer({ jour: "2026-11-12", etat: "prevue" }, "2026-11-11")).toBe(false);
+    expect(peutDemarrer({ jour: "2026-11-09", etat: "prevue" }, "2026-11-11")).toBe(false);
+    expect(peutDemarrer({ jour: "2026-11-10", etat: "en_cours" }, "2026-11-11")).toBe(true);
+  });
+
+  it("démarrer, cocher, valider une série ou terminer une séance d'un autre jour est refusé (rien n'est écrit)", async () => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+    for (const jour of ["2026-11-09", "2026-11-13"]) {
+      const s = db.tables.seances.find((x: any) => x.jour === jour && x.type !== "boxe");
+      const e = db.tables.exercices_seance.find((x: any) => x.seance_id === s.id);
+      await expect(demarrerSeance(db, USER, s.id)).rejects.toThrow(/ne peut être démarrée que ce jour-là/);
+      await expect(cocherExercice(db, USER, e.id, true)).rejects.toThrow(/jour-là/);
+      await expect(validerSerie(db, USER, e.id)).rejects.toThrow(/jour-là/);
+      await expect(terminerSeance(db, USER, s.id)).rejects.toThrow(/jour-là/);
+      expect(s.etat).toBe("prevue");
+      expect(e.fait).toBe(false);
+      expect(e.realise).toBeNull();
+    }
+    // Le jour J, ça passe.
+    const auj = db.tables.seances.find((x: any) => x.jour === "2026-11-11" && x.type !== "boxe");
+    if (auj) expect((await demarrerSeance(db, USER, auj.id)).etat).toBe("en_cours");
   });
 });

@@ -118,9 +118,15 @@ export const tools = {
 
   generer_programme: {
     description:
-      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Remplace le programme actif : ses séances futures non faites sont supprimées. Action lourde → confirmer avec l'utilisateur avant.",
+      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
     input: z.object({
-      debut: z.string().date().optional().describe("Premier jour (lundi conseillé). Par défaut : lundi prochain."),
+      debut: z
+        .string()
+        .date()
+        .optional()
+        .describe(
+          "Premier jour (lundi conseillé ; aujourd'hui possible). Par défaut : lundi prochain. Les séances de l'ancien programme sont remplacées à partir de ce jour.",
+        ),
       parametres: ParametresSport.partial().optional().describe("Surcharges ponctuelles ; sinon les réglages enregistrés."),
     }),
     output: z.object({

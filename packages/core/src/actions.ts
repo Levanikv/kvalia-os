@@ -3,6 +3,7 @@
  * (server actions) appellent `executer` avec un client Supabase — service role côté agent, session utilisateur côté web.
  */
 import type { KvaliaClient } from "./supabase";
+import { FUSEAU, aujourdhuiIso } from "./dates";
 import type { VueJour } from "./schemas";
 import type { ToolInput, ToolName, ToolOutput } from "./tools";
 import {
@@ -78,13 +79,7 @@ async function produitId(ctx: Ctx, nom: string, unite?: string): Promise<string>
   return cree.id;
 }
 
-/** Fuseau de l'utilisateur (v0 : un seul utilisateur, Paris). Le serveur tourne en UTC : « aujourd'hui » doit être calendaire côté utilisateur. */
-export const FUSEAU = process.env.KVALIA_TZ ?? "Europe/Paris";
-
-/** Date du jour (YYYY-MM-DD) dans le fuseau de l'utilisateur. */
-export function aujourdhuiIso(maintenant = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSEAU, year: "numeric", month: "2-digit", day: "2-digit" }).format(maintenant);
-}
+export { FUSEAU, aujourdhuiIso } from "./dates";
 
 /** Date relative FR → ISO (v0 : demain, après-demain, jours de la semaine, jj/mm, ISO). */
 export function resoudreDate(texte: string | undefined, base = new Date()): string | null {
