@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
+import { ChoixDate } from "@/components/kv/ChoixDate";
 import { EcranPlein } from "@/components/kv/EcranPlein";
 import { modifierProgrammeAction } from "../../actions";
 
@@ -204,26 +205,7 @@ export function EditeurProgramme({ programme, initial, modeles, dates }: Props) 
       {/* À partir de */}
       <section className="flex flex-col gap-[var(--stack-sm)]">
         <h2 className="px-[var(--inline-xs)] type-title-sm">À partir de</h2>
-        <div className="kv-seg" role="radiogroup" aria-label="Date d’application">
-          {(
-            [
-              [dates.aujourdhui, "Aujourd’hui"],
-              [dates.demain, "Demain"],
-              [dates.lundi, `Lundi ${date(dates.lundi, { day: "numeric" })}`],
-            ] as const
-          ).map(([v, l]) => (
-            <button
-              key={l}
-              type="button"
-              role="radio"
-              aria-checked={depuis === v}
-              onClick={() => setDepuis(v)}
-              className={`kv-seg-item ${depuis === v ? "is-on" : ""}`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <ChoixDate valeur={depuis} onChange={setDepuis} aujourdhui={dates.aujourdhui} titre="Appliquer à partir du" />
         <p className="px-[var(--inline-xs)] type-body-sm text-fg-secondary">
           Les séances faites ou en cours ne bougent pas. Les semaines, blocs et décharges restent ceux du programme.
         </p>

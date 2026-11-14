@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { LIBELLES, parametresDepuisReponses, phasesProgramme, planSemaine, type ParametresSport, type ReponsesProgramme } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
+import { ChoixDate } from "@/components/kv/ChoixDate";
 import { WheelPicker } from "@/components/kv/WheelPicker";
 import { creerProgramme } from "../../actions";
 import { libelleFocus } from "../../lib";
@@ -261,25 +262,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   </div>
                   <div className="flex flex-col gap-[var(--stack-sm)]">
                     <h2 className="type-title-sm">Premier jour</h2>
-                    <div className="kv-seg" role="radiogroup" aria-label="Premier jour">
-                      {[
-                        [aujourdhui, "Aujourd’hui"],
-                        [lundiProchain, `Lundi ${date(lundiProchain, { day: "numeric" })}`],
-                      ].map(([v, l]) =>
-                        v === lundiProchain && lundiProchain === aujourdhui ? null : (
-                          <button
-                            key={v}
-                            type="button"
-                            role="radio"
-                            aria-checked={debut === v}
-                            onClick={() => setDebut(v)}
-                            className={`kv-seg-item ${debut === v ? "is-on" : ""}`}
-                          >
-                            {l}
-                          </button>
-                        ),
-                      )}
-                    </div>
+                    <ChoixDate valeur={debut} onChange={setDebut} aujourdhui={aujourdhui} titre="Premier jour du programme" />
                     {remplace && (
                       <p className="type-body-sm text-fg-secondary">
                         Ton programme actuel s’arrête la veille ; ses séances non faites à partir de ce jour sont remplacées

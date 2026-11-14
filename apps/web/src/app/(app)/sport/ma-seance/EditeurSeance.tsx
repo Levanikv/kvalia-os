@@ -5,6 +5,7 @@ import { dureeModele } from "@kvalia/core";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Toast";
+import { ChoixDate } from "@/components/kv/ChoixDate";
 import { EcranPlein } from "@/components/kv/EcranPlein";
 import { creerSeancePersoAction, modifierSeancePersoAction, planifierSeancePersoAction, supprimerSeancePersoAction } from "../actions";
 import { formatChrono } from "../lib";
@@ -394,39 +395,14 @@ export function EditeurSeance({ refs, dates, programmeActif, modele, joursPlanif
                   </button>
                 ))}
               </div>
-              <div className="kv-seg" role="radiogroup" aria-label="À partir de">
-                {(
-                  [
-                    [dates.aujourdhui, "Dès aujourd’hui"],
-                    [dates.lundi, "Dès lundi"],
-                  ] as const
-                ).map(([v, l]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    role="radio"
-                    aria-checked={depuis === v}
-                    onClick={() => setDepuis(v)}
-                    className={`kv-seg-item ${depuis === v ? "is-on" : ""}`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
+              <ChoixDate valeur={depuis} onChange={setDepuis} aujourdhui={dates.aujourdhui} titre="Chaque semaine à partir du" />
               <p className="type-body-sm text-fg-secondary">
                 Chaque {NOMS_JOURS[jour]}, elle remplace la séance générée (ou s’ajoute si c’était repos). En semaine de décharge, une série de moins.
               </p>
             </>
           ) : (
             <>
-              <input
-                type="date"
-                value={laDate}
-                min={dates.aujourdhui}
-                onChange={(e) => setLaDate(e.target.value)}
-                className="h-[var(--control-lg)] w-full rounded-[var(--radius-input)] border border-line-default bg-surface-container-default px-[var(--inset-md)] type-body-md outline-none focus:border-focus-ring"
-                aria-label="Date"
-              />
+              <ChoixDate valeur={laDate} onChange={setLaDate} aujourdhui={dates.aujourdhui} titre="Le jour de la séance" />
               <p className="type-body-sm text-fg-secondary">Elle remplace la séance de salle prévue ce jour-là, s’il y en a une (pas si elle est faite).</p>
             </>
           )}
