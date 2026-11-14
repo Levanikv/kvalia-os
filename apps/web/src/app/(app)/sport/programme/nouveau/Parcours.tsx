@@ -344,6 +344,11 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                         : " Chaque séance travaille tout le corps, pour garder la fréquence."}
                     </p>
                     <p className="type-body-sm">Ton niveau, ton matériel et tes douleurs viennent de ton profil : les exercices en tiennent compte.</p>
+                    {debut === aujourdhui && plan.jours[new Date(aujourdhui + "T12:00:00Z").getUTCDay()].every((x) => x.genre === "boxe") && (
+                      <p className="type-body-sm">
+                        Tu démarres aujourd’hui : ta première séance est avancée à aujourd’hui, tu pourras la lancer tout de suite.
+                      </p>
+                    )}
                     {plan.avertissements.length > 0 && <p className="type-body-sm text-feedback-warning-text">{plan.avertissements.join(" ")}</p>}
                   </section>
                 </>
@@ -428,7 +433,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 >
                   <div className="kv-ground-content flex flex-col gap-[var(--stack-sm)] p-[var(--inset-lg)]">
                     <div className="flex items-center justify-between">
-                      <span className="kv-tag kv-tag-brand">Première séance</span>
+                      <span className="kv-tag kv-tag-brand">{resultat.premiere.jour === aujourdhui ? "Aujourd’hui" : "Première séance"}</span>
                       <span className="kv-mono">{date(resultat.premiere.jour, { weekday: "short", day: "numeric", month: "short" })}</span>
                     </div>
                     <p className="type-display-md">{resultat.premiere.titre}</p>
@@ -443,16 +448,40 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
               </p>
             </div>
             {pied(
-              <button
-                type="button"
-                onClick={() => {
-                  router.push("/sport/programme");
-                  router.refresh();
-                }}
-                className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block"
-              >
-                <span className="kv-btn-label">Voir mon programme</span>
-              </button>,
+              resultat.premiere && resultat.premiere.jour === aujourdhui ? (
+                // Programme qui démarre aujourd'hui : la séance du jour est là, on peut la lancer tout de suite.
+                <div className="flex gap-[var(--inline-md)]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push("/sport/programme");
+                      router.refresh();
+                    }}
+                    className="kv-btn kv-btn-outline kv-btn-xl flex-1"
+                  >
+                    <span className="kv-btn-label">Programme</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/sport/seance/${resultat.premiere?.id}`)}
+                    className="kv-btn kv-btn-primary kv-btn-xl flex-[1.6]"
+                  >
+                    <Icon name="play_arrow" size={22} filled />
+                    <span className="kv-btn-label">Démarrer</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push("/sport/programme");
+                    router.refresh();
+                  }}
+                  className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block"
+                >
+                  <span className="kv-btn-label">Voir mon programme</span>
+                </button>
+              ),
             )}
           </>
         )}

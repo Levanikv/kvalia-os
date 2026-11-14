@@ -679,3 +679,32 @@ describe("remise à zéro Sport (temporaire)", () => {
     expect(db.tables.pesees).toHaveLength(1);
   });
 });
+
+describe("programme qui démarre aujourd'hui", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("aujourd'hui n'est pas un jour de salle : la première séance est avancée à aujourd'hui et se démarre", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T10:00:00Z")); // mercredi
+    const db = base();
+    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [] };
+    await genererProgramme(db, USER, params, "2026-11-11");
+    const duJour = db.tables.seances.filter((s: any) => s.jour === "2026-11-11");
+    expect(duJour).toHaveLength(1);
+    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-12")).toBeUndefined(); // jeudi avancé
+    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-16")).toBeDefined(); // lundi suivant inchangé
+    expect((await demarrerSeance(db, USER, duJour[0].id)).etat).toBe("en_cours");
+  });
+
+  it("un autre premier jour que aujourd'hui : rien n'est avancé", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T10:00:00Z"));
+    const db = base();
+    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [] };
+    await genererProgramme(db, USER, params, "2026-11-13");
+    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-13")).toBeUndefined();
+    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-16")).toBeDefined();
+  });
+});

@@ -681,6 +681,22 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 
   const r = await planifierSeances(db, userId, { id: prog.id, debut: debutJour }, params, refs, debutJour, dejaFait);
   avertissements.push(...r.avertissements);
+  // Démarrer aujourd'hui = s'entraîner aujourd'hui : si aujourd'hui n'est pas un jour de salle, la première séance
+  // de salle de la semaine 1 est avancée à aujourd'hui (sauf si une séance de salle est déjà faite aujourd'hui).
+  if (debutJour === aujourdhuiIso() && !dejaFait.has(`${debutJour}|salle`)) {
+    const { data: semaine1 } = await db
+      .from("seances")
+      .select("id, jour, type")
+      .eq("programme_id", prog.id)
+      .gte("jour", debutJour)
+      .lte("jour", decalerJour(debutJour, 6))
+      .order("jour");
+    const salle = (semaine1 ?? []).filter((x) => x.type !== "boxe");
+    if (salle.length && !salle.some((x) => x.jour === debutJour)) {
+      const { error: errAvance } = await db.from("seances").update({ jour: debutJour }).eq("id", salle[0].id);
+      if (errAvance) throw errAvance;
+    }
+  }
   return { programme_id: prog.id, nb_seances: r.nb_seances, nb_exercices: r.nb_exercices, debut: debutJour, fin: iso(fin), avertissements };
 }
 
