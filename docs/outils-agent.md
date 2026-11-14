@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-28 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+29 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -374,6 +374,16 @@ Modifie le programme actif sans en créer un nouveau : jours de salle (0 = diman
 - `fin` : string
 - `nb_seances` : nombre
 - `avertissements` : liste de string
+
+## `reinitialiser_sport` — à confirmer
+
+TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.
+
+**Entrée**
+- `confirmer` : literal
+
+**Sortie**
+- `supprime` : objet { seances, programmes, seances_perso }
 
 ## `connecter_tiime`
 

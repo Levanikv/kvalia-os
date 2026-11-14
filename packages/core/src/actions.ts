@@ -30,6 +30,7 @@ import {
   modifierProgramme,
   planifierModeleSeance,
   supprimerModeleSeance,
+  reinitialiserSport,
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
@@ -394,6 +395,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "planifier_seance_perso": {
       return (await planifierModeleSeance(ctx.db, ctx.userId, entree as ToolInput<"planifier_seance_perso">)) as ToolOutput<T>;
+    }
+
+    case "reinitialiser_sport": {
+      return (await reinitialiserSport(ctx.db, ctx.userId)) as ToolOutput<T>;
     }
 
     case "modifier_programme": {

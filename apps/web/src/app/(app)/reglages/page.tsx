@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { session } from "@/lib/session";
 import { deconnexion } from "./actions";
+import { ResetSport } from "./ResetSport";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -38,6 +39,8 @@ export default async function Reglages() {
             </li>
           ))}
         </ul>
+        {/* TEMPORAIRE (tests v0) : à retirer quand la v1 est validée. */}
+        <ResetSport />
         <form action={deconnexion}>
           <button type="submit" className="tap w-full rounded-md border border-line-default text-sm font-medium text-feedback-danger-text">
             Se déconnecter

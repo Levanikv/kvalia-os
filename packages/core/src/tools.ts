@@ -332,6 +332,13 @@ export const tools = {
     output: z.object({ programme_id: z.string().uuid(), depuis: z.string(), fin: z.string(), nb_seances: z.number(), avertissements: z.array(z.string()) }),
   },
 
+  reinitialiser_sport: {
+    description:
+      "TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.",
+    input: z.object({ confirmer: z.literal(true) }),
+    output: z.object({ supprime: z.object({ seances: z.number(), programmes: z.number(), seances_perso: z.number() }) }),
+  },
+
   // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
   connecter_tiime: {
     description:
@@ -402,5 +409,6 @@ export const toolsAvecConfirmation: ReadonlySet<string> = new Set([
   "generer_programme",
   "modifier_programme",
   "supprimer_seance_perso",
+  "reinitialiser_sport",
   // phase 1+ : "valider_courses", "envoyer_document", "creer_evenement"
 ]);

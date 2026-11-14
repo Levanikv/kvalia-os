@@ -22,6 +22,7 @@ import {
   modifierProgramme,
   planifierModeleSeance,
   supprimerModeleSeance,
+  reinitialiserSport,
   chronoSecondes,
   chronoSeance,
   defiSemaine,
@@ -651,5 +652,30 @@ describe("Mes séances (modèles) et modifier le programme", () => {
     const jeudis = db.tables.seances.filter((s: any) => s.jour >= "2026-11-12" && new Date(s.jour + "T12:00:00Z").getUTCDay() === 4);
     expect(jeudis.length).toBeGreaterThan(0);
     expect(jeudis.every((s: any) => s.modele_id === null)).toBe(true);
+  });
+});
+
+describe("remise à zéro Sport (temporaire)", () => {
+  it("supprime programmes, séances, séances perso et réglages Sport ; garde les pesées et la nutrition", async () => {
+    const db = fausseDb({
+      exercices_ref: refs,
+      programmes: [],
+      seances: [],
+      exercices_seance: [],
+      pesees: [{ id: "p1", user_id: USER, jour: "2026-11-01", poids_kg: 80 }],
+      profils: [{ id: USER, reglages: { nutrition: { cible_kcal: 2500 } } }],
+      modeles_seance: [],
+      modeles_seance_exercices: [],
+    });
+    await executer("regler_sport", { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, { db, userId: USER });
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+    await creerModeleSeance(db, USER, { nom: "Test", exercices: [{ exercice_id: refs[0].id, series: 3, reps: "10", repos_s: 60 }] });
+    const r = await reinitialiserSport(db, USER);
+    expect(r.supprime.programmes).toBe(1);
+    expect(r.supprime.seances).toBeGreaterThan(0);
+    expect(r.supprime.seances_perso).toBe(1);
+    for (const t of ["programmes", "seances", "exercices_seance", "modeles_seance", "modeles_seance_exercices"]) expect(db.tables[t]).toHaveLength(0);
+    expect(db.tables.profils[0].reglages).toEqual({ nutrition: { cible_kcal: 2500 } });
+    expect(db.tables.pesees).toHaveLength(1);
   });
 });

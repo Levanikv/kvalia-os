@@ -1149,6 +1149,33 @@ export async function modifierProgramme(db: KvaliaClient, userId: string, brut: 
   return { programme_id: prog.id, depuis, fin, nb_seances: r.nb_seances, avertissements: r.avertissements };
 }
 
+// ---------- Remise à zéro (outil de test temporaire, à retirer en v1) ----------
+
+/**
+ * Remet l'app Sport à zéro pour l'utilisateur : programmes, séances (et leurs exercices), séances perso,
+ * réglages et onboarding Sport. Les pesées et la nutrition ne sont pas touchées. Irréversible.
+ * TEMPORAIRE : sert aux tests de la v0 ; à retirer quand la v1 est validée.
+ */
+export async function reinitialiserSport(db: KvaliaClient, userId: string) {
+  const compter = async (table: "seances" | "programmes" | "modeles_seance") => {
+    const { count } = await db.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId);
+    return count ?? 0;
+  };
+  const avant = { seances: await compter("seances"), programmes: await compter("programmes"), seances_perso: await compter("modeles_seance") };
+  for (const table of ["exercices_seance", "seances", "programmes", "modeles_seance_exercices", "modeles_seance"] as const) {
+    const { error } = await db.from(table).delete().eq("user_id", userId);
+    if (error) throw error;
+  }
+  const { data: profil } = await db.from("profils").select("reglages").eq("id", userId).maybeSingle();
+  const { sport: _sport, ...reste } = (profil?.reglages as Record<string, unknown> | null) ?? {};
+  const { error } = await db
+    .from("profils")
+    .update({ reglages: reste as never })
+    .eq("id", userId);
+  if (error) throw error;
+  return { supprime: avant };
+}
+
 // ---------- Suivi d'une séance ----------
 /**
  * Ordre d'affichage des séances d'un même jour : salle avant boxe, puis ordre de création.
