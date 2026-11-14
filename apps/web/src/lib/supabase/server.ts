@@ -25,6 +25,6 @@ export async function createClient() {
 /** L'utilisateur courant ou null. */
 export async function utilisateurCourant() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims?.sub ? { id: data.claims.sub, email: typeof data.claims.email === "string" ? data.claims.email : null } : null;
 }

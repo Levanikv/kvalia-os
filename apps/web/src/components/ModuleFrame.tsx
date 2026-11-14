@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { module, type ModuleKey } from "@kvalia/ui";
 import { MenuApps } from "./MenuApps";
-import { createClient } from "@/lib/supabase/server";
+import { initialeUtilisateur } from "@/lib/session";
 
 type Props = {
   module: ModuleKey;
@@ -52,16 +52,4 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
       <main className="kv-ground-content contenu mx-auto max-w-lg px-[var(--page-gutter)] pt-[var(--stack-sm)]">{children}</main>
     </div>
   );
-}
-
-/** Initiale affichée dans l'avatar : prénom du profil, sinon email. */
-async function initialeUtilisateur(): Promise<string> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "?";
-  const { data: profil } = await supabase.from("profils").select("prenom").eq("id", user.id).maybeSingle();
-  const source = profil?.prenom || user.email || "?";
-  return source.trim().charAt(0).toUpperCase();
 }

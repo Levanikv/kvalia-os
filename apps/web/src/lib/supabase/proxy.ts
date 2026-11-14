@@ -21,10 +21,10 @@ export async function majSession(request: NextRequest) {
     },
   });
 
-  // Ne rien mettre entre createServerClient et getUser : c'est ce qui rafraîchit le token.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Ne rien mettre entre createServerClient et getClaims : c'est ce qui rafraîchit le token (et pose les cookies).
+  // getClaims vérifie le JWT localement (clés asymétriques) : pas d'aller-retour Auth à chaque navigation.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
   const { pathname } = request.nextUrl;
   const estPublique = PUBLIC.some((p) => pathname.startsWith(p));
 

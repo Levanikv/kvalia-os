@@ -41,8 +41,9 @@ export default async function Page({ searchParams }: Props) {
   // Première ouverture de Sport : ni programme, ni onboarding terminé ou passé → onboarding muscu.
   const ob = params.onboarding;
   if (!programme && !ob?.termine && !ob?.passe) redirect("/sport/bienvenue");
-  const { poids } = await poidsActuel(supabase, user.id, params);
-  const [prochaine, numeros] = await Promise.all([
+  // Une seule vague de requêtes en parallèle (poids, prochaine séance, rangs) au lieu de deux à la suite.
+  const [{ poids }, prochaine, numeros] = await Promise.all([
+    poidsActuel(supabase, user.id, params),
     seances.length === 0
       ? supabase
           .from("seances")
@@ -191,7 +192,9 @@ export default async function Page({ searchParams }: Props) {
         )}
 
         {/* Records (l'historique complet est derrière « Historique ») */}
-        <Records db={supabase} depuis={programme?.debut ?? decaler(auj, -56)} jusqua={auj} />
+        <Suspense fallback={<div className="squelette h-48 rounded-[var(--radius-card)] bg-surface-container-sunken" />}>
+          <Records db={supabase} depuis={programme?.debut ?? decaler(auj, -56)} jusqua={auj} />
+        </Suspense>
       </div>
     </ModuleFrame>
   );

@@ -15,9 +15,8 @@ type Props = { params: Promise<{ id: string }> };
 export default async function Page({ params }: Props) {
   const { id } = await params;
   const { supabase, user } = await session();
-  const seance = await chargerSeance(supabase, id);
+  const [seance, p] = await Promise.all([chargerSeance(supabase, id), parametresSport(supabase, user.id)]);
   if (!seance) notFound();
-  const p = await parametresSport(supabase, user.id);
   const [{ poids }, dernieres, { data: prog }, { count: avant }] = await Promise.all([
     poidsActuel(supabase, user.id, p),
     dernieresCharges(

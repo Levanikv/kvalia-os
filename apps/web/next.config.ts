@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   // Les paquets du mono-repo sont du TypeScript source : Next les transpile.
   transpilePackages: ["@kvalia/core", "@kvalia/ui"],
+  experimental: {
+    // Cache client des pages déjà visitées : retour arrière et onglets déjà ouverts instantanés pendant 30 s.
+    // Les server actions (revalidatePath) et RealtimeRefresh invalident ce cache quand les données changent.
+    staleTimes: { dynamic: 30, static: 300 },
+  },
   turbopack: {
     rules: {
       "*.css": {

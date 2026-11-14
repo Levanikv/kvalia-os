@@ -123,11 +123,63 @@ body {
 .assistant-etape {
   animation: assistant-etape var(--duration-base) var(--ease-emphasized);
 }
+/*
+ * Fluidité des navigations.
+ * - L'écran entre en fondu (opacité seulement sur l'enveloppe : un transform casserait les barres « fixed ») et le
+ *   contenu (main) monte de quelques pixels ; `backwards` = aucun transform ne reste après l'animation.
+ * - Squelettes (loading.tsx) qui respirent pendant le chargement.
+ * - Retour au toucher : boutons, cartes et lignes s'enfoncent légèrement.
+ */
+@keyframes page-fondu {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes page-monte {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+.page-entree {
+  animation: page-fondu var(--duration-quick) var(--ease-decelerate) backwards;
+}
+.page-entree main {
+  animation: page-monte var(--duration-base) var(--ease-emphasized) backwards;
+}
+@keyframes squelette {
+  50% {
+    opacity: 0.5;
+  }
+}
+.squelette {
+  animation: squelette 1.1s var(--ease-standard) infinite;
+}
+:where(.kv-btn, .kv-iconbtn, .kv-exo, .kv-stat, .kv-goal, .kv-chip, .kv-row-check, .tap, a.kv-ground) {
+  transition: transform var(--duration-fast) var(--ease-standard);
+  -webkit-user-select: none;
+  user-select: none;
+}
+:where(.kv-btn:not(:disabled), .kv-iconbtn:not(:disabled), .kv-exo, .kv-stat, .kv-goal, .kv-chip, .kv-row-check:not(:disabled), .tap, a.kv-ground):active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .assistant-etape,
   .feuille-voile,
-  .feuille-panneau {
+  .feuille-panneau,
+  .page-entree,
+  .page-entree main,
+  .squelette {
     animation: none;
+  }
+  :where(.kv-btn, .kv-iconbtn, .kv-exo, .kv-stat, .kv-goal, .kv-chip, .kv-row-check, .tap, a.kv-ground):active {
+    transform: none;
   }
 }
 

@@ -25,13 +25,16 @@ export default async function Page() {
 
   if (!prog) return sansProgramme(supabase, user.id);
 
-  const { data: brutes } = await supabase
-    .from("seances")
-    .select("id, jour, type, titre, etat, bloc, semaine, focus, duree_min, kcal, created_at, exercices_seance(id)")
-    .eq("programme_id", prog.id)
-    .order("jour");
+  const [{ data: brutes }, modeles, reglages] = await Promise.all([
+    supabase
+      .from("seances")
+      .select("id, jour, type, titre, etat, bloc, semaine, focus, duree_min, kcal, created_at, exercices_seance(id)")
+      .eq("programme_id", prog.id)
+      .order("jour"),
+    chargerModeles(supabase, user.id),
+    parametresSport(supabase, user.id),
+  ]);
   const seances = trierParJour(brutes ?? []);
-  const [modeles, reglages] = await Promise.all([chargerModeles(supabase, user.id), parametresSport(supabase, user.id)]);
   const r = (prog.rythme ?? {}) as Rythme;
   const pos = positionProgramme(prog, auj);
   const nbSemaines = pos?.total ?? Math.max(1, ...seances.map((s) => s.semaine ?? 1));
