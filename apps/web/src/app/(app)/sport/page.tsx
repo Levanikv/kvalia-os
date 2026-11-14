@@ -11,15 +11,14 @@ import { EnergieJour } from "./EnergieJour";
 import { HeroSeance, TicketRepos } from "./HeroSeance";
 import { Records } from "./Records";
 import { ToastUrl } from "./ToastUrl";
-import { decaler, jourDepuis, kcalPrevues, libelleFocus, libelleType, seancesPourJour } from "./lib";
+import { decaler, jourDepuis, kcalPrevues, libelleFocus, seancesPourJour } from "./lib";
 
 type Props = { searchParams: Promise<{ jour?: string }> };
 
-const JOURS_COURTS = ["L", "M", "M", "J", "V", "S", "D"];
-
 /**
- * Sport — vue Jour (défaut). En-tête partagé avec Nutrition (pastille du jour, semaine, bande de jours),
- * puis : le programme suivi → la ou les séances du jour (muscu + boxe possibles) → la semaine en cours →
+ * Sport — vue Jour (défaut), maquette « A01 · Home · séance du jour » : en-tête partagé avec Nutrition
+ * (pastille du jour, semaine, bande de jours), ticket séance (5 états) → défi de la semaine → énergie → records.
+ *
  * historique et énergie. Programme, Exercices et Nutrition sont dans la barre du bas : pas de carte en double.
  */
 export default async function Page({ searchParams }: Props) {
@@ -31,17 +30,11 @@ export default async function Page({ searchParams }: Props) {
   const lundi = decaler(jour, -((d.getUTCDay() + 6) % 7));
   const dimanche = decaler(lundi, 6);
 
-  const [entete, seances, params, { data: semaine }, { data: faitesMois }, bilan] = await Promise.all([
+  const [entete, seances, params, { data: semaine }, bilan] = await Promise.all([
     enteteJour(supabase, jour, auj, "/sport"),
     seancesPourJour(supabase, jour),
     parametresSport(supabase, user.id),
     supabase.from("seances").select("id, jour, type, etat, kcal, created_at").gte("jour", lundi).lte("jour", dimanche).order("created_at"),
-    supabase
-      .from("seances")
-      .select("kcal")
-      .eq("etat", "faite")
-      .gte("jour", jour.slice(0, 8) + "01")
-      .lte("jour", jour.slice(0, 8) + "31"),
     bilanJour(supabase, user.id, jour),
   ]);
   const { programme, pos } = entete;
@@ -79,11 +72,7 @@ export default async function Page({ searchParams }: Props) {
   };
 
   const dansProgramme = pos && !pos.avant && !pos.apres;
-  const kcalMois = (faitesMois ?? []).reduce((a, s) => a + Number(s.kcal ?? 0), 0);
-  const moisLabel = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { month: "long" });
   const semaineSeances = semaine ?? [];
-  const faitesSemaine = semaineSeances.filter((s) => s.etat === "faite");
-  const kcalSemaine = faitesSemaine.reduce((a, s) => a + Number(s.kcal ?? 0), 0);
   const defi = defiSemaine(semaineSeances);
   const kcalSeancePrevue = seances.filter((x) => x.etat !== "faite").reduce((a, x) => a + kcalPrevues(x, poids), 0);
   const focusJour = seances.find((s) => s.type !== "boxe")?.focus ?? seances[0]?.focus ?? null;
@@ -157,7 +146,7 @@ export default async function Page({ searchParams }: Props) {
 
         {/* Défi de la semaine : toutes les séances de salle de la semaine. */}
         {defi.total > 0 && (
-          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-brand-subtle p-[var(--inset-lg)] shadow-card">
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-accent p-[var(--inset-lg)] text-fg-primary shadow-card">
             <div className="flex items-start justify-between gap-[var(--inline-md)]">
               <div>
                 <p className="kv-overline">Défi de la semaine</p>
@@ -201,65 +190,8 @@ export default async function Page({ searchParams }: Props) {
           </section>
         )}
 
-        {/* La semaine */}
-        {semaineSeances.length > 0 && (
-          <section className="rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
-            <div className="flex items-baseline justify-between">
-              <h2 className="kv-overline">{dansProgramme ? `Semaine ${pos.semaine}` : "Cette semaine"}</h2>
-              <p className="kv-mono">
-                {faitesSemaine.length}/{semaineSeances.length} séances · {kcalSemaine.toLocaleString("fr-FR")} kcal
-              </p>
-            </div>
-            <ol className="mt-[var(--stack-md)] grid grid-cols-7 gap-[var(--inline-xs)]">
-              {JOURS_COURTS.map((l, i) => {
-                const j = decaler(lundi, i);
-                const ss = semaineSeances.filter((s) => s.jour === j);
-                const actif = j === jour;
-                const faite = ss.length > 0 && ss.every((s) => s.etat === "faite");
-                return (
-                  <li key={j}>
-                    <Link
-                      href={`/sport?jour=${j}`}
-                      scroll={false}
-                      aria-current={actif ? "date" : undefined}
-                      aria-label={`${new Date(j + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })} : ${ss.length ? (faite ? "séance faite" : "séance prévue") : "repos"}`}
-                      className="flex flex-col items-center gap-[var(--stack-xs)]"
-                    >
-                      <span
-                        className={`flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] ${
-                          ss.length === 0
-                            ? "border border-dashed border-line-strong"
-                            : faite
-                              ? "bg-feedback-success text-icon-inverse"
-                              : "bg-action-primary text-icon-on-brand"
-                        } ${actif ? "ring-2 ring-focus-ring ring-offset-2 ring-offset-surface-container-default" : ""}`}
-                      >
-                        {faite && <Icon name="check" size={18} />}
-                      </span>
-                      <span className={`kv-mono ${j === auj ? "text-fg-brand" : ""}`}>{l}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        )}
-
-        {/* Records et historique */}
+        {/* Records (l'historique complet est derrière « Historique ») */}
         <Records db={supabase} depuis={programme?.debut ?? decaler(auj, -56)} jusqua={auj} />
-        <Link href="/sport/historique" className="kv-stat">
-          <span className="kv-overline">Historique · {moisLabel}</span>
-          <span className="kv-stat-row">
-            <span className="kv-stat-value">{(faitesMois ?? []).length}</span>
-            <span className="kv-mono">séance{(faitesMois ?? []).length > 1 ? "s" : ""}</span>
-          </span>
-          <span className="kv-mono">{kcalMois.toLocaleString("fr-FR")} kcal</span>
-        </Link>
-        {seances.length > 0 && (
-          <p className="kv-mono text-center">
-            {seances.map((s) => s.titre ?? libelleType(s.type)).join(" · ")} — {params.duree_min} min visées
-          </p>
-        )}
       </div>
     </ModuleFrame>
   );

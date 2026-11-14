@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
 import { nomAffiche } from "./lib";
@@ -36,7 +37,9 @@ export async function Records({ db, depuis, jusqua }: { db: Db; depuis: string; 
     <section className="flex flex-col gap-[var(--stack-sm)]">
       <div className="flex items-baseline justify-between px-[var(--inline-xs)]">
         <h2 className="type-title-lg">Records</h2>
-        <span className="kv-mono">{semaines} sem.</span>
+        <Link href="/sport/historique" className="kv-mono underline-offset-2 hover:underline">
+          {semaines} sem. · historique ›
+        </Link>
       </div>
       <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
         {top.map((r) => {
