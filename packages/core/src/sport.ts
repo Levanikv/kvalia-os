@@ -190,6 +190,62 @@ export function appliquerProfil(params: ParametresSport, profil: ProfilSport | u
   return p;
 }
 
+// ---------- Parcours « Nouveau programme » (onglet Programme, sans les questions de profil) ----------
+
+/** Réponses du parcours de création : objectif, échéance (semaines), jours de salle, durée d'une séance. */
+export const ReponsesProgramme = z.object({
+  objectif: ObjectifMuscu,
+  semaines: z.number().int().min(4).max(24),
+  jours: z.array(z.number().int().min(0).max(6)).min(1).max(6),
+  duree_min: z.number().int().min(30).max(120),
+});
+export type ReponsesProgramme = z.infer<typeof ReponsesProgramme>;
+
+const OBJECTIF_INVERSE: Record<ParametresSport["objectif"], z.infer<typeof ObjectifMuscu>> = {
+  force: "force",
+  hypertrophie: "masse",
+  perte_de_gras: "seche",
+  endurance: "endurance",
+};
+
+/**
+ * Paramètres du générateur à partir des réponses du parcours : même traduction que l'onboarding (salle seule),
+ * sans toucher au profil (niveau, lieu, matériel, poids restent ceux déjà connus).
+ */
+export function parametresDepuisReponses(base: ParametresSport, r: ReponsesProgramme): ParametresSport {
+  const jours = [...new Set(r.jours)].sort((a, b) => a - b);
+  return ParametresSport.parse(
+    appliquerProfil(base, { objectifs: [r.objectif], echeance_semaines: r.semaines, jours, seances_semaine: jours.length, duree_min: r.duree_min }),
+  );
+}
+
+/** Réponses pré-remplies depuis les paramètres actuels (« Modifier le programme »). */
+export function reponsesDepuisParametres(p: ParametresSport): ReponsesProgramme {
+  const objectif = p.profil?.objectifs?.[0] ?? OBJECTIF_INVERSE[p.objectif];
+  const jours = [...new Set(p.jours_salle)].sort((a, b) => a - b).slice(0, Math.max(1, p.rythme.salle));
+  return { objectif, semaines: p.semaines, jours: jours.length ? jours : [1, 3, 5], duree_min: Math.min(120, Math.max(30, p.duree_min)) };
+}
+
+/**
+ * Phases d'un programme regroupées par focus, dans l'ordre d'apparition, avec leurs semaines en plages
+ * (« S1–3 · S5–7 ») — pour la légende de la frise.
+ */
+export function plagesPhases(semaines: Array<{ semaine: number; focus: string }>): Array<{ focus: string; semaines: number[]; plages: string }> {
+  const parFocus = new Map<string, number[]>();
+  for (const x of [...semaines].sort((a, b) => a.semaine - b.semaine)) parFocus.set(x.focus, [...(parFocus.get(x.focus) ?? []), x.semaine]);
+  return [...parFocus].map(([focus, ss]) => {
+    const plages: string[] = [];
+    let debut = ss[0];
+    for (let i = 1; i <= ss.length; i++) {
+      if (ss[i] !== ss[i - 1] + 1) {
+        plages.push(debut === ss[i - 1] ? `S${debut}` : `S${debut}–${ss[i - 1]}`);
+        debut = ss[i];
+      }
+    }
+    return { focus, semaines: ss, plages: plages.join(" · ") };
+  });
+}
+
 /** Poids visé par défaut : −3,5 kg en sèche, +3 kg en prise de muscle, sinon maintien (arrondi au ½ kg). */
 export function poidsCibleParDefaut(profil: Pick<ProfilSport, "poids_kg" | "objectifs">): number | null {
   if (profil.poids_kg == null) return null;

@@ -13,6 +13,9 @@ import {
   remplacerExercice,
   terminerSeance,
   peutDemarrer,
+  parametresDepuisReponses,
+  plagesPhases,
+  reponsesDepuisParametres,
   chronoSecondes,
   chronoSeance,
   defiSemaine,
@@ -487,5 +490,35 @@ describe("jour J : une séance ne se démarre que le jour prévu", () => {
     // Le jour J, ça passe.
     const auj = db.tables.seances.find((x: any) => x.jour === "2026-11-11" && x.type !== "boxe");
     if (auj) expect((await demarrerSeance(db, USER, auj.id)).etat).toBe("en_cours");
+  });
+});
+
+describe("parcours « Nouveau programme » (onglet Programme)", () => {
+  it("traduit les réponses en paramètres sans toucher au profil (niveau, matériel)", () => {
+    const base = ParametresSport.parse({ niveau: "advanced", materiel: ["dumbbell", "body weight"], rythme: { salle: 4, boxe: 1 } });
+    const p = parametresDepuisReponses(base, { objectif: "force", semaines: 12, jours: [4, 1, 0, 2, 1], duree_min: 75 });
+    expect(p.objectif).toBe("force");
+    expect(p.semaines).toBe(12);
+    expect(p.jours_salle).toEqual([0, 1, 2, 4]);
+    expect(p.rythme).toEqual({ salle: 4, boxe: 0 });
+    expect(p.duree_min).toBe(75);
+    expect(p.niveau).toBe("advanced");
+    expect(p.materiel).toEqual(["dumbbell", "body weight"]);
+  });
+
+  it("pré-remplit « Modifier » depuis les paramètres, aller-retour stable", () => {
+    const base = ParametresSport.parse({ objectif: "hypertrophie", semaines: 8, jours_salle: [1, 2, 4, 5], rythme: { salle: 3, boxe: 0 }, duree_min: 60 });
+    const r = reponsesDepuisParametres(base);
+    expect(r).toEqual({ objectif: "masse", semaines: 8, jours: [1, 2, 4], duree_min: 60 });
+    const p = parametresDepuisReponses(base, r);
+    expect(reponsesDepuisParametres(p)).toEqual(r);
+  });
+
+  it("regroupe les semaines par phase en plages", () => {
+    const phases = phasesProgramme({ objectif: "hypertrophie", semaines: 12 });
+    const g = plagesPhases(phases);
+    expect(g.map((x) => x.focus)).toEqual(["hypertrophie", "deload", "force", "mixte"]);
+    expect(g.find((x) => x.focus === "deload")!.plages).toBe("S4 · S8 · S12");
+    expect(g[0].plages).toBe("S1–3");
   });
 });

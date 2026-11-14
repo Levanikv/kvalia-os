@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { ciblesDepuisProfil, executer, ParametresSport } from "@kvalia/core";
+import { ciblesDepuisProfil, executer, ParametresSport, parametresDepuisReponses, parametresSport, ReponsesProgramme } from "@kvalia/core";
 import { session } from "@/lib/session";
 
 /** Toutes les actions passent par `executer` : même règle que l'agent (packages/core). */
@@ -77,6 +77,38 @@ export async function genererProgramme(brut: unknown, debut?: string) {
   revalidatePath("/reglages/sport");
   revalidatePath("/");
   return r;
+}
+
+/**
+ * Parcours « Nouveau programme » / « Modifier le programme » (onglet Programme) : réponses → paramètres (règle du
+ * noyau) → generer_programme (même outil que l'agent). Rend aussi la première séance pour l'écran « C'est parti ».
+ */
+export async function creerProgramme(brut: unknown, debut: string) {
+  const { supabase, user } = await session();
+  const reponses = ReponsesProgramme.parse(brut);
+  const base = await parametresSport(supabase, user.id);
+  const r = await executer("generer_programme", { parametres: parametresDepuisReponses(base, reponses), debut }, { db: supabase, userId: user.id });
+  const { data: premiere } = await supabase
+    .from("seances")
+    .select("id, jour, titre, type, duree_min, exercices_seance(id)")
+    .eq("programme_id", r.programme_id)
+    .neq("type", "boxe")
+    .order("jour")
+    .limit(1)
+    .maybeSingle();
+  revalidatePath("/sport");
+  revalidatePath("/sport/programme");
+  revalidatePath("/reglages/sport");
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+  return {
+    debut: r.debut,
+    fin: r.fin,
+    nb_seances: r.nb_seances,
+    premiere: premiere
+      ? { id: premiere.id, jour: premiere.jour, titre: premiere.titre, duree_min: premiere.duree_min, exercices: premiere.exercices_seance?.length ?? 0 }
+      : null,
+  };
 }
 
 export async function noterChargeAction(exerciceSeanceId: string, maj: { charge_kg?: number | null; reps_faites?: number | null; note?: string | null }) {

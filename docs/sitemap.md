@@ -30,9 +30,12 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
-│   ├── /sport/programme              Programme actif : hero (anneau, semaine n / N, chiffres), frise des phases,
-│   │                                 séances de la semaine en carrousel, semaine type, toutes les semaines
-│   ├── /sport/programme/nouveau      Créer / régénérer → redirige vers l'onboarding pré-rempli (/sport/bienvenue?revoir=1)
+│   ├── /sport/programme              Programme actif (maquette 14) : carte du programme (objectif, rythme, semaine n / N,
+│   │                                 fin), phases, semaine type, avancement, toutes les semaines ; « Nouveau programme »
+│   │                                 et « Modifier le programme ». Sans programme : « Construis ton programme » (maquette 02)
+│   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → échéance → rythme + premier
+│   │                                 jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
+│   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition (clair)
 │   ├── /nutrition                    Journal du jour (anneau, 3 barres, repas) · ?jour=YYYY-MM-DD
