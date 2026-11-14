@@ -12,6 +12,15 @@ import {
   trierSeancesDuJour,
   remplacerExercice,
   terminerSeance,
+  chronoSecondes,
+  chronoSeance,
+  defiSemaine,
+  demarrerSeance,
+  exerciceEnCours,
+  repsPrescrites,
+  seriesFaites,
+  validerSerie,
+  volumeSeance,
 } from "../src/sport";
 import { executer } from "../src/actions";
 import { USER, exercicesRef, fausseDb } from "./fausse-db";
@@ -271,5 +280,129 @@ describe("onboarding → paramètres", () => {
     const n = await parametresNutrition(db, USER);
     expect(n.cible_kcal).toBe(2530); // force seule : maintien
     expect(n.proteines_g).toBe(157);
+  });
+});
+
+describe("séance en direct (workflow Home → séance)", () => {
+  const seanceDuLundi = async () => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
+    const s = db.tables.seances.find((x: any) => x.jour === "2026-11-09" && x.type !== "boxe");
+    const exos = db.tables.exercices_seance.filter((e: any) => e.seance_id === s.id).sort((a: any, b: any) => a.ordre - b.ordre);
+    return { db, s, exos };
+  };
+
+  it("chronoSecondes déduit les pauses et se fige pendant une pause et à la fin", () => {
+    const t0 = "2026-11-09T18:00:00Z";
+    const maintenant = new Date("2026-11-09T18:40:00Z");
+    expect(chronoSecondes({ debut_le: null }, maintenant)).toBe(0);
+    expect(chronoSecondes({ debut_le: t0, pause_cumul_s: 300 }, maintenant)).toBe(35 * 60);
+    expect(chronoSecondes({ debut_le: t0, pause_le: "2026-11-09T18:30:00Z", pause_cumul_s: 0 }, maintenant)).toBe(30 * 60);
+    expect(chronoSecondes({ debut_le: t0, faite_le: "2026-11-09T19:02:00Z", pause_cumul_s: 120 }, maintenant)).toBe(60 * 60);
+  });
+
+  it("démarrer lance le chrono sans rien cocher ; pause puis reprise cumulent le temps de pause", async () => {
+    vi.useFakeTimers();
+    try {
+      const { db, s, exos } = await seanceDuLundi();
+      vi.setSystemTime(new Date("2026-11-09T18:00:00Z"));
+      const r = await demarrerSeance(db, USER, s.id);
+      expect(r.etat).toBe("en_cours");
+      expect(s.debut_le).toBe("2026-11-09T18:00:00.000Z");
+      expect(exos.every((e: any) => !e.fait)).toBe(true);
+      expect(exerciceEnCours(exos, s.etat)?.id).toBe(exos[0].id);
+      vi.setSystemTime(new Date("2026-11-09T18:10:00Z"));
+      expect((await chronoSeance(db, USER, s.id, "pause")).en_pause).toBe(true);
+      vi.setSystemTime(new Date("2026-11-09T18:15:00Z"));
+      const rep = await chronoSeance(db, USER, s.id, "reprendre");
+      expect(rep.en_pause).toBe(false);
+      expect(s.pause_cumul_s).toBe(300);
+      expect(rep.chrono_s).toBe(600);
+      // redémarrer ne remet pas le chrono à zéro
+      await demarrerSeance(db, USER, s.id);
+      expect(s.debut_le).toBe("2026-11-09T18:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("valider_serie empile les séries ; la dernière coche l'exercice et crédite ses kcal", async () => {
+    const { db, s, exos } = await seanceDuLundi();
+    const e = exos[0];
+    for (let i = 1; i < e.series; i++) {
+      const r = await validerSerie(db, USER, e.id, { charge_kg: 80 });
+      expect(r.series_faites).toBe(i);
+      expect(r.exercice_fait).toBe(false);
+    }
+    expect(s.etat).toBe("en_cours");
+    expect(seriesFaites(e)).toBe(e.series - 1);
+    const fin = await validerSerie(db, USER, e.id);
+    expect(fin.exercice_fait).toBe(true);
+    expect(fin.kcal).toBe(e.kcal);
+    expect(e.fait).toBe(true);
+    expect(e.charge_kg).toBe(80);
+    expect(e.realise.series.at(-1).charge_kg).toBe(80);
+    expect(exerciceEnCours(exos, s.etat)?.id).toBe(exos[1].id);
+  });
+
+  it("terminer avec un exercice raté : non compté, reprogrammé en fin de la prochaine séance prévue", async () => {
+    const { db, s, exos } = await seanceDuLundi();
+    await demarrerSeance(db, USER, s.id);
+    const rate = exos[exos.length - 1];
+    const r = await terminerSeance(db, USER, s.id, 4, undefined, [rate.id]);
+    expect(rate.fait).toBe(false);
+    expect(rate.realise.rate).toBe(true);
+    const total = exos.filter((e: any) => e.id !== rate.id).reduce((a: number, e: any) => a + e.kcal, 0);
+    expect(r.kcal).toBe(total);
+    expect(r.rates).toHaveLength(1);
+    const cible = r.rates[0].reprogramme!;
+    expect(cible.jour > s.jour).toBe(true);
+    const ajoute = db.tables.exercices_seance.filter((e: any) => e.seance_id === cible.seance_id && e.exercice_id === rate.exercice_id);
+    expect(ajoute).toHaveLength(1);
+    expect(ajoute[0].series).toBe(rate.series);
+    expect(rate.realise.reprogramme.seance_id).toBe(cible.seance_id);
+  });
+
+  it("volume, reps prescrites et défi de la semaine", () => {
+    expect(repsPrescrites("8")).toBe(8);
+    expect(repsPrescrites("8-10")).toBe(8);
+    expect(repsPrescrites("30s")).toBe(0);
+    expect(
+      volumeSeance([
+        { fait: true, series: 5, reps: "5", charge_kg: 80, realise: null },
+        {
+          fait: false,
+          series: 3,
+          reps: "8",
+          charge_kg: 15,
+          realise: {
+            series: [
+              { reps: 8, charge_kg: 15, le: "" },
+              { reps: 6, charge_kg: null, le: "" },
+            ],
+          },
+        },
+        { fait: false, series: 3, reps: "12", charge_kg: 20, realise: null },
+      ]),
+    ).toBe(5 * 5 * 80 + 8 * 15 + 6 * 15);
+    expect(
+      defiSemaine([
+        { type: "push", etat: "faite" },
+        { type: "boxe", etat: "prevue" },
+        { type: "pull", etat: "faite" },
+      ]),
+    ).toEqual({ total: 2, faites: 2, releve: true });
+    expect(defiSemaine([])).toEqual({ total: 0, faites: 0, releve: false });
+  });
+
+  it("les outils passent par executer (agent et app : même règle)", async () => {
+    const { db, s, exos } = await seanceDuLundi();
+    const ctx = { db, userId: USER };
+    await executer("demarrer_seance", { seance_id: s.id }, ctx);
+    await executer("valider_serie", { exercice_seance_id: exos[0].id }, ctx);
+    expect(seriesFaites(exos[0])).toBe(1);
+    const r = await executer("terminer_seance", { seance_id: s.id, rates: [] }, ctx);
+    expect(r.rates).toEqual([]);
+    expect(s.etat).toBe("faite");
   });
 });

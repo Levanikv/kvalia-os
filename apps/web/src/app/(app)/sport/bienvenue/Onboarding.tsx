@@ -283,7 +283,7 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
                   <span>Modifiable</span>
                 </div>
               </div>
-              <div className="pb-[calc(var(--page-safe-bottom)+var(--stack-sm))]">
+              <div className="pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))]">
                 <button type="button" onClick={() => setEcran("question")} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
                   <span className="kv-btn-label">Commencer</span>
                   <span className="kv-btn-end">
@@ -567,7 +567,7 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
                 )}
               </div>
 
-              <div className="sticky bottom-0 pb-[calc(var(--page-safe-bottom)+var(--stack-sm))] pt-[var(--stack-lg)]">
+              <div className="sticky bottom-0 pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))] pt-[var(--stack-lg)]">
                 <button type="button" onClick={suivant} disabled={bloque} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
                   <span className="kv-btn-label">{derniere ? "Générer mon plan" : "Continuer"}</span>
                 </button>
@@ -660,7 +660,7 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
                   </div>
                 ))}
               </dl>
-              <div className="mt-auto flex flex-col items-center gap-[var(--stack-md)] pb-[calc(var(--page-safe-bottom)+var(--stack-sm))]">
+              <div className="mt-auto flex flex-col items-center gap-[var(--stack-md)] pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))]">
                 <Link href="/sport/programme" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
                   <span className="kv-btn-label">Voir mon programme</span>
                   <span className="kv-btn-end">

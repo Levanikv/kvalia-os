@@ -15,7 +15,8 @@ type Props = {
 };
 
 /**
- * Feuille modale qui monte du bas (façon iOS) : voile, coins arrondis, poignée, zone sûre.
+ * Feuille modale qui monte du bas (façon iOS) : voile, coins arrondis, poignée, zones sûres
+ * (le haut ne monte jamais sous la barre d'état, le bas laisse l'indicateur d'accueil libre).
  * Se ferme au tap sur le voile, à Échap, ou via onFermer. Bloque le scroll de la page tant qu'elle est ouverte.
  */
 export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, children }: Props) {
@@ -39,23 +40,23 @@ export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, chil
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-labelledby={titre ? id : undefined} data-module={mod}>
       <button type="button" aria-label="Fermer" onClick={onFermer} className="feuille-voile absolute inset-0 bg-black/45" />
       <div
-        className={`feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col rounded-t-[var(--radius-sheet)] bg-surface-canvas text-fg-primary shadow-2xl ${pleine ? "h-[90dvh]" : "max-h-[88dvh]"}`}
+        className={`feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col rounded-t-[var(--radius-sheet)] bg-surface-canvas text-fg-primary shadow-2xl ${pleine ? "h-[calc(100dvh-env(safe-area-inset-top)-var(--stack-xl))]" : "max-h-[calc(100dvh-env(safe-area-inset-top)-var(--stack-xl))]"}`}
       >
         <div className="flex shrink-0 justify-center pb-1 pt-2.5">
           <span className="h-1.5 w-10 rounded-full bg-surface-sunken" />
         </div>
         {titre && (
           <div className="flex shrink-0 items-center justify-between px-5 pb-2">
-            <h2 id={id} className="text-lg font-semibold tracking-tight">
+            <h2 id={id} className="min-w-0 truncate type-title-lg">
               {titre}
             </h2>
             <button
               type="button"
               onClick={onFermer}
               aria-label="Fermer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-default text-fg-secondary"
+              className="kv-iconbtn shrink-0 border border-line-default bg-surface-container-default text-fg-primary"
             >
-              <Icon name="close" size={18} />
+              <Icon name="close" size={22} />
             </button>
           </div>
         )}

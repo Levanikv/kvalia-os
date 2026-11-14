@@ -20,6 +20,9 @@ import {
   seancesDuJour,
   seancePrincipale,
   terminerSeance,
+  demarrerSeance,
+  chronoSeance,
+  validerSerie,
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
@@ -295,7 +298,22 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "terminer_seance": {
       const e = entree as ToolInput<"terminer_seance">;
-      return (await terminerSeance(ctx.db, ctx.userId, e.seance_id, e.ressenti, e.notes)) as ToolOutput<T>;
+      return (await terminerSeance(ctx.db, ctx.userId, e.seance_id, e.ressenti, e.notes, e.rates)) as ToolOutput<T>;
+    }
+
+    case "demarrer_seance": {
+      const e = entree as ToolInput<"demarrer_seance">;
+      return (await demarrerSeance(ctx.db, ctx.userId, e.seance_id)) as ToolOutput<T>;
+    }
+
+    case "chrono_seance": {
+      const e = entree as ToolInput<"chrono_seance">;
+      return (await chronoSeance(ctx.db, ctx.userId, e.seance_id, e.action)) as ToolOutput<T>;
+    }
+
+    case "valider_serie": {
+      const e = entree as ToolInput<"valider_serie">;
+      return (await validerSerie(ctx.db, ctx.userId, e.exercice_seance_id, { reps: e.reps, charge_kg: e.charge_kg })) as ToolOutput<T>;
     }
 
     case "noter_charge": {

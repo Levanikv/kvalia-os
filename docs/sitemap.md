@@ -15,10 +15,18 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 12–13 questions
 │   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : objectifs, lieu, matériel…)
 │   │                                 → génération → plan prêt. « Plus tard » → reprise depuis la Home (?reprendre=1)
-│   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), programme suivi,
+│   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
+│   │                                 (À faire · En cours · Terminée · Prévue · Repos), défi de la semaine, énergie, records ;
+│   │                                 programme suivi,
 │   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
-│   ├── /sport/seance/[id]            Séance (plein écran) : exercices à cocher (vidéo au tap), kcal en direct, Terminer + ressenti
+│   ├── /sport/seance/[id]            Séance (plein écran, « Home workflow ») : avant départ (chrono 0:00, Démarrer),
+│   │                                 en cours (chrono, pause au tap, exercice en cours, fiche : séries Faite/En cours/
+│   │                                 À faire, minuteur de repos, charge du jour, historique, remplacer), vidéo immersive,
+│   │                                 quitter (le chrono continue), Terminer → exercices ratés → ressenti ; lecture seule
+│   │                                 un autre jour ; résumé quand elle est faite
+│   ├── /sport/seance/[id]/fin        Fin de séance : kcal, volume, séries, exercices, défi de la semaine, ratés reprogrammés
+│   │                                 → « Retour à l'accueil » (/sport?enregistree=1 : toast « Séance enregistrée »)
 │   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)

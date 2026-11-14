@@ -90,6 +90,15 @@ export function libelleMateriel(m: string | null) {
   return m ? (LIBELLES.materiel[m] ?? m) : "";
 }
 
+/** « 0:42 », « 38:40 », « 1:02:14 » : chrono de séance, décompte de repos. */
+export function formatChrono(totalS: number): string {
+  const s = Math.max(0, Math.floor(totalS));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${r}` : `${m}:${r}`;
+}
+
 export function dateCourte(jour: string) {
   return new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
 }

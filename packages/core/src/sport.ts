@@ -743,26 +743,44 @@ export async function cocherExercice(db: KvaliaClient, userId: string, exerciceS
   return { seance_id: exo.seance_id, kcal };
 }
 
-export async function terminerSeance(db: KvaliaClient, userId: string, seanceId: string, ressenti?: number, notes?: string) {
+export type ExoRate = { exercice_seance_id: string; exercice_id: string; reprogramme: { seance_id: string; jour: string; titre: string | null } | null };
+
+/**
+ * Termine une séance : les exercices restants sont comptés comme faits, sauf ceux déclarés `rates`, qui sont
+ * reprogrammés en fin de la prochaine séance prévue du programme (même prescription, même charge).
+ * Durée réelle = chrono (pauses déduites) si la séance a démarré il y a moins de 4 h, sinon la durée prévue.
+ */
+export async function terminerSeance(db: KvaliaClient, userId: string, seanceId: string, ressenti?: number, notes?: string, rates: string[] = []) {
   const params = await parametresSport(db, userId);
   const { poids } = await poidsActuel(db, userId, params);
-  const { data: se, error } = await db.from("seances").select("*, exercices_seance(id, fait, kcal, duree_s)").eq("id", seanceId).eq("user_id", userId).single();
+  const { data: se, error } = await db
+    .from("seances")
+    .select("*, exercices_seance(id, exercice_id, fait, kcal, duree_s, series, reps, repos_s, charge_kg, ordre, realise)")
+    .eq("id", seanceId)
+    .eq("user_id", userId)
+    .single();
   if (error) throw error;
   const exos = se.exercices_seance ?? [];
   const maintenant = new Date();
-  // Durée réelle = depuis le premier exercice coché, si c'était il y a moins de 4 h (sinon la séance a été entamée un autre jour : on garde la durée prévue)
-  const debut = se.debut_le ? new Date(se.debut_le) : null;
-  const ecartMin = debut ? (maintenant.getTime() - debut.getTime()) / 60000 : null;
-  const dureeReelleMin = ecartMin !== null && ecartMin <= 240 ? Math.max(5, Math.round(ecartMin)) : (se.duree_min ?? params.duree_min);
+  const chronoMin = se.debut_le ? chronoSecondes({ ...se, faite_le: null }, maintenant) / 60 : null;
+  const dureeReelleMin = chronoMin !== null && chronoMin <= 240 ? Math.max(5, Math.round(chronoMin)) : (se.duree_min ?? params.duree_min);
+  const ratesSet = new Set(rates);
+  const ratesSortie: ExoRate[] = [];
   let kcal: number;
   if (exos.length === 0) {
     // boxe / cardio : MET de la séance × durée réelle
     kcal = kcalPour(MET_SEANCE[se.type] ?? 5, poids, dureeReelleMin * 60);
   } else {
-    // « terminer » sans tout cocher = tout est compté comme fait
-    const nonFaits = exos.filter((e) => !e.fait).map((e) => e.id);
+    // « terminer » sans tout cocher = le reste est compté comme fait, sauf les exercices déclarés ratés
+    const nonFaits = exos.filter((e) => !e.fait && !ratesSet.has(e.id)).map((e) => e.id);
     if (nonFaits.length) await db.from("exercices_seance").update({ fait: true, fait_le: maintenant.toISOString() }).in("id", nonFaits);
-    kcal = exos.reduce((a, e) => a + Number(e.kcal ?? 0), 0);
+    for (const e of exos.filter((x) => !x.fait && ratesSet.has(x.id))) {
+      const reprogramme = await reprogrammerExercice(db, userId, se, e);
+      const realise: Realise = { ...((e.realise as Realise | null) ?? {}), rate: true, reprogramme };
+      await db.from("exercices_seance").update({ realise }).eq("id", e.id);
+      ratesSortie.push({ exercice_seance_id: e.id, exercice_id: e.exercice_id, reprogramme });
+    }
+    kcal = exos.filter((e) => !ratesSet.has(e.id) || e.fait).reduce((a, e) => a + Number(e.kcal ?? 0), 0);
   }
   const { error: errMaj } = await db
     .from("seances")
@@ -773,14 +791,168 @@ export async function terminerSeance(db: KvaliaClient, userId: string, seanceId:
       duree_min: dureeReelleMin,
       ressenti: ressenti ?? null,
       notes: notes ?? se.notes,
+      pause_le: null,
     })
     .eq("id", seanceId);
   if (errMaj) throw errMaj;
-  return { seance_id: seanceId, kcal, duree_min: dureeReelleMin, poids_utilise: poids };
+  return { seance_id: seanceId, kcal, duree_min: dureeReelleMin, poids_utilise: poids, rates: ratesSortie };
+}
+
+/** Ajoute un exercice raté à la fin de la prochaine séance prévue du même programme (salle d'abord). */
+async function reprogrammerExercice(
+  db: KvaliaClient,
+  userId: string,
+  se: { id: string; jour: string; programme_id: string | null; type: string },
+  e: { exercice_id: string; series: number; reps: string; repos_s: number; duree_s: number | null; kcal: number | null; charge_kg: number | null },
+): Promise<ExoRate["reprogramme"]> {
+  let q = db.from("seances").select("id, jour, titre, type").eq("user_id", userId).eq("etat", "prevue").gt("jour", se.jour);
+  if (se.programme_id) q = q.eq("programme_id", se.programme_id);
+  const { data: suivantes, error } = await q.order("jour").limit(10);
+  if (error) throw error;
+  const cible = (suivantes ?? []).find((x) => x.type !== "boxe");
+  if (!cible) return null;
+  const { data: lignes } = await db.from("exercices_seance").select("ordre").eq("seance_id", cible.id);
+  const ordre = Math.max(-1, ...(lignes ?? []).map((l) => l.ordre)) + 1;
+  const { error: errIns } = await db.from("exercices_seance").insert({
+    user_id: userId,
+    seance_id: cible.id,
+    exercice_id: e.exercice_id,
+    ordre,
+    series: e.series,
+    reps: e.reps,
+    repos_s: e.repos_s,
+    duree_s: e.duree_s,
+    kcal: e.kcal,
+    charge_kg: e.charge_kg,
+  });
+  if (errIns) throw errIns;
+  return { seance_id: cible.id, jour: cible.jour, titre: cible.titre };
+}
+
+// ---------- Séance en direct : chrono, pause, séries ----------
+
+/**
+ * Secondes de séance au chrono : depuis le départ, pauses déduites ; figé pendant une pause et à la fin.
+ * Pure : l'app l'appelle chaque seconde côté client, l'agent pour dire « tu en es à 31 min ».
+ */
+export function chronoSecondes(
+  s: { debut_le: string | null; pause_le?: string | null; pause_cumul_s?: number | null; faite_le?: string | null },
+  maintenant: Date = new Date(),
+): number {
+  if (!s.debut_le) return 0;
+  const fin = s.faite_le ? new Date(s.faite_le) : s.pause_le ? new Date(s.pause_le) : maintenant;
+  return Math.max(0, Math.floor((fin.getTime() - new Date(s.debut_le).getTime()) / 1000) - Number(s.pause_cumul_s ?? 0));
+}
+
+/** Séries faites d'un exercice : toutes s'il est coché, sinon celles validées une à une. */
+export function seriesFaites(e: { fait: boolean; series: number; realise?: unknown }): number {
+  if (e.fait) return e.series;
+  return Math.min(e.series, ((e.realise as Realise | null)?.series ?? []).length);
+}
+
+/** L'exercice en cours d'une séance démarrée : le premier pas encore fait (ni déclaré raté). */
+export function exerciceEnCours<T extends { fait: boolean; realise?: unknown }>(exos: T[], etat: string): T | null {
+  if (etat !== "en_cours") return null;
+  return exos.find((e) => !e.fait && !(e.realise as Realise | null)?.rate) ?? null;
+}
+
+/** Reps d'une prescription (« 8 », « 8-10 » → 8, « 30s » → 0 : pas de volume pour le gainage). */
+export function repsPrescrites(reps: string): number {
+  const t = reps.trim();
+  if (/^\d+\s*(s|sec|min)\b/i.test(t)) return 0;
+  const m = /^(\d+)/.exec(t);
+  return m ? Number(m[1]) : 0;
+}
+
+/** Volume soulevé (kg) : séries validées (reps × charge) ou, à défaut, séries × reps prescrites × charge notée. */
+export function volumeSeance(exos: Array<{ fait: boolean; series: number; reps: string; charge_kg: number | null; realise?: unknown }>): number {
+  let v = 0;
+  for (const e of exos) {
+    const series = (e.realise as Realise | null)?.series ?? [];
+    if (series.length) for (const x of series) v += Number(x.reps ?? repsPrescrites(e.reps)) * Number(x.charge_kg ?? e.charge_kg ?? 0);
+    else if (e.fait) v += e.series * repsPrescrites(e.reps) * Number(e.charge_kg ?? 0);
+  }
+  return Math.round(v);
+}
+
+/** Défi de la semaine : toutes les séances de salle prévues cette semaine (lun.–dim.), combien sont faites. */
+export function defiSemaine(seances: Array<{ type: string; etat: string }>): { total: number; faites: number; releve: boolean } {
+  const salle = seances.filter((s) => s.type !== "boxe");
+  const faites = salle.filter((s) => s.etat === "faite").length;
+  return { total: salle.length, faites, releve: salle.length > 0 && faites === salle.length };
+}
+
+/** « Démarrer la séance » : lance le chrono (sans rien cocher). Sans effet si elle tourne déjà ou est faite. */
+export async function demarrerSeance(db: KvaliaClient, userId: string, seanceId: string) {
+  const { data: se, error } = await db.from("seances").select("id, etat, debut_le").eq("id", seanceId).eq("user_id", userId).single();
+  if (error) throw error;
+  if (se.etat === "faite" || se.debut_le) return { seance_id: se.id, etat: se.etat, debut_le: se.debut_le };
+  const debut_le = new Date().toISOString();
+  const { error: errMaj } = await db.from("seances").update({ etat: "en_cours", debut_le, pause_le: null, pause_cumul_s: 0 }).eq("id", seanceId);
+  if (errMaj) throw errMaj;
+  return { seance_id: se.id, etat: "en_cours" as const, debut_le };
+}
+
+/** Met le chrono en pause ou le relance (le temps de pause est déduit de la durée réelle). */
+export async function chronoSeance(db: KvaliaClient, userId: string, seanceId: string, action: "pause" | "reprendre") {
+  const { data: se, error } = await db.from("seances").select("id, etat, debut_le, pause_le, pause_cumul_s").eq("id", seanceId).eq("user_id", userId).single();
+  if (error) throw error;
+  if (se.etat !== "en_cours" || !se.debut_le) throw new Error("La séance n’est pas en cours.");
+  const maintenant = new Date();
+  let patch: { pause_le: string | null; pause_cumul_s?: number } = { pause_le: se.pause_le };
+  if (action === "pause" && !se.pause_le) patch = { pause_le: maintenant.toISOString() };
+  if (action === "reprendre" && se.pause_le)
+    patch = {
+      pause_le: null,
+      pause_cumul_s: Number(se.pause_cumul_s ?? 0) + Math.max(0, Math.round((maintenant.getTime() - new Date(se.pause_le).getTime()) / 1000)),
+    };
+  const { error: errMaj } = await db.from("seances").update(patch).eq("id", seanceId);
+  if (errMaj) throw errMaj;
+  const ligne = { ...se, ...patch };
+  return { seance_id: se.id, en_pause: !!ligne.pause_le, chrono_s: chronoSecondes(ligne, maintenant) };
+}
+
+/**
+ * Valide la série suivante d'un exercice (reps et charge réellement faites, sinon la prescription).
+ * La première série démarre la séance ; la dernière coche l'exercice (kcal recalculées).
+ */
+export async function validerSerie(db: KvaliaClient, userId: string, exerciceSeanceId: string, maj: { reps?: number | null; charge_kg?: number | null } = {}) {
+  const { data: e, error } = await db
+    .from("exercices_seance")
+    .select("id, seance_id, series, reps, charge_kg, fait, realise")
+    .eq("id", exerciceSeanceId)
+    .eq("user_id", userId)
+    .single();
+  if (error) throw error;
+  const realise: Realise = { ...((e.realise as Realise | null) ?? {}) };
+  const series = [...(realise.series ?? [])];
+  if (!e.fait && series.length < e.series) {
+    const charge = maj.charge_kg !== undefined ? maj.charge_kg : e.charge_kg === null ? null : Number(e.charge_kg);
+    series.push({ reps: maj.reps ?? (repsPrescrites(e.reps) || null), charge_kg: charge ?? null, le: new Date().toISOString() });
+    realise.series = series;
+    const patch: { realise: Realise; charge_kg?: number | null } = { realise };
+    if (maj.charge_kg !== undefined) patch.charge_kg = maj.charge_kg;
+    const { error: errMaj } = await db.from("exercices_seance").update(patch).eq("id", e.id);
+    if (errMaj) throw errMaj;
+  }
+  await demarrerSeance(db, userId, e.seance_id);
+  const termine = e.fait || series.length >= e.series;
+  let kcal: number | null = null;
+  if (termine && !e.fait) kcal = (await cocherExercice(db, userId, e.id, true)).kcal;
+  return { seance_id: e.seance_id, series_faites: Math.min(series.length, e.series), series: e.series, exercice_fait: termine, kcal };
 }
 
 // ---------- Charges (kg) et historique par exercice ----------
-export type Realise = { reps_faites?: number; note?: string };
+export type SerieFaite = { reps: number | null; charge_kg: number | null; le: string };
+export type Realise = {
+  reps_faites?: number;
+  note?: string;
+  /** Séries validées une à une pendant la séance. */
+  series?: SerieFaite[];
+  /** Déclaré raté à la fin de la séance (non compté), et où il a été reprogrammé. */
+  rate?: boolean;
+  reprogramme?: { seance_id: string; jour: string; titre: string | null } | null;
+};
 
 /** Note la charge soulevée (et éventuellement les reps réalisées) sur un exercice d'une séance. */
 export async function noterCharge(

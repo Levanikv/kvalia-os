@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-19 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+22 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -168,20 +168,63 @@ Coche (ou décoche) un exercice d'une séance. Le premier coché démarre la sé
 - `seance_id` : string (uuid)
 - `kcal` : nombre
 
+## `demarrer_seance`
+
+Démarre une séance (« je commence ma séance ») : lance le chrono sans rien cocher. Sans effet si elle tourne déjà ou est faite. Ensuite : valider_serie au fil des séries, terminer_seance à la fin.
+
+**Entrée**
+- `seance_id` : string (uuid)
+
+**Sortie**
+- `seance_id` : string (uuid)
+- `etat` : string
+- `debut_le` : string | null
+
+## `chrono_seance`
+
+Met en pause ou relance le chrono d'une séance en cours (le temps de pause n'est pas compté dans la durée ni les kcal).
+
+**Entrée**
+- `seance_id` : string (uuid)
+- `action` : `pause` · `reprendre`
+
+**Sortie**
+- `seance_id` : string (uuid)
+- `en_pause` : booléen
+- `chrono_s` : nombre
+
+## `valider_serie`
+
+Valide la série suivante d'un exercice de la séance (reps et charge réellement faites ; sinon la prescription). La première série démarre la séance ; la dernière coche l'exercice et recalcule les kcal.
+
+**Entrée**
+- `exercice_seance_id` : string (uuid)
+- `reps` : entier | null (optionnel)
+- `charge_kg` : nombre | null (optionnel)
+
+**Sortie**
+- `seance_id` : string (uuid)
+- `series_faites` : nombre
+- `series` : nombre
+- `exercice_fait` : booléen
+- `kcal` : nombre | null
+
 ## `terminer_seance`
 
-Termine une séance : les exercices restants sont comptés comme faits, la durée réelle est mesurée depuis le premier coché, les kcal sont figées (MET × poids actuel × durée). Ressenti 1–5 optionnel.
+Termine une séance : les exercices restants sont comptés comme faits, sauf ceux passés dans `rates` (exercices_seance ids), qui sont reprogrammés en fin de la prochaine séance prévue du programme. Durée réelle = chrono, pauses déduites ; kcal figées (MET × poids actuel × durée). Ressenti 1–5 optionnel. Demande d'abord s'il y a des exercices ratés quand tout n'est pas coché.
 
 **Entrée**
 - `seance_id` : string (uuid)
 - `ressenti` : entier (optionnel)
 - `notes` : string (optionnel)
+- `rates` : liste de string (uuid) — défaut `[]`
 
 **Sortie**
 - `seance_id` : string (uuid)
 - `kcal` : nombre
 - `duree_min` : nombre
 - `poids_utilise` : nombre
+- `rates` : liste de objet { exercice_seance_id, exercice_id, reprogramme }
 
 ## `noter_charge`
 

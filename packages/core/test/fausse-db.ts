@@ -41,6 +41,8 @@ const DEFAUTS: Record<string, Ligne> = {
     semaine: null,
     duree_min: null,
     programme_id: null,
+    pause_le: null,
+    pause_cumul_s: 0,
   },
   programmes: { actif: true, fin: null, materiel: [], rythme: {}, genere_par: null, objectif_id: null },
   pesees: { note: null },

@@ -1194,6 +1194,8 @@ export type Database = {
           jour: string
           kcal: number | null
           notes: string | null
+          pause_cumul_s: number
+          pause_le: string | null
           programme_id: string | null
           ressenti: number | null
           semaine: number | null
@@ -1214,6 +1216,8 @@ export type Database = {
           jour: string
           kcal?: number | null
           notes?: string | null
+          pause_cumul_s?: number
+          pause_le?: string | null
           programme_id?: string | null
           ressenti?: number | null
           semaine?: number | null
@@ -1234,6 +1238,8 @@ export type Database = {
           jour?: string
           kcal?: number | null
           notes?: string | null
+          pause_cumul_s?: number
+          pause_le?: string | null
           programme_id?: string | null
           ressenti?: number | null
           semaine?: number | null

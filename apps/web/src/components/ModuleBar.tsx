@@ -22,7 +22,8 @@ export function ModuleBar() {
     <div
       data-module={app}
       className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-[var(--page-gutter)]"
-      style={{ bottom: "calc(var(--page-tabbar-offset) + env(safe-area-inset-bottom) * 0.5)" }}
+      // Zone sûre basse : la barre reste au-dessus de l'indicateur d'accueil iPhone (jamais à moitié dessous).
+      style={{ bottom: "max(var(--page-tabbar-offset), calc(env(safe-area-inset-bottom) + var(--stack-xs)))" }}
     >
       <div className="kv-tabbar-wrap pointer-events-auto">
         <nav aria-label="Navigation de l’application" className="kv-tabbar kv-tabbar-auto">

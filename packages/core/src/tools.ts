@@ -146,15 +146,58 @@ export const tools = {
     output: z.object({ seance_id: z.string().uuid(), kcal: z.number() }),
   },
 
+  demarrer_seance: {
+    description:
+      "Démarre une séance (« je commence ma séance ») : lance le chrono sans rien cocher. Sans effet si elle tourne déjà ou est faite. Ensuite : valider_serie au fil des séries, terminer_seance à la fin.",
+    input: z.object({ seance_id: z.string().uuid() }),
+    output: z.object({ seance_id: z.string().uuid(), etat: z.string(), debut_le: z.string().nullable() }),
+  },
+
+  chrono_seance: {
+    description: "Met en pause ou relance le chrono d'une séance en cours (le temps de pause n'est pas compté dans la durée ni les kcal).",
+    input: z.object({ seance_id: z.string().uuid(), action: z.enum(["pause", "reprendre"]) }),
+    output: z.object({ seance_id: z.string().uuid(), en_pause: z.boolean(), chrono_s: z.number() }),
+  },
+
+  valider_serie: {
+    description:
+      "Valide la série suivante d'un exercice de la séance (reps et charge réellement faites ; sinon la prescription). La première série démarre la séance ; la dernière coche l'exercice et recalcule les kcal.",
+    input: z.object({
+      exercice_seance_id: z.string().uuid(),
+      reps: z.number().int().min(0).max(200).nullable().optional(),
+      charge_kg: z.number().min(0).max(500).nullable().optional(),
+    }),
+    output: z.object({
+      seance_id: z.string().uuid(),
+      series_faites: z.number(),
+      series: z.number(),
+      exercice_fait: z.boolean(),
+      kcal: z.number().nullable(),
+    }),
+  },
+
   terminer_seance: {
     description:
-      "Termine une séance : les exercices restants sont comptés comme faits, la durée réelle est mesurée depuis le premier coché, les kcal sont figées (MET × poids actuel × durée). Ressenti 1–5 optionnel.",
+      "Termine une séance : les exercices restants sont comptés comme faits, sauf ceux passés dans `rates` (exercices_seance ids), qui sont reprogrammés en fin de la prochaine séance prévue du programme. Durée réelle = chrono, pauses déduites ; kcal figées (MET × poids actuel × durée). Ressenti 1–5 optionnel. Demande d'abord s'il y a des exercices ratés quand tout n'est pas coché.",
     input: z.object({
       seance_id: z.string().uuid(),
       ressenti: z.number().int().min(1).max(5).optional(),
       notes: z.string().optional(),
+      rates: z.array(z.string().uuid()).default([]),
     }),
-    output: z.object({ seance_id: z.string().uuid(), kcal: z.number(), duree_min: z.number(), poids_utilise: z.number() }),
+    output: z.object({
+      seance_id: z.string().uuid(),
+      kcal: z.number(),
+      duree_min: z.number(),
+      poids_utilise: z.number(),
+      rates: z.array(
+        z.object({
+          exercice_seance_id: z.string().uuid(),
+          exercice_id: z.string(),
+          reprogramme: z.object({ seance_id: z.string().uuid(), jour: z.string(), titre: z.string().nullable() }).nullable(),
+        }),
+      ),
+    }),
   },
 
   noter_charge: {

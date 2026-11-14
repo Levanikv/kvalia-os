@@ -14,15 +14,49 @@ export async function cocher(exerciceSeanceId: string, fait: boolean) {
   return r;
 }
 
-export async function terminer(seanceId: string, ressenti?: number, notes?: string) {
+export async function terminer(seanceId: string, ressenti?: number, notes?: string, rates: string[] = []) {
   const { supabase, user } = await session();
-  const r = await executer("terminer_seance", { seance_id: seanceId, ressenti, notes }, { db: supabase, userId: user.id });
+  const r = await executer("terminer_seance", { seance_id: seanceId, ressenti, notes, rates }, { db: supabase, userId: user.id });
   revalidatePath("/sport");
   revalidatePath("/sport/historique");
   revalidatePath(`/sport/seance/${seanceId}`);
   revalidatePath("/nutrition");
   revalidatePath("/");
   return r;
+}
+
+/** « Démarrer la séance » : lance le chrono (outil demarrer_seance). */
+export async function demarrer(seanceId: string) {
+  const { supabase, user } = await session();
+  const r = await executer("demarrer_seance", { seance_id: seanceId }, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+  revalidatePath(`/sport/seance/${seanceId}`);
+  return r;
+}
+
+/** Tap sur le chrono : pause / reprise (outil chrono_seance). */
+export async function chrono(seanceId: string, action: "pause" | "reprendre") {
+  const { supabase, user } = await session();
+  const r = await executer("chrono_seance", { seance_id: seanceId, action }, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+  revalidatePath(`/sport/seance/${seanceId}`);
+  return r;
+}
+
+/** « Valider la série n » dans la fiche exercice (outil valider_serie). */
+export async function validerSerieAction(exerciceSeanceId: string, maj: { reps?: number | null; charge_kg?: number | null }) {
+  const { supabase, user } = await session();
+  const r = await executer("valider_serie", { exercice_seance_id: exerciceSeanceId, ...maj }, { db: supabase, userId: user.id });
+  revalidatePath("/sport");
+  revalidatePath(`/sport/seance/${r.seance_id}`);
+  revalidatePath("/");
+  return r;
+}
+
+/** Historique d'un exercice (fiche « historique & charge »). */
+export async function historiqueAction(exerciceId: string) {
+  const { supabase, user } = await session();
+  return executer("historique_exercice", { exercice_id: exerciceId, limite: 12 }, { db: supabase, userId: user.id });
 }
 
 export async function enregistrerParametres(brut: unknown) {

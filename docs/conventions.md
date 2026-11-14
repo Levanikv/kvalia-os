@@ -36,7 +36,12 @@ Ce qui n'est pas vérifié par `pnpm check` (types, lint, tests, doc des outils)
 
 ## UI
 
-- **Mobile d'abord** : largeur max `max-w-lg`, cibles tactiles ≥ 44 px (`.tap`), zones sûres (`pt-safe`, `pb-safe`), pas de hover-only.
+- **Mobile d'abord** : largeur max `max-w-lg`, cibles tactiles ≥ 44 px (`.tap`), pas de hover-only.
+- **Zones sûres iPhone (règle non négociable)** : l'app tourne en plein écran (`viewport-fit=cover`, barre d'état `black-translucent`), donc rien ne doit passer sous la barre d'état / l'encoche / la Dynamic Island en haut, ni sous l'indicateur d'accueil en bas.
+  - **Haut** : tout en-tête collé en haut porte `pt-safe` (ou `pt-[calc(env(safe-area-inset-top)+…)]`) ; un écran plein écran sans `ModuleFrame` (séance, fin de séance, vidéo, onboarding) le fait lui-même ; une feuille ne monte jamais plus haut que `100dvh − env(safe-area-inset-top)`.
+  - **Bas** : tout élément `fixed`/`sticky` en bas (barre d'action, barre d'app, « + », toast, bouton d'une vidéo plein écran) ajoute **`env(safe-area-inset-bottom)` entier** à sa marge (`pb-[calc(var(--stack-lg)+env(safe-area-inset-bottom))]`, `bottom: calc(… + env(safe-area-inset-bottom))`, ou `max(…, env(safe-area-inset-bottom) + …)`) — jamais une fraction, jamais une constante en dur (`--page-safe-bottom` = 34 px est une valeur de maquette, pas l'appareil).
+  - **Contenu qui défile** : sa marge basse = hauteur de l'élément fixe + `env(safe-area-inset-bottom)` (`.contenu` le fait sous `ModuleFrame`), pour que le dernier élément ne reste pas caché sous la barre.
+  - Vérifier sur l'iPhone (encoche + indicateur d'accueil), en mode app installée, avant de dire « fini ».
 - **Hiérarchie d'écran** : header (`ModuleFrame`) → barre optionnelle (bande de jours, filtres) → hero (la chose à faire) → cartes d'entrée (`EntreeCarte`) → liens secondaires. Chaque niveau important expose ses sous-modules en cartes avec un chiffre et une ligne de contexte.
 - **Feuilles** (`BottomSheet`) pour le contextuel ; une seule ouverte à la fois ; bouton principal plein (`bg-action-primary text-fg-on-brand`), secondaire `bg-surface-default`.
 - **Navigation** : menu « Applications » + `ModuleBar` par app (`packages/ui/src/index.ts`). Un écran de détail : flèche retour à gauche, pas de burger. Les états et dates vont en query (`?jour=`, `?etat=`), jamais dans le chemin.
