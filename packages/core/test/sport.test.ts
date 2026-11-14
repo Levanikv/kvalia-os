@@ -23,6 +23,8 @@ import {
   planifierModeleSeance,
   supprimerModeleSeance,
   reinitialiserSport,
+  joursDeSeance,
+  premierJourSeance,
   chronoSecondes,
   chronoSeance,
   defiSemaine,
@@ -680,31 +682,41 @@ describe("remise à zéro Sport (temporaire)", () => {
   });
 });
 
-describe("programme qui démarre aujourd'hui", () => {
+describe("un programme commence un jour de séance", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
+  const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [] };
 
-  it("aujourd'hui n'est pas un jour de salle : la première séance est avancée à aujourd'hui et se démarre", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-11T10:00:00Z")); // mercredi
-    const db = base();
-    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [] };
-    await genererProgramme(db, USER, params, "2026-11-11");
-    const duJour = db.tables.seances.filter((s: any) => s.jour === "2026-11-11");
-    expect(duJour).toHaveLength(1);
-    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-12")).toBeUndefined(); // jeudi avancé
-    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-16")).toBeDefined(); // lundi suivant inchangé
-    expect((await demarrerSeance(db, USER, duJour[0].id)).etat).toBe("en_cours");
+  it("premierJourSeance / joursDeSeance", () => {
+    const p = ParametresSport.parse(params);
+    expect(joursDeSeance(p)).toEqual([1, 4]);
+    expect(premierJourSeance(p, "2026-11-14")).toBe("2026-11-16"); // samedi → lundi
+    expect(premierJourSeance(p, "2026-11-12")).toBe("2026-11-12"); // jeudi = jour de séance
+    expect(
+      joursDeSeance(
+        ParametresSport.parse({ ...params, rythme: { salle: 3, boxe: 0 }, seances_perso: [{ jour: 6, modele_id: "11111111-1111-4111-8111-111111111111" }] }),
+      ),
+    ).toEqual([1, 4, 6]);
   });
 
-  it("un autre premier jour que aujourd'hui : rien n'est avancé", async () => {
+  it("samedi « aujourd'hui » sans séance le samedi : le programme démarre lundi, rien n'est posé samedi", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-11T10:00:00Z"));
+    vi.setSystemTime(new Date("2026-11-14T10:00:00Z")); // samedi
     const db = base();
-    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [] };
-    await genererProgramme(db, USER, params, "2026-11-13");
-    expect(db.tables.seances.find((s: any) => s.jour === "2026-11-13")).toBeUndefined();
+    const r = await genererProgramme(db, USER, params, "2026-11-14");
+    expect(r.debut).toBe("2026-11-16");
+    expect(db.tables.programmes[0].debut).toBe("2026-11-16");
+    expect(db.tables.seances.find((s: any) => s.jour < "2026-11-16")).toBeUndefined();
     expect(db.tables.seances.find((s: any) => s.jour === "2026-11-16")).toBeDefined();
+  });
+
+  it("aujourd'hui est un jour de séance : elle est là et se démarre", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-12T10:00:00Z")); // jeudi
+    const db = base();
+    await genererProgramme(db, USER, params, "2026-11-12");
+    const duJour = db.tables.seances.find((s: any) => s.jour === "2026-11-12");
+    expect((await demarrerSeance(db, USER, duJour.id)).etat).toBe("en_cours");
   });
 });

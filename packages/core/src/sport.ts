@@ -195,6 +195,26 @@ export function appliquerProfil(params: ParametresSport, profil: ProfilSport | u
   return p;
 }
 
+/** Jours de la semaine (0 = dim. … 6 = sam.) où le programme pose une séance : salle, séances perso, boxe. */
+export function joursDeSeance(params: Pick<ParametresSport, "jours_salle" | "jours_boxe" | "rythme" | "seances_perso">): number[] {
+  const salle = [...new Set([...params.jours_salle, ...params.seances_perso.map((x) => x.jour)])]
+    .sort((a, b) => a - b)
+    .slice(0, Math.max(params.rythme.salle, params.seances_perso.length));
+  const boxe = [...new Set(params.jours_boxe)].sort((a, b) => a - b).slice(0, params.rythme.boxe);
+  return [...new Set([...salle, ...boxe])].sort((a, b) => a - b);
+}
+
+/** Premier jour de séance à partir de `depuis` (inclus) ; `depuis` lui-même si aucun jour n'est coché. */
+export function premierJourSeance(params: Pick<ParametresSport, "jours_salle" | "jours_boxe" | "rythme" | "seances_perso">, depuis: string): string {
+  const jours = joursDeSeance(params);
+  if (!jours.length) return depuis;
+  for (let i = 0; i < 7; i++) {
+    const j = decalerJour(depuis, i);
+    if (jours.includes(new Date(j + "T12:00:00Z").getUTCDay())) return j;
+  }
+  return depuis;
+}
+
 // ---------- Parcours « Nouveau programme » (onglet Programme, sans les questions de profil) ----------
 
 /** Réponses du parcours de création : objectif, échéance (semaines), jours de salle, durée d'une séance. */
@@ -623,12 +643,9 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
   const refs = (refsData ?? []) as Ref[];
   if (refs.length === 0) throw new Error("Bibliothèque d'exercices vide : lance le seed (pnpm --filter @kvalia/agent seed:exercices).");
 
-  // Début : lundi prochain par défaut (ou aujourd'hui si lundi) — jours calendaires de l'utilisateur, pas UTC.
-  let debutJour = debutIso ?? aujourdhuiIso();
-  if (!debutIso) {
-    const d = new Date(debutJour + "T12:00:00Z").getUTCDay();
-    debutJour = decalerJour(debutJour, d === 1 ? 0 : (8 - d) % 7);
-  }
+  // Début : un programme commence un jour où il y a séance. Date demandée (ou demain par défaut) → premier jour
+  // d'entraînement à partir de celle-ci — jours calendaires de l'utilisateur, pas UTC.
+  const debutJour = premierJourSeance(params, debutIso ?? decalerJour(aujourdhuiIso(), 1));
   const debut = new Date(debutJour + "T12:00:00");
   const fin = new Date(debut);
   fin.setDate(fin.getDate() + params.semaines * 7 - 1);
@@ -681,22 +698,6 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 
   const r = await planifierSeances(db, userId, { id: prog.id, debut: debutJour }, params, refs, debutJour, dejaFait);
   avertissements.push(...r.avertissements);
-  // Démarrer aujourd'hui = s'entraîner aujourd'hui : si aujourd'hui n'est pas un jour de salle, la première séance
-  // de salle de la semaine 1 est avancée à aujourd'hui (sauf si une séance de salle est déjà faite aujourd'hui).
-  if (debutJour === aujourdhuiIso() && !dejaFait.has(`${debutJour}|salle`)) {
-    const { data: semaine1 } = await db
-      .from("seances")
-      .select("id, jour, type")
-      .eq("programme_id", prog.id)
-      .gte("jour", debutJour)
-      .lte("jour", decalerJour(debutJour, 6))
-      .order("jour");
-    const salle = (semaine1 ?? []).filter((x) => x.type !== "boxe");
-    if (salle.length && !salle.some((x) => x.jour === debutJour)) {
-      const { error: errAvance } = await db.from("seances").update({ jour: debutJour }).eq("id", salle[0].id);
-      if (errAvance) throw errAvance;
-    }
-  }
   return { programme_id: prog.id, nb_seances: r.nb_seances, nb_exercices: r.nb_exercices, debut: debutJour, fin: iso(fin), avertissements };
 }
 

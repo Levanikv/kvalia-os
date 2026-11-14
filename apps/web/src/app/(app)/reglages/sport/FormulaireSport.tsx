@@ -171,7 +171,10 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
             className="rounded-md border border-line-default bg-surface-canvas px-3 py-2 text-sm outline-none focus:border-action-primary"
           />
         </label>
-        <p className="text-xs text-fg-tertiary">Vide = lundi prochain. Aujourd’hui = la séance du jour est remplacée (sauf si elle est déjà faite).</p>
+        <p className="text-xs text-fg-tertiary">
+          Un programme commence un jour de séance : si la date n’en est pas un, il démarre au prochain jour coché. Vide = prochain jour de séance à partir de
+          demain.
+        </p>
       </Section>
 
       {message && (

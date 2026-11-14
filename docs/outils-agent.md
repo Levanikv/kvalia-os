@@ -136,7 +136,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.
 
 **Entrée**
-- `debut` : string (date) (optionnel) — Premier jour (lundi conseillé ; aujourd'hui possible). Par défaut : lundi prochain. Les séances de l'ancien programme sont remplacées à partir de ce jour.
+- `debut` : string (date) (optionnel) — Premier jour souhaité (aujourd'hui possible). Un programme commence toujours un jour de séance : si ce jour n'en est pas un, le début passe au prochain jour de séance. Par défaut : le prochain jour de séance à partir de demain. Les séances de l'ancien programme sont remplacées à partir de ce jour.
 - `parametres` : objet { rythme, jours_salle, jours_boxe, duree_min, materiel, objectif, niveau, semaines, poids_kg, effort_s_par_serie, seances_perso, profil, onboarding } (optionnel) — Surcharges ponctuelles ; sinon les réglages enregistrés.
 
 **Sortie**

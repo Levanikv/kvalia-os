@@ -125,7 +125,7 @@ export const tools = {
         .date()
         .optional()
         .describe(
-          "Premier jour (lundi conseillé ; aujourd'hui possible). Par défaut : lundi prochain. Les séances de l'ancien programme sont remplacées à partir de ce jour.",
+          "Premier jour souhaité (aujourd'hui possible). Un programme commence toujours un jour de séance : si ce jour n'en est pas un, le début passe au prochain jour de séance. Par défaut : le prochain jour de séance à partir de demain. Les séances de l'ancien programme sont remplacées à partir de ce jour.",
         ),
       parametres: ParametresSport.partial().optional().describe("Surcharges ponctuelles ; sinon les réglages enregistrés."),
     }),

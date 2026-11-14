@@ -13,8 +13,10 @@ type Props = {
   max?: string;
   /** Titre de la feuille calendrier. */
   titre?: string;
-  /** Raccourcis proposés (par défaut : aujourd'hui, demain, lundi prochain). */
+  /** Raccourcis proposés (par défaut : aujourd'hui, demain, lundi prochain ; ou les 3 prochains jours autorisés). */
   raccourcis?: Array<{ jour: string; label: string }>;
+  /** Jours de semaine autorisés (0 = dim. … 6 = sam.) : ex. un programme ne commence qu'un jour de séance. */
+  joursAutorises?: number[];
 };
 
 const MOIS_COURT: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" };
@@ -35,19 +37,38 @@ const libelle = (jour: string, o: Intl.DateTimeFormatOptions) => new Date(jour +
  * Choix d'une date de démarrage : raccourcis (Aujourd'hui · Demain · Lundi) + « Autre date » qui ouvre un
  * calendrier du mois (semaine du lundi au dimanche, aujourd'hui marqué, jours passés grisés).
  */
-export function ChoixDate({ valeur, onChange, aujourdhui, max, titre = "Choisir une date", raccourcis }: Props) {
+export function ChoixDate({ valeur, onChange, aujourdhui, max, titre = "Choisir une date", raccourcis, joursAutorises }: Props) {
   const fin = max ?? decaler(aujourdhui, 120);
-  const rapides = raccourcis ?? [
-    { jour: aujourdhui, label: "Aujourd’hui" },
-    { jour: decaler(aujourdhui, 1), label: "Demain" },
-    { jour: lundiProchain(aujourdhui), label: `Lun. ${libelle(lundiProchain(aujourdhui), { day: "numeric" })}` },
-  ];
+  const autorise = (j: string) => !joursAutorises?.length || joursAutorises.includes(new Date(j + "T12:00:00Z").getUTCDay());
+  const nom = (j: string) => {
+    if (j === aujourdhui) return "Aujourd’hui";
+    if (j === decaler(aujourdhui, 1)) return "Demain";
+    const t = libelle(j, { weekday: "short", day: "numeric" });
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+  const prochains = Array.from({ length: 21 }, (_, i) => decaler(aujourdhui, i))
+    .filter(autorise)
+    .slice(0, 3);
+  const rapides =
+    raccourcis ??
+    (joursAutorises?.length
+      ? prochains.map((j) => ({ jour: j, label: nom(j) }))
+      : [
+          { jour: aujourdhui, label: "Aujourd’hui" },
+          { jour: decaler(aujourdhui, 1), label: "Demain" },
+          { jour: lundiProchain(aujourdhui), label: `Lun. ${libelle(lundiProchain(aujourdhui), { day: "numeric" })}` },
+        ]);
   const autre = !rapides.some((r) => r.jour === valeur);
   const [ouvert, setOuvert] = useState(false);
 
   return (
     <div className="flex flex-col gap-[var(--stack-sm)]">
-      <div className="grid grid-cols-4 gap-[var(--inline-xs)]" role="radiogroup" aria-label={titre}>
+      <div
+        className="grid gap-[var(--inline-xs)]"
+        style={{ gridTemplateColumns: `repeat(${rapides.length + 1}, minmax(0, 1fr))` }}
+        role="radiogroup"
+        aria-label={titre}
+      >
         {rapides.map((r) => (
           <button
             key={r.jour + r.label}
@@ -79,10 +100,12 @@ export function ChoixDate({ valeur, onChange, aujourdhui, max, titre = "Choisir 
       <p className="px-[var(--inline-xs)] kv-mono">Début : {libelle(valeur, { weekday: "long", day: "numeric", month: "long" })}</p>
 
       <BottomSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre={titre}>
+        {joursAutorises?.length ? <p className="mb-[var(--stack-sm)] type-body-sm text-fg-secondary">Seuls tes jours de séance sont proposés.</p> : null}
         <Calendrier
           valeur={valeur}
           min={aujourdhui}
           max={fin}
+          autorise={autorise}
           onChoisir={(j) => {
             onChange(j);
             setOuvert(false);
@@ -94,7 +117,19 @@ export function ChoixDate({ valeur, onChange, aujourdhui, max, titre = "Choisir 
 }
 
 /** Grille d'un mois (lundi → dimanche) avec navigation mois précédent / suivant, bornée par min et max. */
-export function Calendrier({ valeur, min, max, onChoisir }: { valeur: string; min: string; max: string; onChoisir: (jour: string) => void }) {
+export function Calendrier({
+  valeur,
+  min,
+  max,
+  onChoisir,
+  autorise = () => true,
+}: {
+  valeur: string;
+  min: string;
+  max: string;
+  onChoisir: (jour: string) => void;
+  autorise?: (jour: string) => boolean;
+}) {
   const [mois, setMois] = useState(() => (valeur >= min ? valeur : min).slice(0, 7));
   const premier = mois + "-01";
   const decalage = (new Date(premier + "T12:00:00Z").getUTCDay() + 6) % 7; // lundi = 0
@@ -144,7 +179,7 @@ export function Calendrier({ valeur, min, max, onChoisir }: { valeur: string; mi
         ))}
         {cases.map((j, i) => {
           if (!j) return <span key={`v${i}`} />;
-          const hors = j < min || j > max;
+          const hors = j < min || j > max || !autorise(j);
           const choisi = j === valeur;
           const auj = j === min;
           return (

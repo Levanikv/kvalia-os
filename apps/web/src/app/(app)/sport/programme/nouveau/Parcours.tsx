@@ -2,7 +2,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { LIBELLES, parametresDepuisReponses, phasesProgramme, planSemaine, type ParametresSport, type ReponsesProgramme } from "@kvalia/core";
+import {
+  LIBELLES,
+  parametresDepuisReponses,
+  phasesProgramme,
+  planSemaine,
+  premierJourSeance,
+  type ParametresSport,
+  type ReponsesProgramme,
+} from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ChoixDate } from "@/components/kv/ChoixDate";
 import { WheelPicker } from "@/components/kv/WheelPicker";
@@ -70,10 +78,12 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
   }, [ecran]);
 
   const params = parametresDepuisReponses(base, { ...r, semaines: echeance ? r.semaines : 12 });
+  // Un programme commence un jour de séance (règle du noyau) : la date choisie est calée sur le prochain jour coché.
+  const debutChoisi = premierJourSeance(params, debut < aujourdhui ? aujourdhui : debut);
   const plan = planSemaine(params, Object.fromEntries(modeles.map((m) => [m.id, { nom: m.nom, type: m.type }])));
   const phases = phasesProgramme(params);
   const finIso = (() => {
-    const d = new Date(debut + "T12:00:00Z");
+    const d = new Date(debutChoisi + "T12:00:00Z");
     d.setUTCDate(d.getUTCDate() + params.semaines * 7 - 1);
     return d.toISOString().slice(0, 10);
   })();
@@ -92,7 +102,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
     setEcran("generation");
     start(async () => {
       try {
-        setResultat(await creerProgramme({ ...r, semaines: echeance ? r.semaines : 12 }, debut));
+        setResultat(await creerProgramme({ ...r, semaines: echeance ? r.semaines : 12 }, debutChoisi));
       } catch (e) {
         setEcran("questions");
         setErreur(e instanceof Error ? e.message : "La génération a échoué.");
@@ -262,11 +272,11 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   </div>
                   <div className="flex flex-col gap-[var(--stack-sm)]">
                     <h2 className="type-title-sm">Premier jour</h2>
-                    <ChoixDate valeur={debut} onChange={setDebut} aujourdhui={aujourdhui} titre="Premier jour du programme" />
+                    <ChoixDate valeur={debutChoisi} onChange={setDebut} aujourdhui={aujourdhui} titre="Premier jour du programme" joursAutorises={r.jours} />
                     {remplace && (
                       <p className="type-body-sm text-fg-secondary">
                         Ton programme actuel s’arrête la veille ; ses séances non faites à partir de ce jour sont remplacées
-                        {debut === aujourdhui ? ", celle d’aujourd’hui comprise (sauf si elle est faite)" : ""}.
+                        {debutChoisi === aujourdhui ? ", celle d’aujourd’hui comprise (sauf si elle est faite)" : ""}.
                       </p>
                     )}
                   </div>
@@ -283,7 +293,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                     </p>
                     <div className="flex flex-wrap gap-[var(--inline-sm)]">
                       <span className="kv-tag kv-tag-brand">Fin {date(finIso, { day: "numeric", month: "short", year: "numeric" })}</span>
-                      <span className="kv-tag kv-tag-neutral">Début {date(debut, { weekday: "short", day: "numeric", month: "short" })}</span>
+                      <span className="kv-tag kv-tag-neutral">Début {date(debutChoisi, { weekday: "short", day: "numeric", month: "short" })}</span>
                     </div>
                   </div>
 
@@ -344,11 +354,6 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                         : " Chaque séance travaille tout le corps, pour garder la fréquence."}
                     </p>
                     <p className="type-body-sm">Ton niveau, ton matériel et tes douleurs viennent de ton profil : les exercices en tiennent compte.</p>
-                    {debut === aujourdhui && plan.jours[new Date(aujourdhui + "T12:00:00Z").getUTCDay()].every((x) => x.genre === "boxe") && (
-                      <p className="type-body-sm">
-                        Tu démarres aujourd’hui : ta première séance est avancée à aujourd’hui, tu pourras la lancer tout de suite.
-                      </p>
-                    )}
                     {plan.avertissements.length > 0 && <p className="type-body-sm text-feedback-warning-text">{plan.avertissements.join(" ")}</p>}
                   </section>
                 </>
