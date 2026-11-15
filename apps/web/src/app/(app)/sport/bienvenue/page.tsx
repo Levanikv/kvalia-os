@@ -1,5 +1,5 @@
 import { parametresSport } from "@kvalia/core";
-import { session } from "@/lib/session";
+import { aujourdhui, session } from "@/lib/session";
 import { Onboarding } from "./Onboarding";
 
 export const metadata = { title: "Bienvenue · Sport" };
@@ -12,5 +12,5 @@ export const metadata = { title: "Bienvenue · Sport" };
 export default async function Page({ searchParams }: { searchParams: Promise<{ reprendre?: string; revoir?: string }> }) {
   const { supabase, user } = await session();
   const [params, sp] = await Promise.all([parametresSport(supabase, user.id), searchParams]);
-  return <Onboarding profil={params.profil ?? {}} etape={sp.revoir ? 1 : sp.reprendre ? (params.onboarding?.etape ?? 0) : 0} />;
+  return <Onboarding profil={params.profil ?? {}} etape={sp.revoir ? 1 : sp.reprendre ? (params.onboarding?.etape ?? 0) : 0} aujourdhui={aujourdhui()} />;
 }

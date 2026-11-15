@@ -162,15 +162,24 @@ export async function passerOnboarding(profil: Profil, etape: number) {
 }
 
 /** Dernière réponse : on fige le profil, puis on génère le programme (même outil que l'agent). */
-export async function terminerOnboarding(profil: Profil, etape: number) {
+export async function terminerOnboarding(profil: Profil, etape: number, debut?: string) {
   const { supabase, user } = await session();
   const params = await executer("regler_sport", { profil, onboarding: { etape, termine: true, passe: false } }, { db: supabase, userId: user.id });
-  const r = await executer("generer_programme", {}, { db: supabase, userId: user.id });
+  // « Quand commencer ? » : le noyau cale la date sur un jour de séance (aujourd'hui si c'en est un).
+  const r = await executer("generer_programme", debut ? { debut } : {}, { db: supabase, userId: user.id });
+  const { data: premiere } = await supabase
+    .from("seances")
+    .select("id, jour, titre")
+    .eq("programme_id", r.programme_id)
+    .neq("type", "boxe")
+    .order("jour")
+    .limit(1)
+    .maybeSingle();
   revalidatePath("/sport");
   revalidatePath("/sport/programme");
   revalidatePath("/nutrition");
   revalidatePath("/");
-  return { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, cibles: ciblesDepuisProfil(params.profil) };
+  return { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, cibles: ciblesDepuisProfil(params.profil), premiere };
 }
 
 // ---------- Modifier le programme / Mes séances (outils du noyau, comme l'agent) ----------

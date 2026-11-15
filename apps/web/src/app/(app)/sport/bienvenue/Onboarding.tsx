@@ -6,6 +6,7 @@ import type { ParametresSport } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { LigneChoix, TuileChoix } from "@/components/kv/Choix";
 import { Ground } from "@/components/kv/Ground";
+import { ChoixDate } from "@/components/kv/ChoixDate";
 import { WheelPicker } from "@/components/kv/WheelPicker";
 import { passerOnboarding, sauverOnboarding, terminerOnboarding } from "../actions";
 
@@ -78,6 +79,7 @@ const Q: Record<number, { sur: string; titre: string; sous: string }> = {
   11: { sur: "Niveau", titre: "Ton niveau en salle ?", sous: "Pour le choix des exercices et les charges de départ." },
   12: { sur: "Limites", titre: "Des douleurs ou blessures ?", sous: "Plusieurs choix possibles." },
   13: { sur: "Nutrition · optionnel", titre: "Et côté assiette ?", sous: "Tes calories suivent déjà tes séances." },
+  14: { sur: "Démarrage", titre: "Quand commencer ?", sous: "Ton premier jour de séance. Si aujourd’hui en est un, tu peux démarrer tout de suite." },
 };
 const ETAPES_GENERATION = [
   "Profil et dépense de base",
@@ -162,7 +164,7 @@ const toggle = <T,>(liste: T[], x: T) => (liste.includes(x) ? liste.filter((y) =
 
 type Resultat = Awaited<ReturnType<typeof terminerOnboarding>>;
 
-export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; etape: number }) {
+export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profil: Profil; etape: number; aujourdhui: string }) {
   const router = useRouter();
   const [a, setA] = useState<Etat>(() => depuisProfil(profil));
   const [ecran, setEcran] = useState<"accueil" | "question" | "generation" | "pret">(etapeInitiale > 0 ? "question" : "accueil");
@@ -172,6 +174,19 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
   const [erreur, setErreur] = useState<string | null>(null);
   const [, demarrer] = useTransition();
   const maj = <K extends keyof Etat>(k: K, v: Etat[K]) => setA((x) => ({ ...x, [k]: v }));
+  // « Quand commencer ? » : jours de séance cochés (0 = dimanche) ; par défaut le premier à partir d'aujourd'hui.
+  const joursSeance = a.jours.flatMap((on, i) => (on ? [versJs(i)] : []));
+  const [debutVoulu, setDebutVoulu] = useState<string | null>(null);
+  const premierJour = (() => {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(aujourdhui + "T12:00:00Z");
+      d.setUTCDate(d.getUTCDate() + i);
+      if (joursSeance.includes(d.getUTCDay())) return d.toISOString().slice(0, 10);
+    }
+    return aujourdhui;
+  })();
+  const debutValide =
+    debutVoulu && joursSeance.includes(new Date(debutVoulu + "T12:00:00Z").getUTCDay()) && debutVoulu >= aujourdhui ? debutVoulu : premierJour;
 
   // Étapes conditionnelles : poids cible si sèche / prise de muscle (ou aucun choix), matériel si la maison est concernée.
   const etapes = useMemo(() => {
@@ -179,7 +194,7 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
     if (!a.objectifs.length || a.objectifs.includes("seche") || a.objectifs.includes("masse")) l.push(5);
     l.push(6, 7, 8);
     if (a.lieu !== "salle") l.push(9);
-    l.push(10, 11, 12, 13);
+    l.push(10, 11, 12, 13, 14);
     return l;
   }, [a.objectifs, a.lieu]);
   const idx = Math.max(0, etapes.indexOf(etape));
@@ -211,7 +226,7 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
       setEcran("generation");
       setGen(0);
       setErreur(null);
-      terminerOnboarding(profilCourant(), etape)
+      terminerOnboarding(profilCourant(), etape, debutValide)
         .then(setResultat)
         .catch(() => {
           setErreur("La génération n’a pas abouti. Réessaie, tes réponses sont gardées.");
@@ -558,6 +573,16 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
                   </div>
                 )}
 
+                {etape === 14 && (
+                  <ChoixDate
+                    valeur={debutValide}
+                    onChange={setDebutVoulu}
+                    aujourdhui={aujourdhui}
+                    titre="Premier jour du programme"
+                    joursAutorises={joursSeance}
+                  />
+                )}
+
                 {etape === 13 && (
                   <div role="radiogroup" aria-label="Nutrition">
                     {NUTRITION.map((o) => (
@@ -661,7 +686,18 @@ export function Onboarding({ profil, etape: etapeInitiale }: { profil: Profil; e
                 ))}
               </dl>
               <div className="mt-auto flex flex-col items-center gap-[var(--stack-md)] pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))]">
-                <Link href="/sport/programme" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+                {resultat.premiere && resultat.premiere.jour === aujourdhui && (
+                  <Link href={`/sport/seance/${resultat.premiere.id}`} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+                    <span className="kv-btn-label">Démarrer ma séance du jour</span>
+                    <span className="kv-btn-end">
+                      <Icon name="play_arrow" size={22} filled />
+                    </span>
+                  </Link>
+                )}
+                <Link
+                  href="/sport/programme"
+                  className={`kv-btn kv-btn-xl kv-btn-block kv-btn-has-end ${resultat.premiere && resultat.premiere.jour === aujourdhui ? "kv-btn-tertiary" : "kv-btn-primary"}`}
+                >
                   <span className="kv-btn-label">Voir mon programme</span>
                   <span className="kv-btn-end">
                     <Icon name="arrow_forward" size={22} />

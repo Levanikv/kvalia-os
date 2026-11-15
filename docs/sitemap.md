@@ -14,7 +14,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 ├── /sport                Mini-app Sport (sombre)
 │   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 12–13 questions
 │   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : objectifs, lieu, matériel…)
-│   │                                 → génération → plan prêt. « Plus tard » → reprise depuis la Home (?reprendre=1)
+│   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
+│   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
 │   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
 │   │                                 (À faire · En cours · Terminée · Prévue · Repos), défi de la semaine, énergie, records ;
 │   │                                 programme suivi,
