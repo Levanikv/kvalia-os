@@ -22,11 +22,12 @@ export function Phases({ semaines, semaineCourante }: Props) {
       <ol className="flex gap-[3px]" aria-label="Phases semaine par semaine">
         {[...semaines]
           .sort((a, b) => a.semaine - b.semaine)
-          .map((s) => (
+          .map((s, i) => (
             <li
               key={s.semaine}
               title={`Semaine ${s.semaine} · ${libelleFocus(s.focus)}`}
-              className={`h-2.5 flex-1 rounded-full ${TEINTE_PHASE[s.focus] ?? "bg-data-track"} ${
+              style={{ "--i": i } as React.CSSProperties}
+              className={`pousse-x h-2.5 flex-1 rounded-full ${TEINTE_PHASE[s.focus] ?? "bg-data-track"} ${
                 semaineCourante && s.semaine === semaineCourante ? "ring-2 ring-focus-ring ring-offset-2 ring-offset-surface-container-default" : ""
               } ${semaineCourante && s.semaine > semaineCourante ? "opacity-70" : ""}`}
             />
@@ -59,7 +60,7 @@ export function SemaineType({ jours, note }: { jours: JourType[]; note?: string 
         <h2 className="type-title-lg">Semaine type</h2>
         {note && <span className="kv-mono">{note}</span>}
       </div>
-      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+      <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
         {jours.map((j) => {
           const contenu = (
             <>

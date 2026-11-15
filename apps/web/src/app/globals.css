@@ -169,7 +169,105 @@ body {
   transform: scale(0.97);
 }
 
+/*
+ * Motion du parcours Programme (sans bibliothèque) :
+ * - .apparition : entrée en cascade (opacité + léger glissé), l'ordre vient de --i (0, 1, 2…).
+ * - .pousse-x : une barre (phases, progression) qui se remplit depuis la gauche.
+ * - .pop : petit rebond (validation « C'est parti »).
+ * `backwards` : rien ne reste appliqué après l'animation (pas de transform résiduel).
+ */
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.apparition {
+  animation: apparition var(--duration-slow) var(--ease-emphasized) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+.cascade > * {
+  animation: apparition var(--duration-slow) var(--ease-emphasized) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+.cascade > :nth-child(1) {
+  --i: 0;
+}
+.cascade > :nth-child(2) {
+  --i: 1;
+}
+.cascade > :nth-child(3) {
+  --i: 2;
+}
+.cascade > :nth-child(4) {
+  --i: 3;
+}
+.cascade > :nth-child(5) {
+  --i: 4;
+}
+.cascade > :nth-child(6) {
+  --i: 5;
+}
+.cascade > :nth-child(7) {
+  --i: 6;
+}
+.cascade > :nth-child(8) {
+  --i: 7;
+}
+.cascade > :nth-child(9) {
+  --i: 8;
+}
+.cascade > :nth-child(10) {
+  --i: 9;
+}
+.cascade > :nth-child(11) {
+  --i: 10;
+}
+.cascade > :nth-child(12) {
+  --i: 11;
+}
+.cascade > :nth-child(n + 13) {
+  --i: 12;
+}
+@keyframes pousse-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+.pousse-x {
+  transform-origin: left center;
+  animation: pousse-x var(--duration-slower) var(--ease-emphasized) backwards;
+  animation-delay: calc(var(--i, 0) * 35ms + 120ms);
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: none;
+  }
+}
+.pop {
+  animation: pop var(--duration-slower) var(--ease-spring) backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .apparition,
+  .cascade > *,
+  .pousse-x,
+  .pop,
   .assistant-etape,
   .feuille-voile,
   .feuille-panneau,

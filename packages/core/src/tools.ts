@@ -256,6 +256,8 @@ export const tools = {
         compose: z.boolean(),
         raison: z.string(),
         score: z.number(),
+        image_url: z.string().nullable(),
+        video_url: z.string().nullable(),
       }),
     ),
   },

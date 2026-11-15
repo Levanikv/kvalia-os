@@ -75,7 +75,7 @@ export default async function Page() {
   return (
     <ModuleFrame module="sport" surTitre={`Sport · ${objectif}`} titre="Programme">
       <RealtimeRefresh tables={["seances", "programmes"]} />
-      <div className="flex flex-col gap-[var(--stack-lg)]">
+      <div className="cascade flex flex-col gap-[var(--stack-lg)]">
         {/* Programme en cours */}
         <section
           data-module="sport"
@@ -111,7 +111,10 @@ export default async function Page() {
                 {finTexte && <span className="kv-mono">fin {finTexte}</span>}
               </div>
               <div className="kv-progress-track" aria-hidden>
-                <div className="kv-progress-fill bg-action-primary" style={{ width: `${(Math.min(semaineCourante, nbSemaines) / nbSemaines) * 100}%` }} />
+                <div
+                  className="kv-progress-fill pousse-x bg-action-primary"
+                  style={{ width: `${(Math.min(semaineCourante, nbSemaines) / nbSemaines) * 100}%` }}
+                />
               </div>
             </div>
           </div>
@@ -347,7 +350,7 @@ function MesSeances({
           </span>
         </Link>
       ) : (
-        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+        <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
           {modeles.map((m) => {
             const jours = perso.filter((x) => x.modele_id === m.id).map((x) => NOMS_JOURS[x.jour]);
             return (

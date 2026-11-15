@@ -266,7 +266,7 @@ Propose des exercices équivalents (même muscle cible, matériel disponible, m�
 - `limite` : entier — défaut `8`
 
 **Sortie**
-- liste de objet { id, nom, nom_fr, partie_corps, equipement, compose, raison, score }
+- liste de objet { id, nom, nom_fr, partie_corps, equipement, compose, raison, score, image_url, video_url }
 
 ## `remplacer_exercice`
 

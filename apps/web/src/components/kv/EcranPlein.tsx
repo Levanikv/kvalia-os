@@ -39,7 +39,7 @@ export function EcranPlein({ retour, ferme, surTitre, titre, sousTitre, action, 
         </div>
       </header>
       <main
-        className="kv-ground-content mx-auto flex max-w-lg flex-col gap-[var(--stack-lg)] px-[var(--page-gutter)] pt-[var(--stack-sm)]"
+        className="kv-ground-content cascade mx-auto flex max-w-lg flex-col gap-[var(--stack-lg)] px-[var(--page-gutter)] pt-[var(--stack-sm)]"
         style={{
           paddingBottom: pied
             ? "calc(var(--control-xl) + var(--stack-xl) * 2 + env(safe-area-inset-bottom))"

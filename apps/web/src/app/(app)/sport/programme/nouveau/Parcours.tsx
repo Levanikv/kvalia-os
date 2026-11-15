@@ -143,7 +143,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
               </span>
             </div>
 
-            <div key={etape} className="assistant-etape flex flex-1 flex-col gap-[var(--stack-lg)] pt-[var(--stack-xl)]">
+            <div key={etape} className="assistant-etape cascade flex flex-1 flex-col gap-[var(--stack-lg)] pt-[var(--stack-xl)]">
               {erreur && (
                 <p className="rounded-[var(--radius-input)] bg-feedback-danger-subtle p-[var(--inset-sm)] type-body-sm text-feedback-danger-text">{erreur}</p>
               )}
@@ -300,8 +300,12 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
                     <h2 className="kv-overline">Phases</h2>
                     <div className="flex gap-[3px]" aria-hidden>
-                      {phases.map((p) => (
-                        <span key={p.semaine} className={`h-2.5 flex-1 rounded-full ${TEINTE_PHASE[p.focus] ?? "bg-data-track"}`} />
+                      {phases.map((p, i) => (
+                        <span
+                          key={p.semaine}
+                          style={{ "--i": i } as React.CSSProperties}
+                          className={`pousse-x h-2.5 flex-1 rounded-full ${TEINTE_PHASE[p.focus] ?? "bg-data-track"}`}
+                        />
                       ))}
                     </div>
                     <ul className="grid grid-cols-2 gap-x-[var(--inline-lg)] gap-y-[var(--stack-2xs)]">
@@ -419,8 +423,8 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
 
         {vue === "pret" && resultat && (
           <>
-            <div className="flex flex-1 flex-col gap-[var(--stack-lg)] pt-[var(--stack-2xl)]">
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-surface-container-accent text-fg-primary" aria-hidden>
+            <div className="cascade flex flex-1 flex-col gap-[var(--stack-lg)] pt-[var(--stack-2xl)]">
+              <span className="pop flex h-20 w-20 items-center justify-center rounded-full bg-surface-container-accent text-fg-primary" aria-hidden>
                 <Icon name="check" size={36} />
               </span>
               <div>

@@ -326,7 +326,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                 <div className="h-full bg-action-primary transition-[width] duration-[var(--duration-slow)]" style={{ width: `${pct}%` }} />
               </div>
 
-              <div key={etape} className="assistant-etape flex flex-1 flex-col gap-[var(--stack-xl)] pt-[var(--stack-xl)]">
+              <div key={etape} className="assistant-etape cascade flex flex-1 flex-col gap-[var(--stack-xl)] pt-[var(--stack-xl)]">
                 <div className="flex flex-col gap-[var(--stack-sm)]">
                   <span className="kv-overline">{q.sur}</span>
                   <h1 className="type-display-md">{q.titre}</h1>

@@ -958,13 +958,8 @@ div.kv-row-main {
   flex-direction: column;
   gap: var(--stack-sm);
   min-width: 0;
-  touch-action: none;
   user-select: none;
-  outline: none;
-}
-.kv-wheel:focus-visible .kv-wheel-win {
-  outline: var(--border-width-focus) solid var(--focus-ring);
-  outline-offset: 2px;
+  -webkit-user-select: none;
 }
 .kv-wheel-label {
   font-family: var(--font-mono);
@@ -977,57 +972,53 @@ div.kv-row-main {
 }
 .kv-wheel-win {
   position: relative;
-  display: flex;
-  flex-direction: column;
   border-radius: var(--radius-xl);
   border: var(--border-width-default) solid var(--border-default);
   overflow: hidden;
+}
+.kv-wheel-win:focus-within {
+  outline: var(--border-width-focus) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* Défilement natif : inertie, aimantation sur chaque valeur, plusieurs valeurs par geste. */
+.kv-wheel-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  outline: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+}
+.kv-wheel-scroll::-webkit-scrollbar {
+  display: none;
 }
 .kv-wheel-band {
   position: absolute;
   left: var(--inset-xs);
   right: var(--inset-xs);
-  top: calc(var(--space-10) * 2);
-  height: var(--control-item-lg);
   border-radius: var(--radius-lg);
   background: var(--surface-container-inverse);
   opacity: var(--opacity-faint);
   pointer-events: none;
 }
 .kv-wheel-item {
-  position: relative;
-  height: var(--space-10);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--inline-sm);
+  scroll-snap-align: center;
   cursor: pointer;
   font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
-  transition:
-    opacity var(--duration-base) var(--ease-standard),
-    font-size var(--duration-base) var(--ease-standard);
-}
-.kv-wheel-item.is-far {
-  font-size: 16px;
-  font-weight: 500;
-  opacity: var(--opacity-ghost);
-}
-.kv-wheel-item.is-near {
-  font-size: 20px;
-  font-weight: 600;
-  opacity: var(--opacity-half);
-}
-.kv-wheel-item.is-on {
-  height: var(--control-item-lg);
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  cursor: default;
-}
-.kv-wheel-item.is-empty {
-  visibility: hidden;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 .kv-wheel-unit {
   font-family: var(--font-mono);
@@ -1037,24 +1028,19 @@ div.kv-row-main {
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
-.kv-wheel-sm .kv-wheel-item {
-  height: var(--space-8);
+.kv-wheel-unit-fixe {
+  position: absolute;
+  right: var(--inset-lg);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  z-index: 1;
 }
-.kv-wheel-sm .kv-wheel-item.is-on {
-  height: var(--space-10);
+.kv-wheel-sm .kv-wheel-item {
   font-size: 24px;
 }
-.kv-wheel-sm .kv-wheel-item.is-near {
-  font-size: 17px;
-}
-.kv-wheel-sm .kv-wheel-item.is-far {
-  font-size: 14px;
-}
-.kv-wheel-sm .kv-wheel-band {
-  top: calc(var(--space-8) * 2);
-  height: var(--space-10);
-}
-
 /* ---------- Sport · GoalTile (multi-select tile, onboarding) ---------- */
 .kv-goal {
   position: relative;

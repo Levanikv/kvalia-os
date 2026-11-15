@@ -7,8 +7,8 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Toast";
 import { chrono, cocher, demarrer, terminer } from "../../actions";
-import { FicheExercice, type Repos } from "./FicheExercice";
-import { VideoImmersive } from "./VideoImmersive";
+import { type Apercu, FicheExercice, type Repos } from "./FicheExercice";
+import { FeuilleVideo, type Video } from "./FeuilleVideo";
 import { formatChrono, useMaintenant } from "./temps";
 
 export type SerieVue = { reps: number | null; charge_kg: number | null; le: string };
@@ -86,6 +86,7 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
 
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
+  const [apercu, setApercu] = useState<Apercu | null>(null);
   const [feuille, setFeuille] = useState<null | "rates" | "ressenti" | "quitter">(null);
   const [rates, setRates] = useState<string[]>([]);
   const [ressenti, setRessenti] = useState<number | null>(null);
@@ -94,11 +95,17 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
   const [toast, setToast] = useState<{ message: string; action?: { label: string; onClick: () => void } } | null>(null);
   const [repos, setRepos] = useState<Repos | null>(null);
   const fermerToast = useCallback(() => setToast(null), []);
+  const fermerVideo = useCallback(() => {
+    setVideo(null);
+    setApercu(null);
+  }, []);
 
   const faite = seance.etat === "faite";
   const enCours = seance.etat === "en_cours";
   const enPause = enCours && !!seance.pause_le;
   const lectureSeule = !faite && !enCours && !seance.estAujourdhui;
+  // Une séance à venir ne se démarre pas, mais on peut déjà en remplacer un exercice ou régler une charge.
+  const peutModifier = !faite && !seance.estPassee;
   const maintenant = useMaintenant(enCours && !enPause);
   const secondes = chronoSecondes(seance, new Date(maintenant));
 
@@ -352,6 +359,8 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
         total={exos.length}
         seanceId={seance.id}
         modifiable={!faite && !lectureSeule}
+        peutModifier={peutModifier}
+        onApercu={setApercu}
         enPause={enPause}
         repos={repos && repos.exoId === ouvert ? repos : null}
         setRepos={setRepos}
@@ -374,16 +383,40 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
         }}
       />
 
-      <VideoImmersive
-        exo={exoVideo}
-        index={exos.findIndex((e) => e.id === video)}
-        total={exos.length}
-        modifiable={!faite && !lectureSeule}
-        onFermer={() => setVideo(null)}
-        onTermine={(e) => {
-          setVideo(null);
-          if (!e.fait) toggle(e);
-        }}
+      <FeuilleVideo
+        video={
+          exoVideo
+            ? ({
+                nom: exoVideo.nom,
+                video: exoVideo.video,
+                image: exoVideo.image,
+                detail: `${exoVideo.series} × ${exoVideo.reps}${exoVideo.partie ? ` · ${exoVideo.partie}` : ""}`,
+                repere: `Exercice ${exos.findIndex((e) => e.id === video) + 1} / ${exos.length}`,
+                stats: [
+                  ["Reps", exoVideo.reps],
+                  [
+                    "Charge",
+                    (exoVideo.charge_kg ?? exoVideo.derniere?.charge_kg) != null
+                      ? `${String(exoVideo.charge_kg ?? exoVideo.derniere?.charge_kg).replace(".", ",")} kg`
+                      : "—",
+                  ],
+                  ["Repos", exoVideo.repos_s ? formatChrono(exoVideo.repos_s) : "—"],
+                ],
+              } satisfies Video)
+            : apercu
+              ? { nom: apercu.nom, video: apercu.video, image: apercu.image, detail: apercu.detail, repere: "Équivalent proposé" }
+              : null
+        }
+        onFermer={fermerVideo}
+        action={
+          exoVideo && !exoVideo.fait && !faite && !lectureSeule
+            ? {
+                label: "Exercice terminé",
+                icone: "check",
+                onClick: () => toggle(exoVideo),
+              }
+            : null
+        }
       />
 
       {/* C01 · Des exercices ratés ? */}

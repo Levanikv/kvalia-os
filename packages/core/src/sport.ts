@@ -1569,7 +1569,7 @@ export async function dernieresCharges(db: KvaliaClient, userId: string, exercic
 // ---------- Remplacer un exercice ----------
 export type Equivalent = Pick<
   Ref,
-  "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url"
+  "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url" | "video_url"
 > & { score: number; raison: string };
 
 /**
@@ -1583,7 +1583,7 @@ export async function equivalents(db: KvaliaClient, exerciceId: string, materiel
   const famille = new Set([...orig.muscles, ...orig.muscles_secondaires].map((m) => m.toLowerCase()));
   const { data: cands } = await db
     .from("exercices_ref")
-    .select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url")
+    .select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url, video_url")
     .neq("id", exerciceId)
     .in("equipement", materiel.length ? materiel : (MATERIEL_CONNU as unknown as string[]));
   const interdits = new Set(exclure);

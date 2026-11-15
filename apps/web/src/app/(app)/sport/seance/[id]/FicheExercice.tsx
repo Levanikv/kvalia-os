@@ -10,7 +10,18 @@ import { formatChrono, useMaintenant } from "./temps";
 /** Repos entre deux séries : `restant` secondes à partir de `depuis` (ms) ; `depuis` nul = gelé (séance en pause). */
 export type Repos = { exoId: string; total: number; restant: number; depuis: number | null; serieValidee: number };
 
-type Equivalent = { id: string; nom: string; nom_fr: string | null; partie_corps: string | null; equipement: string | null; raison: string };
+type Equivalent = {
+  id: string;
+  nom: string;
+  nom_fr: string | null;
+  partie_corps: string | null;
+  equipement: string | null;
+  raison: string;
+  image_url: string | null;
+  video_url: string | null;
+};
+/** Vidéo à montrer dans la feuille vidéo (exercice de la séance ou équivalent proposé). */
+export type Apercu = { nom: string; video: string | null; image: string | null; detail: string };
 type Histo = { id: string; jour: string; charge_kg: number; series: number; reps: string; reps_faites: number | null };
 
 type Props = {
@@ -19,7 +30,12 @@ type Props = {
   total: number;
   seanceId: string;
   /** Faux pour une séance faite ou prévue un autre jour : lecture seule. */
+  /** Valider des séries (séance du jour, démarrable). */
   modifiable: boolean;
+  /** Remplacer l'exercice, régler la charge : séance pas faite et pas passée (même un autre jour). */
+  peutModifier: boolean;
+  /** Ouvre la feuille vidéo (vignette d'un équivalent). */
+  onApercu: (a: Apercu) => void;
   enPause: boolean;
   repos: Repos | null;
   setRepos: (r: Repos | null | ((r: Repos | null) => Repos | null)) => void;
@@ -42,7 +58,7 @@ export function FicheExercice(props: Props) {
   );
 }
 
-function Contenu({ exo, index, total, modifiable, enPause, repos, setRepos, onSerie, onTermine, onRemplace }: Props & { exo: ExoVue }) {
+function Contenu({ exo, index, total, modifiable, peutModifier, onApercu, enPause, repos, setRepos, onSerie, onTermine, onRemplace }: Props & { exo: ExoVue }) {
   const [, start] = useTransition();
   const [mode, setMode] = useState<"series" | "historique" | "remplacer">("series");
   const [charge, setCharge] = useState<number | null>(exo.charge_kg ?? exo.derniere?.charge_kg ?? null);
@@ -115,22 +131,27 @@ function Contenu({ exo, index, total, modifiable, enPause, repos, setRepos, onSe
     });
   }
 
-  const actions = modifiable ? (
-    <div className="flex gap-[var(--inline-md)]">
-      <button type="button" onClick={ouvrirRemplacer} className="kv-btn kv-btn-outline kv-btn-lg flex-1">
-        Remplacer
-      </button>
-      {toutFait ? (
-        <button type="button" onClick={() => onTermine({ ...exo, fait: true })} className="kv-btn kv-btn-primary kv-btn-lg flex-[1.4]">
-          Exercice terminé
-        </button>
-      ) : (
-        <button type="button" onClick={validerSerie} disabled={auRepos} className="kv-btn kv-btn-primary kv-btn-lg flex-[1.4]">
-          Valider la série {faites + 1}
-        </button>
-      )}
-    </div>
-  ) : null;
+  const actions =
+    modifiable || peutModifier ? (
+      <div className="flex gap-[var(--inline-md)]">
+        {peutModifier && (
+          <button type="button" onClick={ouvrirRemplacer} className={`kv-btn kv-btn-lg flex-1 ${modifiable ? "kv-btn-outline" : "kv-btn-primary"}`}>
+            <Icon name="swap_horiz" size={20} />
+            <span className="kv-btn-label">Remplacer</span>
+          </button>
+        )}
+        {modifiable &&
+          (toutFait ? (
+            <button type="button" onClick={() => onTermine({ ...exo, fait: true })} className="kv-btn kv-btn-primary kv-btn-lg flex-[1.4]">
+              Exercice terminé
+            </button>
+          ) : (
+            <button type="button" onClick={validerSerie} disabled={auRepos} className="kv-btn kv-btn-primary kv-btn-lg flex-[1.4]">
+              Valider la série {faites + 1}
+            </button>
+          ))}
+      </div>
+    ) : null;
 
   const tags = (
     <div className="flex flex-wrap gap-[var(--inline-sm)]">
@@ -148,7 +169,7 @@ function Contenu({ exo, index, total, modifiable, enPause, repos, setRepos, onSe
         <p className="kv-overline">Charge du jour</p>
         <p className="type-display-md">{charge === null ? "—" : `${String(charge).replace(".", ",")} kg`}</p>
       </div>
-      {modifiable && (
+      {peutModifier && (
         <div className="flex gap-[var(--inline-md)]">
           <button
             type="button"
@@ -194,13 +215,35 @@ function Contenu({ exo, index, total, modifiable, enPause, repos, setRepos, onSe
             {equiv.map((q, i) => {
               const on = choix === q.id;
               return (
-                <li key={q.id}>
+                <li
+                  key={q.id}
+                  className={`apparition flex items-center gap-[var(--inline-md)] rounded-[var(--radius-tile)] border p-[var(--inset-xs)] ${on ? "border-line-brand-solid bg-surface-container-brand-subtle" : "border-line-default bg-surface-container-default"}`}
+                  style={{ "--i": i } as React.CSSProperties}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onApercu({
+                        nom: nomAffiche(q),
+                        video: q.video_url,
+                        image: q.image_url,
+                        detail: `${exo.series} × ${exo.reps}${q.equipement ? ` · ${libelleMateriel(q.equipement)}` : ""}`,
+                      })
+                    }
+                    aria-label={`Vidéo : ${nomAffiche(q)}`}
+                    className="kv-exo-thumb shrink-0 overflow-hidden"
+                    style={q.image_url ? { backgroundImage: `url(${q.image_url})` } : undefined}
+                  >
+                    <span className="kv-exo-play" aria-hidden>
+                      <Icon name="play_arrow" size={16} filled />
+                    </span>
+                  </button>
                   <button
                     type="button"
                     role="radio"
                     aria-checked={on}
                     onClick={() => setChoix(q.id)}
-                    className={`flex w-full items-center gap-[var(--inline-lg)] rounded-[var(--radius-tile)] border p-[var(--inset-sm)] text-left ${on ? "border-line-brand-solid bg-surface-container-brand-subtle" : "border-line-default bg-surface-container-default"}`}
+                    className="flex min-w-0 flex-1 items-center gap-[var(--inline-md)] text-left"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-[var(--inline-sm)]">
