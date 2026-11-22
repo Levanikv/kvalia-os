@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { LIBELLES, type ParametresSport } from "@kvalia/core";
+import { CHOIX_MORPHO, CHOIX_PREFERENCE_MATERIEL, LIBELLES, type Morpho, type ParametresSport, type PreferenceMateriel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { enregistrerParametres, genererProgramme } from "../../sport/actions";
 
@@ -114,6 +114,21 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
           onChange={(v) => maj("niveau", v as ParametresSport["niveau"])}
         />
         <Compteur label="Semaines" valeur={p.semaines} min={4} max={24} pas={4} onChange={(v) => maj("semaines", v)} />
+      </Section>
+
+      <Section titre="Ta façon de t’entraîner" note="Oriente le choix des exercices ; la morphologie ajuste aussi calories et protéines.">
+        <Choix
+          label="Matériel préféré"
+          options={CHOIX_PREFERENCE_MATERIEL.map((o) => [o.id, o.titre])}
+          valeur={p.profil?.preference_materiel ?? "mix"}
+          onChange={(v) => maj("profil", { ...(p.profil ?? {}), preference_materiel: v as PreferenceMateriel })}
+        />
+        <Choix
+          label="Morphologie"
+          options={CHOIX_MORPHO.map((o) => [o.id, o.titre])}
+          valeur={p.profil?.morpho ?? ""}
+          onChange={(v) => maj("profil", { ...(p.profil ?? {}), morpho: v as Morpho })}
+        />
       </Section>
 
       <Section titre="Matériel disponible" note="Seuls les exercices faisables avec ce matériel sont proposés.">

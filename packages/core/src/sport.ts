@@ -22,6 +22,20 @@ export const TypeSalle = z.enum(["complete", "basique"]);
 export const MaterielMaison = z.enum(["halteres", "barre", "kettlebell", "elastiques", "traction", "banc"]);
 export const Douleur = z.enum(["epaule", "poignet", "genou", "dos", "nuque"]);
 export const ChoixNutrition = z.enum(["ia", "saisie", "plus_tard"]);
+/**
+ * Matériel préféré : oriente le choix des exercices quand plusieurs se valent. Poids libres et machines donnent les
+ * mêmes résultats (force, muscle) : on suit donc la préférence, c'est elle qui fait tenir le programme
+ * (docs/decisions/0011-programme-fonde-sur-les-preuves.md).
+ */
+export const PreferenceMateriel = z.enum(["mix", "poids_libres", "machines", "poulies"]);
+export type PreferenceMateriel = z.infer<typeof PreferenceMateriel>;
+/**
+ * Morphologie = composition corporelle « à l'œil » (pas un somatotype) : deux personnes de 95 kg n'ont ni la même
+ * masse maigre ni les mêmes exercices adaptés. Sert aux cibles kcal / protéines et à écarter les exercices
+ * au poids du corps trop exigeants quand la masse grasse est élevée.
+ */
+export const Morpho = z.enum(["mince", "athletique", "costaud", "rond"]);
+export type Morpho = z.infer<typeof Morpho>;
 export const ProfilSport = z
   .object({
     sexe: z.enum(["homme", "femme"]),
@@ -44,6 +58,8 @@ export const ProfilSport = z
     niveau: Niveau,
     douleurs: z.array(Douleur),
     nutrition: ChoixNutrition,
+    morpho: Morpho,
+    preference_materiel: PreferenceMateriel,
   })
   .partial();
 export type ProfilSport = z.infer<typeof ProfilSport>;
@@ -142,7 +158,36 @@ export const LIBELLES = {
   objectif: { hypertrophie: "Prise de muscle", force: "Force", perte_de_gras: "Perte de gras", endurance: "Endurance" } as Record<string, string>,
   niveau: { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" } as Record<string, string>,
   focus: { hypertrophie: "Hypertrophie", force: "Force", mixte: "Mixte", deload: "Décharge" } as Record<string, string>,
+  preference_materiel: { mix: "Mix", poids_libres: "Poids libres", machines: "Machines", poulies: "Poulies" } as Record<string, string>,
+  morpho: { mince: "Mince", athletique: "Athlétique", costaud: "Costaud", rond: "Rond" } as Record<string, string>,
 };
+
+/** Choix proposés à l'écran (onboarding, nouveau programme, réglages) : libellé + ligne d'aide. */
+export const CHOIX_PREFERENCE_MATERIEL: Array<{ id: PreferenceMateriel; titre: string; aide: string }> = [
+  { id: "mix", titre: "Mix", aide: "Le meilleur exercice pour chaque muscle, tout matériel confondu" },
+  { id: "poids_libres", titre: "Poids libres", aide: "Barres et haltères d’abord" },
+  { id: "machines", titre: "Machines", aide: "Mouvements guidés, faciles à charger" },
+  { id: "poulies", titre: "Poulies", aide: "Tension continue, câbles dès que possible" },
+];
+export const CHOIX_MORPHO: Array<{ id: Morpho; titre: string; aide: string }> = [
+  { id: "mince", titre: "Mince", aide: "Fin, peu de gras, du mal à prendre" },
+  { id: "athletique", titre: "Athlétique", aide: "Dessiné, muscles visibles" },
+  { id: "costaud", titre: "Costaud", aide: "Large et musclé, un peu de gras" },
+  { id: "rond", titre: "Rond", aide: "Plus de gras que de muscle pour l’instant" },
+];
+
+/** Masse grasse estimée (fraction du poids) selon la morphologie et le sexe — ordre de grandeur, pas une mesure. */
+const MASSE_GRASSE: Record<Morpho, { homme: number; femme: number }> = {
+  mince: { homme: 0.12, femme: 0.2 },
+  athletique: { homme: 0.15, femme: 0.23 },
+  costaud: { homme: 0.2, femme: 0.28 },
+  rond: { homme: 0.3, femme: 0.38 },
+};
+/** Masse maigre estimée (kg) ; `null` sans morphologie ou sans sexe. */
+export function masseMaigre(profil: Pick<ProfilSport, "poids_kg" | "morpho" | "sexe">): number | null {
+  if (profil.poids_kg == null || !profil.morpho || !profil.sexe) return null;
+  return Math.round(profil.poids_kg * (1 - MASSE_GRASSE[profil.morpho][profil.sexe]) * 10) / 10;
+}
 
 // ---------- Onboarding → paramètres ----------
 const MATERIEL_SALLE: Record<z.infer<typeof TypeSalle>, string[]> = {
@@ -225,6 +270,9 @@ export const ReponsesProgramme = z.object({
   duree_min: z.number().int().min(30).max(120),
   /** Jours où l'on veut une de ses séances perso plutôt qu'une séance générée. */
   perso: z.array(z.object({ jour: z.number().int().min(0).max(6), modele_id: z.string().uuid() })).default([]),
+  /** Matériel préféré et morphologie : demandés avant de créer le programme, rangés dans le profil. */
+  preference_materiel: PreferenceMateriel.optional(),
+  morpho: Morpho.optional(),
 });
 export type ReponsesProgramme = z.infer<typeof ReponsesProgramme>;
 
@@ -242,7 +290,14 @@ const OBJECTIF_INVERSE: Record<ParametresSport["objectif"], z.infer<typeof Objec
 export function parametresDepuisReponses(base: ParametresSport, r: ReponsesProgramme): ParametresSport {
   const jours = [...new Set(r.jours)].sort((a, b) => a - b);
   const p = appliquerProfil(base, { objectifs: [r.objectif], echeance_semaines: r.semaines, jours, seances_semaine: jours.length, duree_min: r.duree_min });
-  return ParametresSport.parse({ ...p, seances_perso: (r.perso ?? []).filter((x) => jours.includes(x.jour)) });
+  const profil = { ...(base.profil ?? {}) };
+  if (r.preference_materiel) profil.preference_materiel = r.preference_materiel;
+  if (r.morpho) profil.morpho = r.morpho;
+  return ParametresSport.parse({
+    ...p,
+    seances_perso: (r.perso ?? []).filter((x) => jours.includes(x.jour)),
+    ...(Object.keys(profil).length ? { profil } : {}),
+  });
 }
 
 /** Réponses pré-remplies depuis les paramètres actuels (« Modifier le programme »). */
@@ -256,6 +311,8 @@ export function reponsesDepuisParametres(p: ParametresSport): ReponsesProgramme 
     jours: js,
     duree_min: Math.min(120, Math.max(30, p.duree_min)),
     perso: p.seances_perso.filter((x) => js.includes(x.jour)),
+    preference_materiel: p.profil?.preference_materiel ?? "mix",
+    morpho: p.profil?.morpho,
   };
 }
 
@@ -290,21 +347,25 @@ export function poidsCibleParDefaut(profil: Pick<ProfilSport, "poids_kg" | "obje
 /**
  * Cibles énergétiques depuis le profil (Mifflin-St Jeor × activité, ajusté à l'objectif de poids) :
  * kcal un jour de repos, kcal un jour de séance (+ durée × 5,7), protéines (2 g/kg du poids de référence).
- * `null` tant qu'il manque sexe, âge, taille, poids ou activité.
+ * Avec une morphologie, le métabolisme de base est la moyenne de Mifflin (poids total) et de Katch-McArdle
+ * (masse maigre estimée), et les protéines valent 2,4 g/kg de masse maigre : à poids égal, un profil costaud
+ * a une cible plus haute qu'un profil rond. `null` tant qu'il manque sexe, âge, taille, poids ou activité.
  */
 export function ciblesDepuisProfil(profil: ProfilSport | undefined): { kcal_repos: number; kcal_seance: number; proteines_g: number } | null {
   if (!profil?.sexe || profil.age == null || profil.taille_cm == null || profil.poids_kg == null || !profil.activite) return null;
   const kg = profil.poids_kg;
   const cible = profil.poids_cible_kg ?? poidsCibleParDefaut(profil) ?? kg;
   const ecart = cible - kg;
-  const bmr = 10 * kg + 6.25 * profil.taille_cm - 5 * profil.age + (profil.sexe === "homme" ? 5 : -161);
+  const mifflin = 10 * kg + 6.25 * profil.taille_cm - 5 * profil.age + (profil.sexe === "homme" ? 5 : -161);
+  const maigre = masseMaigre(profil);
+  const bmr = maigre == null ? mifflin : (mifflin + 370 + 21.6 * maigre) / 2;
   const base = bmr * { assis: 1.3, actif: 1.45, tres_actif: 1.6 }[profil.activite];
   const ajust = ecart < -0.4 ? 0.85 : ecart > 0.4 ? 1.08 : 1;
   const arrondi = (x: number) => Math.round(x / 10) * 10;
   return {
     kcal_repos: arrondi(base * ajust),
     kcal_seance: arrondi(base * ajust + (profil.duree_min ?? 60) * 5.7),
-    proteines_g: Math.round(2 * Math.max(cible, kg - 5)),
+    proteines_g: Math.round(maigre == null ? 2 * Math.max(cible, kg - 5) : 2.4 * maigre),
   };
 }
 
@@ -393,6 +454,8 @@ const S = {
     compose: true,
     requis: /pulldown|pull-up|pull up|chin|pullover/i,
     prefere: /pulldown|pull-up/i,
+    // Le tirage bras tendus est une isolation : pas le tirage vertical principal d'une séance.
+    exclure: /straight arm|one arm|kneeling/i,
   } as Slot,
   epaulesCompose: { nom: "Épaules — développé", parties: ["shoulders"], cibles: ["delts", "deltoid"], compose: true, prefere: /press/i } as Slot,
   epaulesLateral: {
@@ -473,7 +536,14 @@ const S = {
   } as Slot,
   obliques: { nom: "Obliques / gainage", parties: ["waist"], cibles: ["obliques"], prefere: /twist|side|plank|woodchop/i, isolation: true } as Slot,
   trapezes: { nom: "Trapèzes", parties: ["back", "shoulders"], cibles: ["traps"], requis: /shrug|upright/i, prefere: /shrug/i, isolation: true } as Slot,
-  cardioFin: { nom: "Finisher cardio", parties: ["cardio"], cibles: ["cardiovascular"], prefere: /burpee|jump rope|rope/i } as Slot,
+  // Finisher de 8 min : un effort continu et dosable (vélo, elliptique, tapis), pas 8 min de burpees.
+  cardioFin: {
+    nom: "Finisher cardio",
+    parties: ["cardio"],
+    cibles: ["cardiovascular"],
+    requis: /bike|elliptical|treadmill|jump rope|running|walk/i,
+    prefere: /bike|elliptical|treadmill|walk/i,
+  } as Slot,
 };
 
 type Modele = { type: string; titre: string; slots: Slot[] };
@@ -508,9 +578,34 @@ const RANG_NIVEAU: Record<string, number> = { beginner: 0, intermediate: 1, adva
 const ECHAUFFEMENT_S = 8 * 60;
 const TRANSITION_S = 75;
 
+/** Matériel de chaque préférence (valeurs `equipement` du référentiel). « mix » n'en privilégie aucun. */
+const FAMILLE_MATERIEL: Record<PreferenceMateriel, string[]> = {
+  mix: [],
+  poids_libres: ["barbell", "dumbbell", "ez barbell", "kettlebell", "weighted"],
+  machines: ["leverage machine", "smith machine", "sled machine"],
+  poulies: ["cable"],
+};
+/** Exercices au poids du corps qui demandent de porter ou de projeter tout son poids : écartés pour un profil « rond ». */
+const POIDS_DU_CORPS_EXIGEANT = /pull-?up|chin-?up|\bdips?\b|burpee|jump|plyo|pistol|muscle-?up|handstand|sprint|running|mountain climber|box/i;
+/** Mouvements à éviter par zone douloureuse (noms du référentiel, en anglais). */
+const A_EVITER: Record<z.infer<typeof Douleur>, RegExp> = {
+  epaule: /behind|upright row|\bdips?\b|military|overhead press|handstand/i,
+  poignet: /push-?up|handstand|wrist|reverse curl/i,
+  genou: /lunge|jump|sissy|pistol|step-?up|box|burpee/i,
+  dos: /good morning|bent.?over|deadlift|hyperextension|t-bar/i,
+  nuque: /behind|shrug|upright row|neck/i,
+};
+
+/** L'exercice est-il déconseillé pour ce profil (morphologie, douleurs) ? */
+export function deconseille(r: Pick<Ref, "nom" | "equipement" | "partie_corps">, profil: ProfilSport | undefined): boolean {
+  if (!profil) return false;
+  if (profil.morpho === "rond" && (r.equipement === "body weight" || r.partie_corps === "cardio") && POIDS_DU_CORPS_EXIGEANT.test(r.nom)) return true;
+  return (profil.douleurs ?? []).some((d) => A_EVITER[d].test(r.nom));
+}
+
 function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set<string>, graine: number): Ref | null {
   const niveauMax = RANG_NIVEAU[params.niveau] ?? 1;
-  const cands = refs.filter((r) => {
+  const possibles = refs.filter((r) => {
     if (dejaPris.has(r.id)) return false;
     if (!r.equipement || !params.materiel.includes(r.equipement)) return false;
     if ((RANG_NIVEAU[r.difficulte ?? "beginner"] ?? 0) > niveauMax) return false;
@@ -523,7 +618,16 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
     if (slot.compose !== undefined && r.compose !== slot.compose) return false;
     return true;
   });
-  if (cands.length === 0) return null;
+  if (possibles.length === 0) return null;
+  // Morphologie et douleurs : on écarte les exercices déconseillés, sauf s'il ne reste rien d'autre pour ce créneau.
+  const adaptes = possibles.filter((r) => !deconseille(r, params.profil));
+  let cands = adaptes.length ? adaptes : possibles;
+  // Matériel préféré : s'il offre un bon exercice pour ce créneau (motif préféré), on ne choisit que dans cette
+  // famille ; sinon elle garde un avantage au score, sans imposer un exercice hors sujet.
+  const famille = FAMILLE_MATERIEL[params.profil?.preference_materiel ?? "mix"];
+  const dansFamille = (r: Ref) => famille.includes(r.equipement ?? "");
+  const bons = cands.filter((r) => dansFamille(r) && (!slot.prefere || slot.prefere.test(r.nom)));
+  if (bons.length) cands = bons;
   // score : motif préféré, matériel « sérieux » d'abord, difficulté proche du niveau
   const poidsMateriel: Record<string, number> = {
     barbell: 3,
@@ -542,6 +646,7 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
   };
   const score = (r: Ref) =>
     (slot.prefere?.test(r.nom) ? 10 : 0) +
+    (dansFamille(r) ? 4 : 0) +
     (poidsMateriel[r.equipement ?? ""] ?? 0) +
     (3 - Math.abs((RANG_NIVEAU[r.difficulte ?? "beginner"] ?? 0) - niveauMax)) -
     (r.unilateral && slot.compose ? 2 : 0);

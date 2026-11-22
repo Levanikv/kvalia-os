@@ -15,3 +15,4 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0008](0008-navigation-menu-apps-barre-par-app.md) | Navigation : menu Applications + barre par app + feuilles (remplace la tab bar globale)             | acceptée |
 | [0009](0009-outillage-agents.md)                   | Outillage pour coder avec des agents : CLAUDE.md en couches, tests du noyau, doc générée, Biome, CI | acceptée |
 | [0010](0010-tiime-api-interne-lecture-seule.md)    | Entreprise : synchro Tiime par son API interne, en lecture seule, connexion SMS côté agent          | acceptée |
+| [0011](0011-programme-fonde-sur-les-preuves.md)    | Sport : règles fondées sur les sources récentes — matériel préféré, morphologie, douleurs           | acceptée |

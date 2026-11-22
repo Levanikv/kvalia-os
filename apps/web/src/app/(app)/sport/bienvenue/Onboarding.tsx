@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { ParametresSport } from "@kvalia/core";
+import { CHOIX_MORPHO, CHOIX_PREFERENCE_MATERIEL, type ParametresSport } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { LigneChoix, TuileChoix } from "@/components/kv/Choix";
 import { Ground } from "@/components/kv/Ground";
@@ -79,6 +79,12 @@ const Q: Record<number, { sur: string; titre: string; sous: string }> = {
   11: { sur: "Niveau", titre: "Ton niveau en salle ?", sous: "Pour le choix des exercices et les charges de départ." },
   12: { sur: "Limites", titre: "Des douleurs ou blessures ?", sous: "Plusieurs choix possibles." },
   13: { sur: "Nutrition · optionnel", titre: "Et côté assiette ?", sous: "Tes calories suivent déjà tes séances." },
+  15: {
+    sur: "Morphologie",
+    titre: "Tu te décrirais comment ?",
+    sous: "Le poids seul ne dit rien : ça ajuste tes calories, tes protéines et le choix des exercices.",
+  },
+  16: { sur: "Matériel préféré", titre: "Tu préfères quel matériel ?", sous: "Les résultats sont les mêmes : on prend ce que tu aimes utiliser." },
   14: { sur: "Démarrage", titre: "Quand commencer ?", sous: "Ton premier jour de séance. Si aujourd’hui en est un, tu peux démarrer tout de suite." },
 };
 const ETAPES_GENERATION = [
@@ -108,6 +114,8 @@ type Etat = {
   niveau: "beginner" | "intermediate" | "advanced";
   douleurs: Douleur[];
   nutrition: "ia" | "saisie" | "plus_tard" | null;
+  morpho: Profil["morpho"] | null;
+  preference: NonNullable<Profil["preference_materiel"]>;
 };
 
 function depuisProfil(p: Profil): Etat {
@@ -132,6 +140,8 @@ function depuisProfil(p: Profil): Etat {
     niveau: p.niveau ?? "intermediate",
     douleurs: p.douleurs ?? [],
     nutrition: p.nutrition ?? null,
+    morpho: p.morpho ?? null,
+    preference: p.preference_materiel ?? "mix",
   };
 }
 
@@ -155,6 +165,8 @@ function versProfil(a: Etat): Profil {
     niveau: a.niveau,
     douleurs: a.douleurs,
     nutrition: a.nutrition ?? undefined,
+    morpho: a.morpho ?? undefined,
+    preference_materiel: a.preference,
   };
 }
 
@@ -190,10 +202,12 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
 
   // Étapes conditionnelles : poids cible si sèche / prise de muscle (ou aucun choix), matériel si la maison est concernée.
   const etapes = useMemo(() => {
-    const l = [1, 2, 3, 4];
+    const l = [1, 2, 15, 3, 4];
     if (!a.objectifs.length || a.objectifs.includes("seche") || a.objectifs.includes("masse")) l.push(5);
     l.push(6, 7, 8);
     if (a.lieu !== "salle") l.push(9);
+    // Matériel préféré : seulement s'il y a le choix (une salle).
+    if (a.lieu !== "maison") l.push(16);
     l.push(10, 11, 12, 13, 14);
     return l;
   }, [a.objectifs, a.lieu]);
@@ -210,7 +224,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
   const semainesBesoin = Math.max(1, Math.ceil(Math.abs(ecart) / rythmeKg));
   const placesJours = a.jours.filter(Boolean).length;
   const diff = a.seances - placesJours;
-  const bloque = (etape === 4 && a.objectifs.length === 0) || (etape === 6 && diff !== 0) || (etape === 13 && !a.nutrition);
+  const bloque = (etape === 15 && !a.morpho) || (etape === 4 && a.objectifs.length === 0) || (etape === 6 && diff !== 0) || (etape === 13 && !a.nutrition);
 
   // Animation de génération : on avance les 5 lignes pendant que le serveur génère.
   useEffect(() => {
@@ -573,6 +587,20 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                   </div>
                 )}
 
+                {etape === 15 && (
+                  <div className="grid grid-cols-2 gap-[var(--inline-sm)]" role="radiogroup" aria-label="Morphologie">
+                    {CHOIX_MORPHO.map((o) => (
+                      <TuileChoix key={o.id} titre={o.titre} description={o.aide} actif={a.morpho === o.id} onClick={() => maj("morpho", o.id)} />
+                    ))}
+                  </div>
+                )}
+                {etape === 16 && (
+                  <div role="radiogroup" aria-label="Matériel préféré">
+                    {CHOIX_PREFERENCE_MATERIEL.map((o) => (
+                      <LigneChoix key={o.id} titre={o.titre} description={o.aide} actif={a.preference === o.id} onClick={() => maj("preference", o.id)} />
+                    ))}
+                  </div>
+                )}
                 {etape === 14 && (
                   <ChoixDate
                     valeur={debutValide}

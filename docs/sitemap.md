@@ -12,8 +12,9 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /quotidien/taches             Tâches (dues, à venir, faites)
 │   └── /quotidien/habitudes          Habitudes du jour + séries
 ├── /sport                Mini-app Sport (sombre)
-│   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 12–13 questions
-│   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : objectifs, lieu, matériel…)
+│   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 13–15 questions
+│   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : morphologie, objectifs,
+│   │                                 lieu, matériel, matériel préféré…)
 │   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
 │   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
 │   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
@@ -42,7 +43,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /sport/ma-seance/nouvelle     Créer une séance perso (plein écran) : nom, type, exercices (bibliothèque), séries,
 │   │                                 reps, repos, charge, ordre
 │   ├── /sport/ma-seance/[id]         Ma séance : modifier, « Au programme » (chaque semaine un jour ou une fois), supprimer
-│   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → échéance → rythme (jours,
+│   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → matériel préféré (mix, poids
+│   │                                 libres, machines, poulies) et morphologie → échéance → rythme (jours,
 │   │                                 séance générée ou une de mes séances par jour, durée) + premier jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)

@@ -87,7 +87,7 @@ export default async function Page({ searchParams }: Props) {
     : programme && pos?.avant
       ? "Sport · programme à venir"
       : "Sport";
-  const etapesOnboarding = 13;
+  const etapesOnboarding = 15;
   const defisDuJour = defis.filter((d) => d.du_jour);
   const sansProgrammePret = !programme && !!ob?.termine;
 

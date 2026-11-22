@@ -95,12 +95,12 @@ Lit les paramètres du programme sportif (rythme salle/boxe, jours, durée, mat�
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
-- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel)
+- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition, morpho, preference_materiel } (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel)
 
 ## `regler_sport`
 
-Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.
+Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition, `preference_materiel` : mix / poids_libres / machines / poulies, `morpho` : mince / athletique / costaud / rond) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.
 
 **Entrée**
 - `rythme` : objet { salle, boxe } — défaut `{"salle":4,"boxe":1}` (optionnel)
@@ -114,7 +114,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `poids_kg` : nombre (optionnel) (optionnel)
 - `effort_s_par_serie` : entier — défaut `40` (optionnel)
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]` (optionnel)
-- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel) (optionnel)
+- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition, morpho, preference_materiel } (optionnel) (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel) (optionnel)
 
 **Sortie**
@@ -129,12 +129,12 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
-- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition } (optionnel)
+- `profil` : objet { sexe, age, taille_cm, poids_kg, activite, objectifs, poids_cible_kg, seances_semaine, jours, duree_min, lieu, salle, materiel_maison, evenement, echeance_semaines, niveau, douleurs, nutrition, morpho, preference_materiel } (optionnel)
 - `onboarding` : objet { etape, termine, passe } (optionnel)
 
 ## `generer_programme` — à confirmer
 
-Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.
+Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.
 
 **Entrée**
 - `debut` : string (date) (optionnel) — Premier jour souhaité (aujourd'hui possible). Un programme commence toujours un jour de séance : si ce jour n'en est pas un, le début passe au prochain jour de séance. Par défaut : le prochain jour de séance à partir de demain. Les séances de l'ancien programme sont remplacées à partir de ce jour.

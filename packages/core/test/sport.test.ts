@@ -34,6 +34,9 @@ import {
   seriesFaites,
   validerSerie,
   volumeSeance,
+  ciblesDepuisProfil,
+  deconseille,
+  masseMaigre,
 } from "../src/sport";
 import { executer } from "../src/actions";
 import { USER, exercicesRef, fausseDb } from "./fausse-db";
@@ -518,7 +521,7 @@ describe("parcours « Nouveau programme » (onglet Programme)", () => {
   it("pré-remplit « Modifier » depuis les paramètres, aller-retour stable", () => {
     const base = ParametresSport.parse({ objectif: "hypertrophie", semaines: 8, jours_salle: [1, 2, 4, 5], rythme: { salle: 3, boxe: 0 }, duree_min: 60 });
     const r = reponsesDepuisParametres(base);
-    expect(r).toEqual({ objectif: "masse", semaines: 8, jours: [1, 2, 4], duree_min: 60, perso: [] });
+    expect(r).toEqual({ preference_materiel: "mix", objectif: "masse", semaines: 8, jours: [1, 2, 4], duree_min: 60, perso: [] });
     const p = parametresDepuisReponses(base, r);
     expect(reponsesDepuisParametres(p)).toEqual(r);
   });
@@ -718,5 +721,79 @@ describe("un programme commence un jour de séance", () => {
     await genererProgramme(db, USER, params, "2026-11-12");
     const duJour = db.tables.seances.find((s: any) => s.jour === "2026-11-12");
     expect((await demarrerSeance(db, USER, duJour.id)).etat).toBe("en_cours");
+  });
+});
+
+describe("matériel préféré, morphologie, douleurs", () => {
+  const generer = async (profil: NonNullable<ParametresSport["profil"]>, objectif: ParametresSport["objectif"] = "hypertrophie") => {
+    const db = base();
+    await genererProgramme(
+      db,
+      USER,
+      { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 4, boxe: 0 }, jours_boxe: [], objectif, poids_kg: 90, profil },
+      "2026-11-09",
+    );
+    const parId = new Map(exercicesRef().map((e) => [e.id, e]));
+    return db.tables.exercices_seance.map((e: any) => parId.get(e.exercice_id)!);
+  };
+  const part = (exos: any[], materiel: string[]) => exos.filter((e) => materiel.includes(e.equipement)).length / exos.length;
+
+  it("la préférence oriente le choix : plus de machines, de poulies ou de poids libres que le mix", async () => {
+    const mix = await generer({ preference_materiel: "mix" });
+    const machines = await generer({ preference_materiel: "machines" });
+    const poulies = await generer({ preference_materiel: "poulies" });
+    const libres = await generer({ preference_materiel: "poids_libres" });
+    const M = ["leverage machine", "smith machine", "sled machine"];
+    const L = ["barbell", "dumbbell", "ez barbell", "kettlebell", "weighted"];
+    expect(part(machines, M)).toBeGreaterThan(0.7);
+    expect(part(machines, M)).toBeGreaterThan(part(mix, M) + 0.3);
+    expect(part(poulies, ["cable"])).toBeGreaterThan(part(mix, ["cable"]) + 0.15);
+    expect(part(libres, L)).toBeGreaterThanOrEqual(part(mix, L));
+    // Une préférence n'impose jamais un exercice hors sujet : les jambes gardent un vrai composé (squat, presse, fente).
+    expect(poulies.some((e) => /squat|leg press|lunge/i.test(e.nom))).toBe(true);
+  });
+
+  it("profil rond : ni tractions, ni dips, ni sauts, ni course — tirage à la poulie et cardio sans impact", async () => {
+    const exos = await generer({ morpho: "rond" }, "perte_de_gras");
+    expect(exos.filter((e) => /pull-?up|chin-?up|dip|burpee|jump|running/i.test(e.nom) && e.equipement !== "leverage machine")).toEqual([]);
+    expect(exos.some((e) => /running/i.test(e.nom))).toBe(false);
+    expect(exos.some((e) => /pulldown/i.test(e.nom))).toBe(true);
+    expect(exos.some((e) => /bike|elliptical|walk/i.test(e.nom))).toBe(true);
+  });
+
+  it("douleurs : les mouvements à risque pour la zone sont écartés", async () => {
+    const genou = await generer({ douleurs: ["genou"] });
+    expect(genou.filter((e) => /lunge|jump|sissy|pistol|step-?up/i.test(e.nom))).toEqual([]);
+    const dos = await generer({ douleurs: ["dos"] });
+    expect(dos.filter((e) => /good morning|bent.?over|deadlift/i.test(e.nom))).toEqual([]);
+    expect(deconseille({ nom: "Barbell Bench Press", equipement: "barbell", partie_corps: "chest" }, { douleurs: ["genou"], morpho: "rond" })).toBe(false);
+  });
+
+  it("à poids égal, costaud et rond n'ont pas les mêmes cibles (masse maigre)", () => {
+    const commun = { sexe: "homme" as const, age: 30, taille_cm: 180, poids_kg: 95, activite: "actif" as const, objectifs: ["sante" as const] };
+    const costaud = ciblesDepuisProfil({ ...commun, morpho: "costaud" })!;
+    const rond = ciblesDepuisProfil({ ...commun, morpho: "rond" })!;
+    const sans = ciblesDepuisProfil(commun)!;
+    expect(masseMaigre({ ...commun, morpho: "costaud" })).toBe(76);
+    expect(masseMaigre({ ...commun, morpho: "rond" })).toBe(66.5);
+    expect(costaud.kcal_repos).toBeGreaterThan(rond.kcal_repos + 100);
+    expect(costaud.proteines_g).toBe(182);
+    expect(rond.proteines_g).toBe(160);
+    expect(sans.proteines_g).toBe(190);
+  });
+
+  it("le parcours « Nouveau programme » range matériel préféré et morphologie dans le profil", () => {
+    const depart = ParametresSport.parse({ profil: { niveau: "advanced", douleurs: ["epaule"] } });
+    const p = parametresDepuisReponses(depart, {
+      objectif: "masse",
+      semaines: 12,
+      jours: [1, 3, 5],
+      duree_min: 60,
+      perso: [],
+      preference_materiel: "poulies",
+      morpho: "costaud",
+    });
+    expect(p.profil).toMatchObject({ niveau: "advanced", douleurs: ["epaule"], preference_materiel: "poulies", morpho: "costaud" });
+    expect(reponsesDepuisParametres(p)).toMatchObject({ preference_materiel: "poulies", morpho: "costaud" });
   });
 });

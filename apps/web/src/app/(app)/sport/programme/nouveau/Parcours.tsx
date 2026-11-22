@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
+  CHOIX_MORPHO,
+  CHOIX_PREFERENCE_MATERIEL,
   LIBELLES,
   parametresDepuisReponses,
   phasesProgramme,
@@ -55,7 +57,8 @@ type Props = {
 
 /**
  * Parcours « Nouveau programme » / « Modifier le programme » (maquettes 03 → 05, 09, 08, 13), sans les questions
- * de profil (niveau, lieu, douleurs, repères : déjà connus). Objectif → échéance → rythme et premier jour →
+ * de profil (niveau, lieu, douleurs, repères : déjà connus). Objectif → matériel préféré et morphologie → échéance →
+ * rythme et premier jour →
  * proposition (phases et semaine type calculées par le noyau) → génération → « C'est parti ».
  */
 export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, remplace, modeles }: Props) {
@@ -89,7 +92,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
   })();
   const date = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", o);
   const titreObjectif = OBJECTIFS.find((o) => o.id === r.objectif)?.t ?? LIBELLES.objectif[params.objectif];
-  const total = 4; // 3 questions + proposition
+  const total = 5; // 4 questions + proposition
   const vue = ecran === "generation" && resultat && gen >= ETAPES_GENERATION.length ? "pret" : ecran;
 
   function maj<K extends keyof ReponsesProgramme>(k: K, v: ReponsesProgramme[K]) {
@@ -165,6 +168,50 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
 
               {etape === 1 && (
                 <>
+                  <Titre
+                    sur="Ta façon de t’entraîner"
+                    titre="Tu préfères quel matériel ?"
+                    aide="Poids libres et machines donnent les mêmes résultats : on prend ce que tu aimes utiliser, c’est ce qui fait tenir un programme."
+                  />
+                  <div className="flex flex-col gap-[var(--stack-sm)]" role="radiogroup" aria-label="Matériel préféré">
+                    {CHOIX_PREFERENCE_MATERIEL.map((o) => (
+                      <Option
+                        key={o.id}
+                        titre={o.titre}
+                        description={o.aide}
+                        actif={(r.preference_materiel ?? "mix") === o.id}
+                        onClick={() => maj("preference_materiel", o.id)}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-[var(--stack-sm)]">
+                    <div>
+                      <h2 className="type-title-sm">Ta morphologie aujourd’hui</h2>
+                      <p className="type-body-sm text-fg-secondary">
+                        Le poids seul ne dit rien : elle ajuste tes calories, tes protéines et écarte les exercices mal adaptés.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-[var(--inline-sm)]" role="radiogroup" aria-label="Morphologie">
+                      {CHOIX_MORPHO.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={r.morpho === o.id}
+                          onClick={() => maj("morpho", o.id)}
+                          className={`kv-goal ${r.morpho === o.id ? "is-on" : ""}`}
+                        >
+                          <span className="type-label-lg">{o.titre}</span>
+                          <span className="kv-goal-desc">{o.aide}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {etape === 2 && (
+                <>
                   <Titre sur="Échéance" titre="Tu as une date en tête ?" aide="Avec une échéance, l’IA découpe le programme en phases jusqu’au jour J." />
                   <div className="flex flex-col gap-[var(--stack-sm)]" role="radiogroup" aria-label="Échéance">
                     <Option titre="Oui, une échéance" description="Test de force, vacances, événement…" actif={echeance} onClick={() => setEcheance(true)} />
@@ -186,7 +233,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 </>
               )}
 
-              {etape === 2 && (
+              {etape === 3 && (
                 <>
                   <Titre
                     sur="Rythme"
@@ -283,7 +330,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 </>
               )}
 
-              {etape === 3 && (
+              {etape === 4 && (
                 <>
                   <div className="flex flex-col gap-[var(--stack-sm)]">
                     <span className="kv-overline text-fg-brand">Proposition · {params.semaines} semaines</span>
@@ -357,7 +404,12 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                         ? " Le volume est réparti sur un split pour laisser 48 h à chaque muscle."
                         : " Chaque séance travaille tout le corps, pour garder la fréquence."}
                     </p>
-                    <p className="type-body-sm">Ton niveau, ton matériel et tes douleurs viennent de ton profil : les exercices en tiennent compte.</p>
+                    <p className="type-body-sm">
+                      Exercices choisis pour toi : matériel préféré {LIBELLES.preference_materiel[r.preference_materiel ?? "mix"].toLowerCase()}
+                      {r.morpho ? `, morphologie ${LIBELLES.morpho[r.morpho].toLowerCase()}` : ""}, plus ton niveau et tes douleurs (profil). Volume et
+                      progression suivent les recommandations actuelles : une dizaine de séries par muscle et par semaine, charges progressives, décharge toutes
+                      les 4 semaines.
+                    </p>
                     {plan.avertissements.length > 0 && <p className="type-body-sm text-feedback-warning-text">{plan.avertissements.join(" ")}</p>}
                   </section>
                 </>
@@ -365,11 +417,11 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
             </div>
 
             {pied(
-              etape < 3 ? (
+              etape < 4 ? (
                 <button
                   type="button"
                   onClick={() => setEtape((e) => e + 1)}
-                  disabled={etape === 2 && r.jours.length === 0}
+                  disabled={etape === 3 && r.jours.length === 0}
                   className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block"
                 >
                   <span className="kv-btn-label">Continuer</span>

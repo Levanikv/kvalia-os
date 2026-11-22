@@ -123,14 +123,14 @@ export const tools = {
 
   regler_sport: {
     description:
-      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.",
+      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition, `preference_materiel` : mix / poids_libres / machines / poulies, `morpho` : mince / athletique / costaud / rond) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.",
     input: ParametresSport.partial(),
     output: ParametresSport,
   },
 
   generer_programme: {
     description:
-      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
+      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
     input: z.object({
       debut: z
         .string()
