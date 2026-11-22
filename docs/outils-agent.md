@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-35 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+41 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -487,6 +487,107 @@ Supprime un défi et tout son historique. Irréversible : pour simplement l'arr�
 **Sortie**
 - `id` : string (uuid)
 - `supprime` : booléen
+
+## `chercher_aliment`
+
+Cherche un aliment dans la base (3 000 aliments génériques de la table CIQUAL de l'ANSES + produits de marque d'Open Food Facts) par nom (« skyr », « riz basmati cuit ») ou par code-barres. Rend les valeurs pour 100 g et la portion usuelle. À appeler avant ajouter_au_journal pour obtenir l'aliment_id.
+
+**Entrée**
+- `requete` : string (trim) — Nom de l'aliment ou code-barres (8 à 14 chiffres)
+- `distant` : booléen — défaut `true` — Interroger aussi Open Food Facts (produits de marque)
+
+**Sortie**
+- `aliments` : liste de objet { id, nom, marque, source, kcal, prot, gluc, lip, fibres, portion_g, portion_nom, nutriscore }
+- `open_food_facts` : `consulte` · `ignore` · `indisponible`
+
+## `journal_du_jour`
+
+Le journal alimentaire d'un jour (aujourd'hui par défaut) : cible kcal (base + sport), mangé, reste, protéines / glucides / lipides et leurs cibles, puis les lignes par repas (petit-déjeuner, collation, déjeuner, encas, dîner).
+
+**Entrée**
+- `jour` : string (date) (optionnel)
+
+**Sortie**
+- `jour` : string
+- `base` : nombre
+- `brule` : nombre
+- `cible` : nombre
+- `consomme` : nombre
+- `reste` : nombre
+- `proteines` : nombre
+- `proteines_cible` : nombre
+- `glucides` : nombre
+- `lipides` : nombre
+- `macros_cible` : objet { prot, gluc, lip }
+- `repas` : liste de objet { repas, libelle, kcal, lignes }
+
+## `ajouter_au_journal`
+
+Note quelque chose de mangé : un aliment de la base (aliment_id de chercher_aliment + quantite_g), une recette (recette_id + portions) ou une saisie libre (libelle + kcal, et si possible prot / gluc / lip). Sans repas précisé, c'est le repas du moment. « J'ai mangé 150 g de skyr » → chercher_aliment puis cet outil.
+
+**Entrée**
+- `jour` : string (date) (optionnel) — Jour concerné (aujourd'hui par défaut)
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner` (optionnel) — petit_dej, collation (matin), dejeuner, encas (après-midi), diner ; par défaut le repas du moment
+- `aliment_id` : string (optionnel) — Identifiant d'un aliment trouvé par chercher_aliment (avec quantite_g)
+- `quantite_g` : nombre (optionnel) — Quantité en grammes (ou ml) pour un aliment
+- `recette_id` : string (uuid) (optionnel) — Identifiant d'une recette (avec portions)
+- `portions` : nombre (optionnel) — Nombre de portions de la recette (1 par défaut)
+- `libelle` : string (trim) (optionnel) — Saisie libre : ce qui a été mangé (avec kcal)
+- `kcal` : nombre (optionnel)
+- `prot` : nombre (optionnel)
+- `gluc` : nombre (optionnel)
+- `lip` : nombre (optionnel)
+
+**Sortie**
+- `id` : string (uuid)
+- `jour` : string
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner`
+- `libelle` : string
+- `kcal` : nombre
+- `prot` : nombre
+- `gluc` : nombre
+- `lip` : nombre
+
+## `supprimer_du_journal`
+
+Retire une ligne du journal alimentaire (id donné par journal_du_jour).
+
+**Entrée**
+- `id` : string (uuid)
+
+**Sortie**
+- `id` : string (uuid)
+- `supprime` : booléen
+
+## `lister_recettes`
+
+Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). Filtrable par repas.
+
+**Entrée**
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner` (optionnel)
+
+**Sortie**
+- liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres }
+
+## `suggerer_repas`
+
+« Il me reste 300 kcal, je mange quoi ? » : pour un repas (celui du moment par défaut), calcule le budget de calories à partir de ce qu'il reste aujourd'hui et propose les recettes les mieux adaptées — au plus près du budget, en comblant les protéines manquantes, et selon le sport (glucides avant la séance, protéines après, léger en sèche, dense en prise de muscle). `budget_kcal` impose un budget précis.
+
+**Entrée**
+- `jour` : string (date) (optionnel)
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner` (optionnel)
+- `budget_kcal` : entier (optionnel)
+
+**Sortie**
+- `jour` : string
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner`
+- `libelle_repas` : string
+- `reste_kcal` : nombre
+- `reste_proteines` : nombre
+- `budget_kcal` : nombre
+- `sport` : objet { objectif, seance_a_venir, seance_faite }
+- `message` : string
+- `suggestions` : liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres, portions, raison }
 
 ## `connecter_tiime`
 

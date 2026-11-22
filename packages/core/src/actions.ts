@@ -32,7 +32,16 @@ import {
   supprimerModeleSeance,
   reinitialiserSport,
 } from "./sport";
-import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
+import {
+  ajouterAuJournal,
+  enregistrerParametresNutrition,
+  journalDuJour,
+  listerRecettes,
+  parametresNutrition,
+  suggererRepas,
+  supprimerDuJournal,
+} from "./nutrition";
+import { chercherAliments } from "./aliments";
 import { creerDefi, listerDefis, modifierDefi, noterDefi, supprimerDefi } from "./defis";
 import { METHODES, choisirMethode, decrireMethode } from "./methodes";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
@@ -41,7 +50,13 @@ import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 /**
  * `tiime` n'existe que côté agent (secrets Tiime, ADR 0010) ; l'app web lit les tables synchronisées.
  */
-export type ContexteOutil = { db: KvaliaClient; userId: string; tiime?: { auth: AuthTiime; client: ClientTiime } };
+export type ContexteOutil = {
+  db: KvaliaClient;
+  userId: string;
+  tiime?: { auth: AuthTiime; client: ClientTiime };
+  /** `fetch` de remplacement pour les appels sortants (Open Food Facts) — tests sans réseau. */
+  fetch?: Parameters<typeof chercherAliments>[2] extends infer O ? (O extends { fetch?: infer F } ? F : never) : never;
+};
 type Ctx = ContexteOutil;
 
 function tiimeOuErreur(ctx: Ctx): NonNullable<Ctx["tiime"]> {
@@ -435,6 +450,34 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "supprimer_defi": {
       return (await supprimerDefi(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_defi">).id)) as ToolOutput<T>;
+    }
+
+    // ---------- Nutrition ----------
+    case "chercher_aliment": {
+      const e = entree as ToolInput<"chercher_aliment">;
+      return (await chercherAliments(ctx.db, e.requete, { distant: e.distant, fetch: ctx.fetch })) as ToolOutput<T>;
+    }
+
+    case "journal_du_jour": {
+      const j = await journalDuJour(ctx.db, ctx.userId, (entree as ToolInput<"journal_du_jour">).jour ?? aujourdhuiIso());
+      const { seances: _seances, fibres: _fibres, ...reste } = j;
+      return { ...reste, repas: j.repas.map((r) => ({ ...r, lignes: r.lignes.map(({ repas: _r, recette_id: _id, ...l }) => l) })) } as ToolOutput<T>;
+    }
+
+    case "ajouter_au_journal": {
+      return (await ajouterAuJournal(ctx.db, ctx.userId, entree as ToolInput<"ajouter_au_journal">)) as ToolOutput<T>;
+    }
+
+    case "supprimer_du_journal": {
+      return (await supprimerDuJournal(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_du_journal">).id)) as ToolOutput<T>;
+    }
+
+    case "lister_recettes": {
+      return (await listerRecettes(ctx.db, ctx.userId, entree as ToolInput<"lister_recettes">)) as ToolOutput<T>;
+    }
+
+    case "suggerer_repas": {
+      return (await suggererRepas(ctx.db, ctx.userId, entree as ToolInput<"suggerer_repas">)) as ToolOutput<T>;
     }
 
     // ---------- Entreprise (Tiime, lecture seule) ----------

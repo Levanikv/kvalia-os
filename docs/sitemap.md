@@ -48,11 +48,17 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 séance générée ou une de mes séances par jour, durée) + premier jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
-├── /nutrition            Mini-app Nutrition (clair)
-│   ├── /nutrition                    Journal du jour (anneau, 3 barres, repas) · ?jour=YYYY-MM-DD
-│   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD
-│   ├── /nutrition/recettes           Recettes (base + versions temporaires)
-│   └── /nutrition/recettes/[id]      Fiche recette (ingrédients, macros, substituts)
+├── /nutrition            Mini-app Nutrition
+│   ├── /nutrition                    Journal du jour · ?jour=YYYY-MM-DD : anneau des calories restantes (base + sport), barres de
+│   │                                 macros, « À manger maintenant » (suggestions selon le reste, le repas du moment et la séance ;
+│   │                                 puces pour changer de repas, ajout d'un geste), repas (petit-déjeuner, collation, déjeuner,
+│   │                                 encas, dîner), « Ajouter un aliment » en barre fixe → feuille : recherche (3 000 aliments
+│   │                                 CIQUAL + produits Open Food Facts, code-barres), récents, saisie rapide, quantité
+│   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD — à venir
+│   ├── /nutrition/recettes           Recettes avec macros · ?repas= : filtres par repas et par usage (avant / après la séance,
+│   │                                 riche en protéines…), mises en avant selon l'objectif du programme sportif
+│   └── /nutrition/recettes/[id]      Fiche recette (macros par portion, ingrédients en grammes, étapes) ; « Ajouter au journal »
+│                                     en barre fixe (repas, portions) · ?repas=&jour=
 ├── /finances             Mini-app Finances — perso (BoursoBank)
 │   ├── /finances                     À catégoriser (swipe) + résumé du mois
 │   ├── /finances/transactions        Recherche, filtres, lien document
@@ -116,7 +122,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 | Home | Jour · réordonnancement des widgets | Semaine, mode focus |
 | Quotidien | Courses (+ mode magasin) · Produits & stock · Tâches · Habitudes | Agenda complet |
 | Sport | Programme · Séance plein écran · Fiche exercice · Historique | Charge / récupération |
-| Nutrition | Journal · Plan semaine · Fiche recette · Pesée (feuille) | Scan, photo |
+| Nutrition | Journal (suggestions, ajout d’aliment) · Recettes · Fiche recette — Plan semaine et pesée à venir | Scan du code-barres à la caméra, photo |
 | Finances | À catégoriser · Transactions · Budgets · Comptes | Abonnements oubliés, épargne |
 | Entreprise | Pilotage · Factures · Charges · Échéances (+ simulateur en feuille) | Conseils de l'agent (juridique, investissement), devis, relances auto |
 | Documents | Coffre · Aperçu · Ajout | Mode voyage |

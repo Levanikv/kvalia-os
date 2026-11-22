@@ -7,5 +7,7 @@ export * from "./sport";
 export * from "./defis";
 export * from "./methodes";
 export * from "./nutrition";
+export * from "./aliments";
+export { RECETTES_BASE, type RecetteBase } from "./recettes-base";
 export * from "./tiime";
 export * from "./entreprise";

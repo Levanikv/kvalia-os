@@ -8,6 +8,8 @@ import { Ligne, Priorite, Tache, VueJour } from "./schemas";
 import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
 import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
 import { MethodeId } from "./methodes";
+import { AlimentSortie } from "./aliments";
+import { EntreeJournal, Repas } from "./nutrition";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -55,6 +57,19 @@ const DefiSortie = z.object({
   libelle_jours: z.string(),
   debut: z.string(),
   fin: z.string().nullable(),
+});
+
+const RecetteSortie = z.object({
+  id: z.string().uuid(),
+  nom: z.string(),
+  repas: z.array(z.string()),
+  tags: z.array(z.string()),
+  temps_min: z.number().nullable(),
+  kcal: z.number().describe("par portion"),
+  prot: z.number(),
+  gluc: z.number(),
+  lip: z.number(),
+  fibres: z.number().nullable(),
 });
 
 export const tools = {
@@ -422,6 +437,101 @@ export const tools = {
       "Supprime un défi et tout son historique. Irréversible : pour simplement l'arrêter en gardant l'historique, préférer modifier_defi avec actif=false. Confirmer avant.",
     input: z.object({ id: z.string().uuid() }),
     output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
+  },
+
+  // ---------- Nutrition : aliments, journal, recettes, suggestions ----------
+  chercher_aliment: {
+    description:
+      "Cherche un aliment dans la base (3 000 aliments génériques de la table CIQUAL de l'ANSES + produits de marque d'Open Food Facts) par nom (« skyr », « riz basmati cuit ») ou par code-barres. Rend les valeurs pour 100 g et la portion usuelle. À appeler avant ajouter_au_journal pour obtenir l'aliment_id.",
+    input: z.object({
+      requete: z.string().trim().min(2).max(80).describe("Nom de l'aliment ou code-barres (8 à 14 chiffres)"),
+      distant: z.boolean().default(true).describe("Interroger aussi Open Food Facts (produits de marque)"),
+    }),
+    output: z.object({ aliments: z.array(AlimentSortie), open_food_facts: z.enum(["consulte", "ignore", "indisponible"]) }),
+  },
+
+  journal_du_jour: {
+    description:
+      "Le journal alimentaire d'un jour (aujourd'hui par défaut) : cible kcal (base + sport), mangé, reste, protéines / glucides / lipides et leurs cibles, puis les lignes par repas (petit-déjeuner, collation, déjeuner, encas, dîner).",
+    input: z.object({ jour: z.string().date().optional() }),
+    output: z.object({
+      jour: z.string(),
+      base: z.number(),
+      brule: z.number(),
+      cible: z.number(),
+      consomme: z.number(),
+      reste: z.number(),
+      proteines: z.number(),
+      proteines_cible: z.number(),
+      glucides: z.number(),
+      lipides: z.number(),
+      macros_cible: z.object({ prot: z.number(), gluc: z.number(), lip: z.number() }),
+      repas: z.array(
+        z.object({
+          repas: Repas,
+          libelle: z.string(),
+          kcal: z.number(),
+          lignes: z.array(
+            z.object({
+              id: z.string().uuid(),
+              libelle: z.string(),
+              kcal: z.number(),
+              prot: z.number(),
+              gluc: z.number(),
+              lip: z.number(),
+              quantite_g: z.number().nullable(),
+              portions: z.number(),
+            }),
+          ),
+        }),
+      ),
+    }),
+  },
+
+  ajouter_au_journal: {
+    description:
+      "Note quelque chose de mangé : un aliment de la base (aliment_id de chercher_aliment + quantite_g), une recette (recette_id + portions) ou une saisie libre (libelle + kcal, et si possible prot / gluc / lip). Sans repas précisé, c'est le repas du moment. « J'ai mangé 150 g de skyr » → chercher_aliment puis cet outil.",
+    input: EntreeJournal,
+    output: z.object({
+      id: z.string().uuid(),
+      jour: z.string(),
+      repas: Repas,
+      libelle: z.string(),
+      kcal: z.number(),
+      prot: z.number(),
+      gluc: z.number(),
+      lip: z.number(),
+    }),
+  },
+
+  supprimer_du_journal: {
+    description: "Retire une ligne du journal alimentaire (id donné par journal_du_jour).",
+    input: z.object({ id: z.string().uuid() }),
+    output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
+  },
+
+  lister_recettes: {
+    description:
+      "Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). Filtrable par repas.",
+    input: z.object({ repas: Repas.optional() }),
+    output: z.array(RecetteSortie),
+  },
+
+  suggerer_repas: {
+    description:
+      "« Il me reste 300 kcal, je mange quoi ? » : pour un repas (celui du moment par défaut), calcule le budget de calories à partir de ce qu'il reste aujourd'hui et propose les recettes les mieux adaptées — au plus près du budget, en comblant les protéines manquantes, et selon le sport (glucides avant la séance, protéines après, léger en sèche, dense en prise de muscle). `budget_kcal` impose un budget précis.",
+    input: z.object({ jour: z.string().date().optional(), repas: Repas.optional(), budget_kcal: z.number().int().min(50).max(2000).optional() }),
+    output: z.object({
+      jour: z.string(),
+      repas: Repas,
+      libelle_repas: z.string(),
+      reste_kcal: z.number(),
+      reste_proteines: z.number(),
+      budget_kcal: z.number(),
+      sport: z.object({ objectif: z.string().nullable(), seance_a_venir: z.boolean(), seance_faite: z.boolean() }),
+      message: z.string(),
+      suggestions: z.array(RecetteSortie.extend({ portions: z.number(), raison: z.string() })),
+    }),
   },
 
   // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
