@@ -39,6 +39,7 @@ const JOURS = [
   { v: 0, l: "D" },
 ];
 const LETTRE = ["D", "L", "M", "M", "J", "V", "S"];
+const ICONE_MATERIEL: Record<string, string> = { mix: "shuffle", poids_libres: "fitness_center", machines: "settings", poulies: "cable" };
 const DUREES = [45, 60, 75, 90];
 const ETAPES_GENERATION = ["Analyse de ton objectif", "Répartition de la semaine", "Choix des exercices", "Calcul des charges", "Projection et phases"];
 
@@ -177,6 +178,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                     {CHOIX_PREFERENCE_MATERIEL.map((o) => (
                       <Option
                         key={o.id}
+                        icone={ICONE_MATERIEL[o.id]}
                         titre={o.titre}
                         description={o.aide}
                         actif={(r.preference_materiel ?? "mix") === o.id}
@@ -553,7 +555,20 @@ function Titre({ sur, titre, aide }: { sur: string; titre: string; aide: string 
 }
 
 /** Option à choix unique (maquette : carte, titre + aide, pastille radio à droite). */
-function Option({ titre, description, actif, onClick }: { titre: string; description: string; actif: boolean; onClick: () => void }) {
+function Option({
+  titre,
+  description,
+  actif,
+  onClick,
+  icone,
+}: {
+  titre: string;
+  description: string;
+  actif: boolean;
+  onClick: () => void;
+  /** Pastille d'icône à gauche (facultative). */
+  icone?: string;
+}) {
   return (
     <button
       type="button"
@@ -562,6 +577,14 @@ function Option({ titre, description, actif, onClick }: { titre: string; descrip
       onClick={onClick}
       className={`flex w-full items-center gap-[var(--inline-lg)] rounded-[var(--radius-tile)] border bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-sm)] text-left ${actif ? "border-line-strong shadow-card ring-1 ring-fg-primary" : "border-line-subtle"}`}
     >
+      {icone && (
+        <span
+          aria-hidden
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${actif ? "bg-action-primary text-fg-on-brand" : "bg-surface-container-brand-subtle text-fg-brand"}`}
+        >
+          <Icon name={icone} size={22} />
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block type-title-sm">{titre}</span>
         <span className="block type-body-sm text-fg-secondary">{description}</span>
