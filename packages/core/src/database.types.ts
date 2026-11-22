@@ -213,6 +213,97 @@ export type Database = {
         }
         Relationships: []
       }
+      defis: {
+        Row: {
+          actif: boolean
+          cible: number
+          created_at: string
+          debut: string
+          fin: string | null
+          id: string
+          jours_semaine: number[]
+          mesure: string
+          nom: string
+          programme_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean
+          cible?: number
+          created_at?: string
+          debut?: string
+          fin?: string | null
+          id?: string
+          jours_semaine?: number[]
+          mesure?: string
+          nom: string
+          programme_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean
+          cible?: number
+          created_at?: string
+          debut?: string
+          fin?: string | null
+          id?: string
+          jours_semaine?: number[]
+          mesure?: string
+          nom?: string
+          programme_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defis_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      defis_suivi: {
+        Row: {
+          created_at: string
+          defi_id: string
+          id: string
+          jour: string
+          updated_at: string
+          user_id: string
+          valeur: number
+        }
+        Insert: {
+          created_at?: string
+          defi_id: string
+          id?: string
+          jour: string
+          updated_at?: string
+          user_id: string
+          valeur?: number
+        }
+        Update: {
+          created_at?: string
+          defi_id?: string
+          id?: string
+          jour?: string
+          updated_at?: string
+          user_id?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defis_suivi_defi_id_fkey"
+            columns: ["defi_id"]
+            isOneToOne: false
+            referencedRelation: "defis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
