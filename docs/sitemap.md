@@ -24,7 +24,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
 │   ├── /sport/seance/[id]            Séance (plein écran, « Home workflow ») : avant départ (chrono 0:00, Démarrer),
 │   │                                 en cours (chrono, pause au tap, exercice en cours, fiche : séries Faite/En cours/
-│   │                                 À faire, minuteur de repos, charge du jour, historique, remplacer), vidéo immersive,
+│   │                                 À faire, minuteur de repos, charge du jour, historique, remplacer), vidéo en feuille (16:9, hauteur du contenu),
 │   │                                 quitter (le chrono continue), Terminer → exercices ratés → ressenti ; lecture seule
 │   │                                 un autre jour ; résumé quand elle est faite
 │   ├── /sport/seance/[id]/fin        Fin de séance : kcal, volume, séries, exercices, défi de la semaine, ratés reprogrammés

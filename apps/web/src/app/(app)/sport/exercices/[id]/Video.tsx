@@ -4,7 +4,7 @@ import { Icon } from "@/components/Icon";
 
 type Props = { src: string | null; srcF: string | null; poster: string | null; posterF: string | null };
 
-/** Vidéo en boucle, muette, inline (autoplay iOS) ; bascule démonstrateur H/F si les deux existent. */
+/** Vidéo en boucle, muette, inline (autoplay iOS), au format d'origine 16:9 ; bascule démonstrateur H/F si les deux existent. */
 export function Video({ src, srcF, poster, posterF }: Props) {
   const [femme, setFemme] = useState(false);
   const [erreur, setErreur] = useState(false);
@@ -12,7 +12,7 @@ export function Video({ src, srcF, poster, posterF }: Props) {
   const affiche = femme && posterF ? posterF : poster;
 
   return (
-    <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-surface-container-inverse sm:mx-0 sm:rounded-lg">
+    <div className="relative -mx-4 aspect-video overflow-hidden bg-surface-container-inverse sm:mx-0 sm:rounded-lg">
       {url && !erreur ? (
         <video
           key={url}
@@ -24,10 +24,10 @@ export function Video({ src, srcF, poster, posterF }: Props) {
           playsInline
           preload="metadata"
           onError={() => setErreur(true)}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
       ) : affiche ? (
-        <img src={affiche} alt="" className="h-full w-full object-cover" />
+        <img src={affiche} alt="" className="h-full w-full object-contain" />
       ) : (
         <div className="flex h-full items-center justify-center text-fg-tertiary">
           <Icon name="videocam_off" size={40} />
