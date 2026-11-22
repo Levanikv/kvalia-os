@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Ligne, Priorite, Tache, VueJour } from "./schemas";
 import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
 import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
+import { MethodeId } from "./methodes";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -130,7 +131,7 @@ export const tools = {
 
   generer_programme: {
     description:
-      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
+      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices, en suivant une méthode de référence choisie selon l'objectif et le niveau (voir lister_methodes ; `parametres.methode` en impose une). Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
     input: z.object({
       debut: z
         .string()
@@ -147,7 +148,29 @@ export const tools = {
       nb_exercices: z.number(),
       debut: z.string(),
       fin: z.string(),
+      methode: z.string().describe("Nom de la méthode suivie ; détail et sources par lister_methodes"),
       avertissements: z.array(z.string()),
+    }),
+  },
+
+  lister_methodes: {
+    description:
+      "Les méthodes d'entraînement de référence sur lesquelles les programmes sont construits (double progression, progression linéaire, 5/3/1, sèche charges maintenues, endurance musculaire) : pour qui, ce qu'elles prescrivent, la règle de progression et leurs sources. `recommandee` = celle que le générateur prendrait pour le profil actuel (objectif + niveau). À appeler avant generer_programme pour expliquer le choix, ou pour en imposer une autre via parametres.methode si l'utilisateur le demande.",
+    input: z.object({}),
+    output: z.object({
+      recommandee: MethodeId,
+      methodes: z.array(
+        z.object({
+          id: MethodeId,
+          nom: z.string(),
+          pour: z.string(),
+          resume: z.string(),
+          progression: z.string(),
+          objectifs: z.array(z.string()),
+          niveaux: z.array(z.string()),
+          sources: z.array(z.object({ titre: z.string(), url: z.string() })),
+        }),
+      ),
     }),
   },
 

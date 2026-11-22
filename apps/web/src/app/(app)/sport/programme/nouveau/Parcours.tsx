@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
   CHOIX_PREFERENCE_MATERIEL,
+  METHODES,
   LIBELLES,
   parametresDepuisReponses,
   phasesProgramme,
@@ -86,6 +87,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
   const debutChoisi = premierJourSeance(params, debut < aujourdhui ? aujourdhui : debut);
   const plan = planSemaine(params, Object.fromEntries(modeles.map((m) => [m.id, { nom: m.nom, type: m.type }])));
   const phases = phasesProgramme(params);
+  const methode = METHODES[plan.methode];
   const finIso = (() => {
     const d = new Date(debutChoisi + "T12:00:00Z");
     d.setUTCDate(d.getUTCDate() + params.semaines * 7 - 1);
@@ -377,6 +379,29 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                           </li>
                         );
                       })}
+                    </ul>
+                  </section>
+
+                  <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+                    <div className="flex items-center justify-between gap-[var(--inline-md)]">
+                      <span className="kv-overline">Méthode</span>
+                      <span className="kv-tag kv-tag-brand">Sourcée</span>
+                    </div>
+                    <h2 className="type-title-lg">{methode.nom}</h2>
+                    <p className="type-body-sm text-fg-secondary">{methode.resume}</p>
+                    <p className="type-body-sm">
+                      <span className="text-fg-brand">Progression · </span>
+                      {methode.progression}
+                    </p>
+                    <ul className="flex flex-col gap-[var(--stack-2xs)] border-t border-line-subtle pt-[var(--stack-sm)]">
+                      {methode.sources.map((x) => (
+                        <li key={x.url}>
+                          <a href={x.url} target="_blank" rel="noreferrer" className="flex items-start gap-[var(--inline-sm)] type-body-sm text-fg-link">
+                            <Icon name="menu_book" size={16} className="mt-0.5 shrink-0" />
+                            <span>{x.titre}</span>
+                          </a>
+                        </li>
+                      ))}
                     </ul>
                   </section>
 

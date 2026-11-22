@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { KvaliaClient } from "./supabase";
 import { aujourdhuiIso, decalerJour } from "./dates";
 import type { Tables } from "./database.types";
+import { MethodeId, choisirMethode } from "./methodes";
 
 // ---------- Paramètres (profils.reglages.sport) ----------
 export const ObjectifSport = z.enum(["hypertrophie", "force", "perte_de_gras", "endurance"]);
@@ -82,6 +83,8 @@ export const ParametresSport = z.object({
   objectif: ObjectifSport.default("hypertrophie"),
   niveau: Niveau.default("intermediate"),
   semaines: z.number().int().min(4).max(24).default(12),
+  /** Méthode d'entraînement imposée (sinon choisie selon l'objectif et le niveau) — voir methodes.ts. */
+  methode: MethodeId.optional(),
   /** Poids de secours si aucune pesée. */
   poids_kg: z.number().positive().optional(),
   effort_s_par_serie: z.number().int().default(40),
@@ -296,6 +299,8 @@ export function parametresDepuisReponses(base: ParametresSport, r: ReponsesProgr
   return ParametresSport.parse({
     ...p,
     seances_perso: (r.perso ?? []).filter((x) => jours.includes(x.jour)),
+    // Le parcours de l'app laisse le générateur choisir la méthode : une méthode imposée plus tôt (agent) ne reste pas collée.
+    methode: undefined,
     ...(Object.keys(profil).length ? { profil } : {}),
   });
 }
@@ -685,7 +690,7 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
 // ---------- Progression ----------
 /** Focus d'un bloc selon l'objectif (hors semaine de décharge). */
 export function focusBloc(objectif: ParametresSport["objectif"], bloc: number): string {
-  if (objectif === "force") return bloc === 1 ? "hypertrophie" : "force";
+  if (objectif === "force") return "force";
   if (objectif === "endurance") return "mixte";
   return bloc === 1 ? "hypertrophie" : bloc === 2 ? "force" : "mixte";
 }
@@ -699,11 +704,14 @@ export function phasesProgramme(params: Pick<ParametresSport, "objectif" | "sema
 }
 type Prescription = { series: number; reps: string; repos_s: number; focus: string };
 
-function prescription(params: ParametresSport, bloc: number, semaineDansBloc: number, slot: Slot): Prescription {
+function prescription(params: ParametresSport, bloc: number, semaineDansBloc: number, slot: Slot, principal = false): Prescription {
   const deload = semaineDansBloc === 4;
   const iso = slot.isolation === true;
   const focus = focusBloc(params.objectif, bloc);
   if (deload) return { series: 2, reps: iso ? "12" : "8", repos_s: 60, focus: "deload" };
+  // La méthode du programme (5/3/1, progression linéaire…) prescrit ; sinon, prescription par blocs ci-dessous.
+  const propre = choisirMethode(params).prescrire({ semaineDansBloc, principal, isolation: iso });
+  if (propre) return { ...propre, focus };
   const progression = semaineDansBloc === 3 ? 1 : 0; // semaine 3 : une série de plus
   if (params.objectif === "endurance") return { series: 3 + progression, reps: "15", repos_s: 45, focus };
   if (focus === "force")
@@ -726,6 +734,8 @@ export type PlanSemaine = {
   doubles: number[];
   /** Pourquoi ce découpage des séances générées (une phrase). */
   explication: string;
+  /** Méthode d'entraînement suivie (id ; détail : `METHODES`). */
+  methode: MethodeId;
   avertissements: string[];
 };
 
@@ -759,10 +769,27 @@ export function planSemaine(params: ParametresSport, modeles: Record<string, { n
   }
   for (const j of joursBoxe) jours[j].push({ genre: "boxe", type: "boxe", titre: TITRE_BOXE });
   const doubles = joursBoxe.filter((j) => joursTous.includes(j));
-  return { jours, nb_salle: joursTous.length, nb_boxe: joursBoxe.length, doubles, explication: explicationSplit(joursSalle.length), avertissements };
+  return {
+    jours,
+    nb_salle: joursTous.length,
+    nb_boxe: joursBoxe.length,
+    doubles,
+    explication: explicationSplit(joursSalle.length),
+    methode: choisirMethode(params).id,
+    avertissements,
+  };
 }
 
-export type ProgrammeGenere = { programme_id: string; nb_seances: number; nb_exercices: number; debut: string; fin: string; avertissements: string[] };
+export type ProgrammeGenere = {
+  programme_id: string;
+  nb_seances: number;
+  nb_exercices: number;
+  debut: string;
+  fin: string;
+  /** Méthode suivie (nom) — détail par l'outil lister_methodes. */
+  methode: string;
+  avertissements: string[];
+};
 
 /**
  * Génère un programme complet et le rend actif. L'ancien programme actif s'arrête la veille du premier jour du
@@ -820,6 +847,7 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
         objectif: params.objectif,
         niveau: params.niveau,
         duree_min: params.duree_min,
+        methode: choisirMethode(params).id,
       },
       materiel: params.materiel,
       actif: true,
@@ -831,7 +859,15 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 
   const r = await planifierSeances(db, userId, { id: prog.id, debut: debutJour }, params, refs, debutJour, dejaFait);
   avertissements.push(...r.avertissements);
-  return { programme_id: prog.id, nb_seances: r.nb_seances, nb_exercices: r.nb_exercices, debut: debutJour, fin: iso(fin), avertissements };
+  return {
+    programme_id: prog.id,
+    nb_seances: r.nb_seances,
+    nb_exercices: r.nb_exercices,
+    debut: debutJour,
+    fin: iso(fin),
+    methode: choisirMethode(params).nom,
+    avertissements,
+  };
 }
 
 /**
@@ -905,7 +941,7 @@ async function planifierSeances(
             const ref = choisir(refs, slot, params, pris, (bloc - 1) * 2 + idxSalle + (slot.isolation ? s % 2 : 0));
             if (!ref) return;
             pris.add(ref.id);
-            const p = prescription(params, bloc, semaineDansBloc, slot);
+            const p = prescription(params, bloc, semaineDansBloc, slot, ordre === 0);
             const reps = slot === S.cardioFin ? "8 min" : p.reps;
             const series = slot === S.cardioFin ? 1 : p.series;
             const repos = slot === S.cardioFin ? 0 : p.repos_s;
@@ -933,6 +969,7 @@ async function planifierSeances(
             bloc,
             semaine: s + 1,
             focus: p0.focus,
+            notes: semaineDansBloc === 4 ? null : (choisirMethode(params).consigne?.(semaineDansBloc) ?? null),
           });
           exosParSeance.push(exos);
         } else {

@@ -1,7 +1,18 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
-import { chargerModeles, dureeModele, LIBELLES, listerDefis, parametresNutrition, parametresSport, phasesProgramme, poidsActuel } from "@kvalia/core";
+import {
+  chargerModeles,
+  choisirMethode,
+  dureeModele,
+  LIBELLES,
+  listerDefis,
+  MethodeId,
+  parametresNutrition,
+  parametresSport,
+  phasesProgramme,
+  poidsActuel,
+} from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
@@ -11,7 +22,7 @@ import { libelleFocus, libelleType, positionProgramme, trierParJour } from "../l
 import { ORDRE_SEMAINE, Phases, SemaineType, type JourType } from "./Phases";
 
 type Db = SupabaseClient<Database>;
-type Rythme = { salle?: number; boxe?: number; objectif?: string; niveau?: string; duree_min?: number };
+type Rythme = { salle?: number; boxe?: number; objectif?: string; niveau?: string; duree_min?: number; methode?: string };
 
 /**
  * Onglet Programme (maquette « 14 · Programme actif ») : carte du programme en cours (objectif, rythme, semaine n,
@@ -74,6 +85,13 @@ export default async function Page() {
   const finTexte = prog.fin ? new Date(prog.fin + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : null;
   const objectif = r.objectif ? (LIBELLES.objectif[r.objectif] ?? prog.nom) : prog.nom;
   const etat = pos?.avant ? "À venir" : pos?.apres ? "Terminé" : "Actif";
+  // Méthode suivie : celle enregistrée avec le programme ; pour un programme plus ancien, celle de son objectif et niveau.
+  const idMethode = MethodeId.safeParse(r.methode);
+  const methode = choisirMethode({
+    objectif: r.objectif ?? "hypertrophie",
+    niveau: r.niveau ?? "intermediate",
+    methode: idMethode.success ? idMethode.data : null,
+  });
 
   return (
     <ModuleFrame
@@ -141,6 +159,37 @@ export default async function Page() {
         <Phases semaines={semainesFocus} semaineCourante={pos?.avant || pos?.apres ? null : semaineCourante} />
 
         <SemaineType jours={jours} note={`semaine ${semaineCourante} · touche une séance`} />
+
+        {/* Méthode d'entraînement et ses sources */}
+        <details className="group overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+          <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
+              <Icon name="menu_book" size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block kv-overline">Méthode</span>
+              <span className="block truncate type-title-sm">{methode.nom}</span>
+            </span>
+            <Icon name="expand_more" size={20} className="text-icon-tertiary transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="flex flex-col gap-[var(--stack-sm)] px-[var(--inset-md)] pb-[var(--inset-md)]">
+            <p className="type-body-sm text-fg-secondary">{methode.resume}</p>
+            <p className="type-body-sm">
+              <span className="text-fg-brand">Progression · </span>
+              {methode.progression}
+            </p>
+            <ul className="flex flex-col gap-[var(--stack-2xs)] border-t border-line-subtle pt-[var(--stack-sm)]">
+              {methode.sources.map((x) => (
+                <li key={x.url}>
+                  <a href={x.url} target="_blank" rel="noreferrer" className="flex items-start gap-[var(--inline-sm)] type-body-sm text-fg-link">
+                    <Icon name="open_in_new" size={16} className="mt-0.5 shrink-0" />
+                    <span>{x.titre}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
 
         <DefisProgramme defis={defis} finProgramme={prog.fin} />
 

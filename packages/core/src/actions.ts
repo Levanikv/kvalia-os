@@ -34,6 +34,7 @@ import {
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
 import { creerDefi, listerDefis, modifierDefi, noterDefi, supprimerDefi } from "./defis";
+import { METHODES, choisirMethode, decrireMethode } from "./methodes";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
 import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 
@@ -255,6 +256,11 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
       const params = e.parametres ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } }) : base;
       if (e.parametres) await enregistrerParametresSport(ctx.db, ctx.userId, params);
       return (await genererProgramme(ctx.db, ctx.userId, params, e.debut)) as ToolOutput<T>;
+    }
+
+    case "lister_methodes": {
+      const params = await parametresSport(ctx.db, ctx.userId);
+      return { recommandee: choisirMethode({ ...params, methode: null }).id, methodes: Object.values(METHODES).map(decrireMethode) } as ToolOutput<T>;
     }
 
     case "seance_du_jour": {

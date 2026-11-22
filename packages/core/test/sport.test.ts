@@ -38,6 +38,7 @@ import {
   deconseille,
   masseMaigre,
 } from "../src/sport";
+import { METHODES, choisirMethode } from "../src/methodes";
 import { executer } from "../src/actions";
 import { USER, exercicesRef, fausseDb } from "./fausse-db";
 
@@ -830,5 +831,58 @@ describe("le découpage s'adapte au nombre de séances", () => {
       const parties = db.tables.exercices_seance.filter((e: any) => e.seance_id === se.id).map((e: any) => parId.get(e.exercice_id)!.partie_corps);
       expect(parties).toEqual(expect.arrayContaining(["chest", "back", "upper legs"]));
     }
+  });
+});
+
+describe("méthodes de référence", () => {
+  it("la méthode suit l'objectif et le niveau ; on peut en imposer une", () => {
+    expect(choisirMethode({ objectif: "force", niveau: "beginner" }).id).toBe("progression_lineaire");
+    expect(choisirMethode({ objectif: "force", niveau: "advanced" }).id).toBe("cinq_trois_un");
+    expect(choisirMethode({ objectif: "hypertrophie", niveau: "intermediate" }).id).toBe("double_progression");
+    expect(choisirMethode({ objectif: "perte_de_gras", niveau: "beginner" }).id).toBe("seche");
+    expect(choisirMethode({ objectif: "endurance", niveau: "beginner" }).id).toBe("endurance_musculaire");
+    expect(choisirMethode({ objectif: "hypertrophie", niveau: "beginner", methode: "cinq_trois_un" }).id).toBe("cinq_trois_un");
+    for (const m of Object.values(METHODES)) expect(m.sources.length, m.id).toBeGreaterThan(0);
+  });
+
+  const premiers = async (params: Partial<ParametresSport>) => {
+    const db = base();
+    const r = await genererProgramme(
+      db,
+      USER,
+      { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 4, boxe: 0 }, jours_boxe: [], poids_kg: 80, ...params },
+      "2026-11-09",
+    );
+    const seance = (semaine: number) => db.tables.seances.filter((s: any) => s.semaine === semaine)[0];
+    const exos = (semaine: number) =>
+      db.tables.exercices_seance.filter((e: any) => e.seance_id === seance(semaine).id).sort((a: any, b: any) => a.ordre - b.ordre);
+    return { r, db, seance, exos };
+  };
+
+  it("5/3/1 : le mouvement principal suit la vague 5 → 3 → 5-3-1, puis décharge ; la consigne est dans la séance", async () => {
+    const { r, db, seance, exos } = await premiers({ objectif: "force", niveau: "intermediate" });
+    expect(r.methode).toBe("5/3/1");
+    expect(db.tables.programmes[0].rythme.methode).toBe("cinq_trois_un");
+    expect(exos(1)[0]).toMatchObject({ series: 3, reps: "5" });
+    expect(exos(2)[0]).toMatchObject({ series: 3, reps: "3" });
+    expect(exos(3)[0]).toMatchObject({ series: 3, reps: "5-3-1" });
+    expect(exos(4)[0]).toMatchObject({ series: 2 });
+    expect(exos(1)[1].reps).toBe("8-10");
+    expect(seance(2).notes).toMatch(/70, 80 puis 90 %/);
+    expect(seance(4).notes).toBeNull();
+  });
+
+  it("progression linéaire (force, débutant) : 3×5 sur les composés, toutes les semaines hors décharge", async () => {
+    const { r, exos } = await premiers({ objectif: "force", niveau: "beginner" });
+    expect(r.methode).toBe("Progression linéaire");
+    for (const s of [1, 2, 3]) expect(exos(s)[0]).toMatchObject({ series: 3, reps: "5" });
+  });
+
+  it("lister_methodes rend les méthodes, leurs sources et la recommandée pour le profil", async () => {
+    const db = base();
+    const r = await executer("lister_methodes", {}, { db, userId: USER });
+    expect(r.recommandee).toBe("double_progression");
+    expect(r.methodes.map((m) => m.id)).toContain("cinq_trois_un");
+    expect(r.methodes.every((m) => m.sources.every((x) => x.url.startsWith("https://")))).toBe(true);
   });
 });

@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-34 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+35 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -92,6 +92,7 @@ Lit les paramètres du programme sportif (rythme salle/boxe, jours, durée, mat�
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"`
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"`
 - `semaines` : entier — défaut `12`
+- `methode` : `double_progression` · `progression_lineaire` · `cinq_trois_un` · `seche` · `endurance_musculaire` (optionnel)
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
@@ -111,6 +112,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"` (optionnel)
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"` (optionnel)
 - `semaines` : entier — défaut `12` (optionnel)
+- `methode` : `double_progression` · `progression_lineaire` · `cinq_trois_un` · `seche` · `endurance_musculaire` (optionnel) (optionnel)
 - `poids_kg` : nombre (optionnel) (optionnel)
 - `effort_s_par_serie` : entier — défaut `40` (optionnel)
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]` (optionnel)
@@ -126,6 +128,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"`
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"`
 - `semaines` : entier — défaut `12`
+- `methode` : `double_progression` · `progression_lineaire` · `cinq_trois_un` · `seche` · `endurance_musculaire` (optionnel)
 - `poids_kg` : nombre (optionnel)
 - `effort_s_par_serie` : entier — défaut `40`
 - `seances_perso` : liste de objet { jour, modele_id } — défaut `[]`
@@ -134,11 +137,11 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 
 ## `generer_programme` — à confirmer
 
-Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices. Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.
+Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices, en suivant une méthode de référence choisie selon l'objectif et le niveau (voir lister_methodes ; `parametres.methode` en impose une). Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.
 
 **Entrée**
 - `debut` : string (date) (optionnel) — Premier jour souhaité (aujourd'hui possible). Un programme commence toujours un jour de séance : si ce jour n'en est pas un, le début passe au prochain jour de séance. Par défaut : le prochain jour de séance à partir de demain. Les séances de l'ancien programme sont remplacées à partir de ce jour.
-- `parametres` : objet { rythme, jours_salle, jours_boxe, duree_min, materiel, objectif, niveau, semaines, poids_kg, effort_s_par_serie, seances_perso, profil, onboarding } (optionnel) — Surcharges ponctuelles ; sinon les réglages enregistrés.
+- `parametres` : objet { rythme, jours_salle, jours_boxe, duree_min, materiel, objectif, niveau, semaines, methode, poids_kg, effort_s_par_serie, seances_perso, profil, onboarding } (optionnel) — Surcharges ponctuelles ; sinon les réglages enregistrés.
 
 **Sortie**
 - `programme_id` : string (uuid)
@@ -146,7 +149,19 @@ Génère un programme complet (N semaines, blocs de 4 : progression puis déchar
 - `nb_exercices` : nombre
 - `debut` : string
 - `fin` : string
+- `methode` : string — Nom de la méthode suivie ; détail et sources par lister_methodes
 - `avertissements` : liste de string
+
+## `lister_methodes`
+
+Les méthodes d'entraînement de référence sur lesquelles les programmes sont construits (double progression, progression linéaire, 5/3/1, sèche charges maintenues, endurance musculaire) : pour qui, ce qu'elles prescrivent, la règle de progression et leurs sources. `recommandee` = celle que le générateur prendrait pour le profil actuel (objectif + niveau). À appeler avant generer_programme pour expliquer le choix, ou pour en imposer une autre via parametres.methode si l'utilisateur le demande.
+
+**Entrée**
+- (aucune)
+
+**Sortie**
+- `recommandee` : `double_progression` · `progression_lineaire` · `cinq_trois_un` · `seche` · `endurance_musculaire`
+- `methodes` : liste de objet { id, nom, pour, resume, progression, objectifs, niveaux, sources }
 
 ## `seance_du_jour`
 

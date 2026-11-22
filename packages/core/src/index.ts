@@ -5,6 +5,7 @@ export * from "./supabase";
 export type { Database, Tables, TablesInsert, TablesUpdate, Enums, Json } from "./database.types";
 export * from "./sport";
 export * from "./defis";
+export * from "./methodes";
 export * from "./nutrition";
 export * from "./tiime";
 export * from "./entreprise";
