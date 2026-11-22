@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      aliments: {
+        Row: {
+          code_barres: string | null
+          created_at: string
+          cree_par: string | null
+          fibres: number | null
+          gluc: number
+          groupe: string | null
+          id: string
+          kcal: number
+          lip: number
+          marque: string | null
+          nom: string
+          nom_recherche: string
+          nutriscore: string | null
+          portion_g: number | null
+          portion_nom: string | null
+          prot: number
+          satures: number | null
+          sel: number | null
+          source: string
+          sous_groupe: string | null
+          sucres: number | null
+        }
+        Insert: {
+          code_barres?: string | null
+          created_at?: string
+          cree_par?: string | null
+          fibres?: number | null
+          gluc?: number
+          groupe?: string | null
+          id: string
+          kcal: number
+          lip?: number
+          marque?: string | null
+          nom: string
+          nom_recherche: string
+          nutriscore?: string | null
+          portion_g?: number | null
+          portion_nom?: string | null
+          prot?: number
+          satures?: number | null
+          sel?: number | null
+          source: string
+          sous_groupe?: string | null
+          sucres?: number | null
+        }
+        Update: {
+          code_barres?: string | null
+          created_at?: string
+          cree_par?: string | null
+          fibres?: number | null
+          gluc?: number
+          groupe?: string | null
+          id?: string
+          kcal?: number
+          lip?: number
+          marque?: string | null
+          nom?: string
+          nom_recherche?: string
+          nutriscore?: string | null
+          portion_g?: number | null
+          portion_nom?: string | null
+          prot?: number
+          satures?: number | null
+          sel?: number | null
+          source?: string
+          sous_groupe?: string | null
+          sucres?: number | null
+        }
+        Relationships: []
+      }
       appels_outils: {
         Row: {
           canal: Database["public"]["Enums"]["canal"]
@@ -719,7 +791,9 @@ export type Database = {
       }
       journal_repas: {
         Row: {
+          aliment_id: string | null
           created_at: string
+          fibres: number | null
           gluc: number | null
           id: string
           jour: string
@@ -729,13 +803,16 @@ export type Database = {
           portions: number
           produit_id: string | null
           prot: number | null
+          quantite_g: number | null
           recette_id: string | null
           repas: Database["public"]["Enums"]["repas_type"]
           source: Database["public"]["Enums"]["journal_source"]
           user_id: string
         }
         Insert: {
+          aliment_id?: string | null
           created_at?: string
+          fibres?: number | null
           gluc?: number | null
           id?: string
           jour?: string
@@ -745,13 +822,16 @@ export type Database = {
           portions?: number
           produit_id?: string | null
           prot?: number | null
+          quantite_g?: number | null
           recette_id?: string | null
           repas: Database["public"]["Enums"]["repas_type"]
           source?: Database["public"]["Enums"]["journal_source"]
           user_id: string
         }
         Update: {
+          aliment_id?: string | null
           created_at?: string
+          fibres?: number | null
           gluc?: number | null
           id?: string
           jour?: string
@@ -761,12 +841,20 @@ export type Database = {
           portions?: number
           produit_id?: string | null
           prot?: number | null
+          quantite_g?: number | null
           recette_id?: string | null
           repas?: Database["public"]["Enums"]["repas_type"]
           source?: Database["public"]["Enums"]["journal_source"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "journal_repas_aliment_id_fkey"
+            columns: ["aliment_id"]
+            isOneToOne: false
+            referencedRelation: "aliments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journal_repas_produit_id_fkey"
             columns: ["produit_id"]
@@ -1268,11 +1356,22 @@ export type Database = {
           batch: boolean
           conservation_jours: number | null
           created_at: string
+          etapes: string[]
+          fibres: number | null
+          gluc: number | null
           id: string
+          ingredients_detail: Json
           instructions: string | null
+          kcal: number | null
+          lip: number | null
           nom: string
           portions: number
+          prot: number | null
+          ref: string | null
+          repas: string[]
+          tags: string[]
           temporaire: boolean
+          temps_min: number | null
           type: Database["public"]["Enums"]["repas_type"]
           updated_at: string
           user_id: string
@@ -1283,11 +1382,22 @@ export type Database = {
           batch?: boolean
           conservation_jours?: number | null
           created_at?: string
+          etapes?: string[]
+          fibres?: number | null
+          gluc?: number | null
           id?: string
+          ingredients_detail?: Json
           instructions?: string | null
+          kcal?: number | null
+          lip?: number | null
           nom: string
           portions?: number
+          prot?: number | null
+          ref?: string | null
+          repas?: string[]
+          tags?: string[]
           temporaire?: boolean
+          temps_min?: number | null
           type: Database["public"]["Enums"]["repas_type"]
           updated_at?: string
           user_id: string
@@ -1298,11 +1408,22 @@ export type Database = {
           batch?: boolean
           conservation_jours?: number | null
           created_at?: string
+          etapes?: string[]
+          fibres?: number | null
+          gluc?: number | null
           id?: string
+          ingredients_detail?: Json
           instructions?: string | null
+          kcal?: number | null
+          lip?: number | null
           nom?: string
           portions?: number
+          prot?: number | null
+          ref?: string | null
+          repas?: string[]
+          tags?: string[]
           temporaire?: boolean
+          temps_min?: number | null
           type?: Database["public"]["Enums"]["repas_type"]
           updated_at?: string
           user_id?: string
@@ -1684,7 +1805,7 @@ export type Database = {
       objectif_type: "sport" | "epargne" | "habitude" | "autre"
       perimetre: "perso" | "sasu"
       priorite: "basse" | "normale" | "haute"
-      repas_type: "petit_dej" | "dejeuner" | "diner" | "encas"
+      repas_type: "petit_dej" | "dejeuner" | "diner" | "encas" | "collation"
       seance_etat: "prevue" | "en_cours" | "faite" | "sautee"
       seance_type:
         | "upper"
@@ -1847,7 +1968,7 @@ export const Constants = {
       objectif_type: ["sport", "epargne", "habitude", "autre"],
       perimetre: ["perso", "sasu"],
       priorite: ["basse", "normale", "haute"],
-      repas_type: ["petit_dej", "dejeuner", "diner", "encas"],
+      repas_type: ["petit_dej", "dejeuner", "diner", "encas", "collation"],
       seance_etat: ["prevue", "en_cours", "faite", "sautee"],
       seance_type: [
         "upper",
