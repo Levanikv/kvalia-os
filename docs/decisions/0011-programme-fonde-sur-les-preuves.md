@@ -47,6 +47,13 @@ que le programme s'appuie sur les meilleures sources récentes.
 5. **Deux corrections de bon sens** : le tirage vertical principal n'est plus un tirage bras tendus ; le finisher
    cardio de 8 min est un effort continu (vélo, elliptique, tapis), plus 8 min de burpees.
 
+6. **Le découpage dépend du nombre de séances** (ajout du 22 nov.) : l'objectif est que chaque muscle soit travaillé
+   au moins 2 fois par semaine (Schoenfeld, Ogborn & Krieger 2016, méta-analyse sur la fréquence :
+   <https://pubmed.ncbi.nlm.nih.gov/27102172/>). 1 séance → corps entier ; 2 → corps entier A / B (plus de haut / bas,
+   qui ne faisait travailler chaque muscle qu'une fois) ; 3 → corps entier A / B / A ; 4 → haut / bas × 2 ;
+   5 → push / pull / jambes + haut + bas ; 6 → push / pull / jambes × 2. `explicationSplit()` donne la raison en une
+   phrase (écran de proposition, agent).
+
 ## Conséquences
 
 - Les deux questions sont posées avant de créer un programme (onboarding, « Nouveau programme ») et modifiables dans

@@ -797,3 +797,38 @@ describe("matériel préféré, morphologie, douleurs", () => {
     expect(reponsesDepuisParametres(p)).toMatchObject({ preference_materiel: "poulies", morpho: "costaud" });
   });
 });
+
+describe("le découpage s'adapte au nombre de séances", () => {
+  const types = (n: number, jours: number[]) => {
+    const plan = planSemaine({ ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: n, boxe: 0 }, jours_salle: jours, jours_boxe: [] });
+    return { titres: plan.jours.flat().map((x) => x.titre), plan };
+  };
+
+  it("2 jours : deux séances corps entier complémentaires, pas un haut / bas", () => {
+    const { titres, plan } = types(2, [1, 4]);
+    expect(titres).toEqual(["Corps entier A", "Corps entier B"]);
+    expect(plan.explication).toMatch(/2 fois par semaine/);
+  });
+
+  it("3 jours : corps entier A / B / A ; 4 jours : haut / bas deux fois", () => {
+    expect(types(3, [1, 3, 5]).titres).toEqual(["Corps entier A", "Corps entier B", "Corps entier A"]);
+    expect(types(4, [1, 2, 4, 5]).titres).toEqual(["Haut du corps A", "Bas du corps A", "Haut du corps B", "Bas du corps B"]);
+  });
+
+  it("à 2 jours, pectoraux, dos et jambes sont travaillés dans les deux séances", async () => {
+    const db = base();
+    await genererProgramme(
+      db,
+      USER,
+      { ...PARAMETRES_SPORT_DEFAUT, rythme: { salle: 2, boxe: 0 }, jours_salle: [1, 4], jours_boxe: [], duree_min: 75, poids_kg: 80 },
+      "2026-11-09",
+    );
+    const parId = new Map(exercicesRef().map((e) => [e.id, e]));
+    const s1 = db.tables.seances.filter((s: any) => s.semaine === 1);
+    expect(s1).toHaveLength(2);
+    for (const se of s1) {
+      const parties = db.tables.exercices_seance.filter((e: any) => e.seance_id === se.id).map((e: any) => parId.get(e.exercice_id)!.partie_corps);
+      expect(parties).toEqual(expect.arrayContaining(["chest", "back", "upper legs"]));
+    }
+  });
+});

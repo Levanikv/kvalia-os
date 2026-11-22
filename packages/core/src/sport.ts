@@ -560,17 +560,43 @@ const MODELES: Record<string, Modele> = {
   pull: { type: "pull", titre: "Pull", slots: [S.dosVertical, S.dosHorizontal, S.dosHorizontal, S.arriereEpaules, S.trapezes, S.biceps, S.biceps] },
   legs: { type: "legs", titre: "Jambes", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.fessiers, S.mollets, S.abdos] },
   full: { type: "full", titre: "Full body", slots: [S.quadsCompose, S.pecsCompose, S.dosHorizontal, S.ischiosCompose, S.epaulesCompose, S.abdos] },
+  // Corps entier en deux versions complémentaires : à 2 ou 3 séances par semaine, chaque muscle revient au moins 2 fois.
+  fullA: {
+    type: "full",
+    titre: "Corps entier A",
+    slots: [S.quadsCompose, S.pecsCompose, S.dosHorizontal, S.ischiosCompose, S.epaulesCompose, S.triceps, S.abdos],
+  },
+  fullB: {
+    type: "full",
+    titre: "Corps entier B",
+    slots: [S.ischiosCompose, S.dosVertical, S.pecsIncline, S.quadsCompose, S.epaulesLateral, S.biceps, S.mollets],
+  },
 };
 
-/** Ordre des séances salle selon le nombre de jours. */
+/**
+ * Ordre des séances de salle selon le nombre de jours. Le principe : chaque muscle est travaillé au moins 2 fois par
+ * semaine dès que le nombre de séances le permet (ADR 0011) — donc corps entier jusqu'à 3 séances, haut / bas à 4,
+ * push / pull / jambes à partir de 5. Un haut / bas sur 2 jours ne ferait travailler chaque muscle qu'une fois.
+ */
 function splitPour(nbJours: number): string[] {
   if (nbJours <= 0) return [];
   if (nbJours === 1) return ["full"];
-  if (nbJours === 2) return ["upperA", "lowerA"];
-  if (nbJours === 3) return ["full", "full", "full"];
+  if (nbJours === 2) return ["fullA", "fullB"];
+  if (nbJours === 3) return ["fullA", "fullB", "fullA"];
   if (nbJours === 4) return ["upperA", "lowerA", "upperB", "lowerB"];
   if (nbJours === 5) return ["push", "pull", "legs", "upperA", "lowerB"];
   return ["push", "pull", "legs", "push", "pull", "legs"];
+}
+
+/** Pourquoi ce découpage, en une phrase à afficher (proposition de programme) ou à répéter (agent). */
+export function explicationSplit(nbJours: number): string {
+  if (nbJours <= 0) return "Aucune séance de salle générée.";
+  if (nbJours === 1) return "1 séance : corps entier, pour entretenir tous les muscles avec le temps disponible.";
+  if (nbJours === 2) return "2 séances : corps entier A et B — chaque muscle est travaillé 2 fois par semaine, ce qu’un haut / bas ne permettrait pas.";
+  if (nbJours === 3) return "3 séances : corps entier en alternance A / B — chaque muscle revient 3 fois par semaine, avec un jour de repos entre deux.";
+  if (nbJours === 4) return "4 séances : haut / bas, deux fois chacun — chaque muscle 2 fois par semaine, avec plus de volume par séance.";
+  if (nbJours === 5) return "5 séances : push / pull / jambes puis un haut et un bas — chaque muscle 2 fois par semaine.";
+  return "6 séances : push / pull / jambes deux fois — chaque muscle 2 fois par semaine, séances plus ciblées.";
 }
 
 const RANG_NIVEAU: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
@@ -698,6 +724,8 @@ export type PlanSemaine = {
   nb_boxe: number;
   /** Jours où salle et boxe tombent ensemble (double séance). */
   doubles: number[];
+  /** Pourquoi ce découpage des séances générées (une phrase). */
+  explication: string;
   avertissements: string[];
 };
 
@@ -731,7 +759,7 @@ export function planSemaine(params: ParametresSport, modeles: Record<string, { n
   }
   for (const j of joursBoxe) jours[j].push({ genre: "boxe", type: "boxe", titre: TITRE_BOXE });
   const doubles = joursBoxe.filter((j) => joursTous.includes(j));
-  return { jours, nb_salle: joursTous.length, nb_boxe: joursBoxe.length, doubles, avertissements };
+  return { jours, nb_salle: joursTous.length, nb_boxe: joursBoxe.length, doubles, explication: explicationSplit(joursSalle.length), avertissements };
 }
 
 export type ProgrammeGenere = { programme_id: string; nb_seances: number; nb_exercices: number; debut: string; fin: string; avertissements: string[] };

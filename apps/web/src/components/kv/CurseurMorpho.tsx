@@ -74,7 +74,7 @@ function Silhouette({ pos }: { pos: number }) {
   const epaules = xs[4];
   const taille = xs[19];
   return (
-    <svg viewBox={`0 0 ${LARGEUR} 420`} className="h-[min(40dvh,330px)] w-auto" role="img" aria-hidden>
+    <svg viewBox={`0 0 ${LARGEUR} 420`} className="h-[min(30dvh,250px)] w-auto" role="img" aria-hidden>
       <defs>
         <linearGradient id={`${id}-corps`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="var(--text-primary)" stopOpacity="1" />
@@ -126,16 +126,16 @@ export function CurseurMorpho({ valeur, onChange }: Props) {
   const gauche = (p: number) => `calc(${POUCE / 2}px + (100% - ${POUCE}px) * ${p / max})`;
 
   return (
-    <div className="flex flex-col gap-[var(--stack-md)]">
-      <div className="relative flex flex-col items-center overflow-hidden rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default pb-[var(--inset-lg)] pt-[var(--inset-md)] shadow-card">
+    <div className="flex flex-col gap-[var(--stack-sm)]">
+      <div className="relative flex flex-col items-center overflow-hidden rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default pb-[var(--inset-md)] pt-[var(--inset-sm)] shadow-card">
         <span className="kv-overline absolute left-[var(--inset-md)] top-[var(--inset-md)]">Silhouette</span>
         <span className="kv-mono absolute right-[var(--inset-md)] top-[var(--inset-md)]">
           {String(proche + 1).padStart(2, "0")} / {String(max + 1).padStart(2, "0")}
         </span>
         <Silhouette pos={pos} />
-        <div className="mt-[var(--stack-sm)] px-[var(--inset-md)] text-center" aria-live="polite">
-          <p className="type-display-md">{choix ? choix.titre : "Glisse pour choisir"}</p>
-          <p className="mt-[var(--stack-2xs)] type-body-md text-fg-secondary">{choix ? choix.aide : "Prends la silhouette la plus proche de la tienne."}</p>
+        <div className="mt-[var(--stack-xs)] px-[var(--inset-md)] text-center" aria-live="polite">
+          <p className="type-title-lg">{choix ? choix.titre : "Glisse pour choisir"}</p>
+          <p className="type-body-sm text-fg-secondary">{choix ? choix.aide : "Prends la silhouette la plus proche de la tienne."}</p>
         </div>
       </div>
 

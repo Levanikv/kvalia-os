@@ -394,6 +394,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                         ? " Le volume est réparti sur un split pour laisser 48 h à chaque muscle."
                         : " Chaque séance travaille tout le corps, pour garder la fréquence."}
                     </p>
+                    <p className="type-body-sm text-fg-primary">{plan.explication}</p>
                     <p className="type-body-sm">
                       Exercices choisis pour toi : matériel préféré {LIBELLES.preference_materiel[r.preference_materiel ?? "mix"].toLowerCase()}
                       {r.morpho ? `, morphologie ${LIBELLES.morpho[r.morpho].toLowerCase()}` : ""}, plus ton niveau et tes douleurs (profil). Volume et
