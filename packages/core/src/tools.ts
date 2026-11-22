@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { Ligne, Priorite, Tache, VueJour } from "./schemas";
 import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
+import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -42,6 +43,17 @@ const SortieConnexionTiime = z.object({
   methode: z.string().nullable(),
   attend_code: z.boolean().describe("Vrai : demander un code ; faux : faire valider la notification dans l'app Tiime"),
   message: z.string(),
+});
+
+const DefiSortie = z.object({
+  id: z.string().uuid(),
+  nom: z.string(),
+  mesure: MesureDefi,
+  cible: z.number(),
+  jours_semaine: z.array(z.number()),
+  libelle_jours: z.string(),
+  debut: z.string(),
+  fin: z.string().nullable(),
 });
 
 export const tools = {
@@ -336,9 +348,57 @@ export const tools = {
 
   reinitialiser_sport: {
     description:
-      "TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.",
+      "TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, défis, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.",
     input: z.object({ confirmer: z.literal(true) }),
-    output: z.object({ supprime: z.object({ seances: z.number(), programmes: z.number(), seances_perso: z.number() }) }),
+    output: z.object({ supprime: z.object({ seances: z.number(), programmes: z.number(), seances_perso: z.number(), defis: z.number() }) }),
+  },
+
+  // ---------- Défis du programme (pas, minutes, répétitions, case à cocher) ----------
+  lister_defis: {
+    description:
+      "Liste les défis de l'utilisateur (ex. 10 000 pas par jour, 10 min de mobilité, 50 pompes, une case « pas de sucre ») et leur état pour un jour (aujourd'hui par défaut) : valeur notée, cible atteinte, série de jours tenus, bilan de la semaine. du_jour = le défi vaut ce jour-là.",
+    input: z.object({ jour: z.string().date().optional().describe("YYYY-MM-DD (aujourd'hui par défaut)") }),
+    output: z.array(
+      DefiSortie.extend({
+        actif: z.boolean(),
+        du_jour: z.boolean(),
+        termine: z.boolean(),
+        a_venir: z.boolean(),
+        unite: z.string(),
+        valeur: z.number(),
+        atteint: z.boolean(),
+        serie: z.number(),
+        semaine: z.object({ atteints: z.number(), total: z.number() }),
+      }),
+    ),
+  },
+
+  creer_defi: {
+    description:
+      "Ajoute un défi au programme : un nom, une mesure (pas, minutes, repetitions, ou case pour juste cocher), une cible par jour, les jours de la semaine (tous par défaut). Il commence aujourd'hui et s'arrête à la fin du programme actif, sauf dates données. Demander la cible si elle n'est pas claire.",
+    input: DefiEntree,
+    output: DefiSortie,
+  },
+
+  modifier_defi: {
+    description:
+      "Modifie un défi (nom, mesure, cible, jours, dates) ou le met en pause (actif=false) / le relance (actif=true). L'historique déjà noté ne bouge pas.",
+    input: ModificationDefi,
+    output: DefiSortie.extend({ actif: z.boolean() }),
+  },
+
+  noter_defi: {
+    description:
+      "Note la progression d'un défi pour un jour (aujourd'hui par défaut, jamais dans le futur) : « j'ai fait 8 500 pas » → valeur=8500 ; « +10 min de gainage » → ajouter=10 ; « défi pas de sucre tenu » → fait=true. Appeler lister_defis d'abord pour trouver l'id.",
+    input: NotationDefi,
+    output: z.object({ defi_id: z.string().uuid(), nom: z.string(), jour: z.string(), valeur: z.number(), cible: z.number(), atteint: z.boolean() }),
+  },
+
+  supprimer_defi: {
+    description:
+      "Supprime un défi et tout son historique. Irréversible : pour simplement l'arrêter en gardant l'historique, préférer modifier_defi avec actif=false. Confirmer avant.",
+    input: z.object({ id: z.string().uuid() }),
+    output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
   },
 
   // ---------- Entreprise (SASU) — Tiime en lecture seule, ADR 0010 ----------
@@ -411,6 +471,7 @@ export const toolsAvecConfirmation: ReadonlySet<string> = new Set([
   "generer_programme",
   "modifier_programme",
   "supprimer_seance_perso",
+  "supprimer_defi",
   "reinitialiser_sport",
   // phase 1+ : "valider_courses", "envoyer_document", "creer_evenement"
 ]);

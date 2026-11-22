@@ -59,6 +59,16 @@ export default async function Page({ params, searchParams }: Props) {
           <Icon name="arrow_back" size={24} />
         </Link>
       }
+      pied={
+        ctx && !ctx.seanceFaite ? (
+          <BoutonFait
+            ligneId={ctx.ligne.id}
+            fait={ctx.ligne.fait}
+            desactive={ctx.seanceFaite}
+            suivant={ctx.suivant ? `/sport/exercices/${ctx.suivant}?seance=${seanceId}` : retour}
+          />
+        ) : undefined
+      }
     >
       <Video src={e.video_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
 
@@ -80,12 +90,6 @@ export default async function Page({ params, searchParams }: Props) {
             {ctx.ligne.repos_s ? `Repos ${ctx.ligne.repos_s} s · ` : ""}
             {ctx.ligne.kcal ?? 0} kcal
           </p>
-          <BoutonFait
-            ligneId={ctx.ligne.id}
-            fait={ctx.ligne.fait}
-            desactive={ctx.seanceFaite}
-            suivant={ctx.suivant ? `/sport/exercices/${ctx.suivant}?seance=${seanceId}` : retour}
-          />
         </div>
       )}
 

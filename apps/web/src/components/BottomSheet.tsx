@@ -11,6 +11,8 @@ type Props = {
   pleine?: boolean;
   /** Accent du module hôte pour les boutons dans la feuille. */
   module?: string;
+  /** Boutons d'action collés en bas de la feuille (hors de la zone qui défile) : toujours visibles. */
+  pied?: ReactNode;
   children: ReactNode;
 };
 
@@ -19,7 +21,7 @@ type Props = {
  * (le haut ne monte jamais sous la barre d'état, le bas laisse l'indicateur d'accueil libre).
  * Se ferme au tap sur le voile, à Échap, ou via onFermer. Bloque le scroll de la page tant qu'elle est ouverte.
  */
-export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, children }: Props) {
+export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, pied, children }: Props) {
   const id = useId();
   useEffect(() => {
     if (!ouvert) return;
@@ -60,7 +62,10 @@ export function BottomSheet({ ouvert, onFermer, titre, pleine, module: mod, chil
             </button>
           </div>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+20px)]">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto px-5 ${pied ? "pb-[var(--stack-md)]" : "pb-[calc(env(safe-area-inset-bottom)+20px)]"}`}>{children}</div>
+        {pied && (
+          <div className="shrink-0 border-t border-line-subtle px-5 pb-[calc(env(safe-area-inset-bottom)+var(--stack-md))] pt-[var(--stack-sm)]">{pied}</div>
+        )}
       </div>
     </div>,
     document.body,

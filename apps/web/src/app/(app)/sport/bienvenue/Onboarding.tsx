@@ -685,7 +685,8 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                   </div>
                 ))}
               </dl>
-              <div className="mt-auto flex flex-col items-center gap-[var(--stack-md)] pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))]">
+              {/* CTA collés en bas : visibles même quand le récapitulatif dépasse l'écran (petits iPhone). */}
+              <div className="sticky bottom-0 mt-auto flex flex-col items-center gap-[var(--stack-md)] bg-surface-page/85 pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))] pt-[var(--stack-md)] backdrop-blur-md">
                 {resultat.premiere && resultat.premiere.jour === aujourdhui && (
                   <Link href={`/sport/seance/${resultat.premiere.id}`} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
                     <span className="kv-btn-label">Démarrer ma séance du jour</span>

@@ -2,7 +2,10 @@
 import { revalidatePath } from "next/cache";
 import {
   ciblesDepuisProfil,
+  DefiEntree,
   executer,
+  ModificationDefi,
+  NotationDefi,
   ModeleSeanceEntree,
   ModificationProgramme,
   ParametresSport,
@@ -224,4 +227,54 @@ export async function planifierSeancePersoAction(e: { modele_id: string; jour_se
   const r = await executer("planifier_seance_perso", e, { db: supabase, userId: user.id });
   revaliderSport();
   return r;
+}
+
+// ---------- Défis du programme ----------
+/** En production, Next masque le message d'une erreur levée dans une server action : on le renvoie explicitement. */
+type Resultat<T> = { ok: true; valeur: T } | { ok: false; erreur: string };
+
+async function tenter<T>(f: () => Promise<T>): Promise<Resultat<T>> {
+  try {
+    return { ok: true, valeur: await f() };
+  } catch (e) {
+    return { ok: false, erreur: e instanceof Error ? e.message : "Action impossible." };
+  }
+}
+
+export async function creerDefiAction(brut: unknown) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("creer_defi", DefiEntree.parse(brut), { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
+}
+
+export async function modifierDefiAction(brut: unknown) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("modifier_defi", ModificationDefi.parse(brut), { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
+}
+
+export async function noterDefiAction(brut: unknown) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("noter_defi", NotationDefi.parse(brut), { db: supabase, userId: user.id });
+    revalidatePath("/sport");
+    revalidatePath("/sport/programme");
+    revalidatePath("/");
+    return r;
+  });
+}
+
+export async function supprimerDefiAction(id: string) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("supprimer_defi", { id }, { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
 }

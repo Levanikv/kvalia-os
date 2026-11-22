@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@kvalia/core";
-import { chargerModeles, dureeModele, LIBELLES, parametresNutrition, parametresSport, phasesProgramme, poidsActuel } from "@kvalia/core";
+import { chargerModeles, dureeModele, LIBELLES, listerDefis, parametresNutrition, parametresSport, phasesProgramme, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
+import { DefisProgramme } from "../Defis";
 import { libelleFocus, libelleType, positionProgramme, trierParJour } from "../lib";
 import { ORDRE_SEMAINE, Phases, SemaineType, type JourType } from "./Phases";
 
@@ -14,8 +15,9 @@ type Rythme = { salle?: number; boxe?: number; objectif?: string; niveau?: strin
 
 /**
  * Onglet Programme (maquette « 14 · Programme actif ») : carte du programme en cours (objectif, rythme, semaine n,
- * fin), phases, semaine type, puis les infos secondaires (avancement, toutes les semaines) et les deux entrées :
- * « Nouveau programme » et « Modifier le programme » (parcours /sport/programme/nouveau, sans questions de profil).
+ * fin), phases, semaine type, défis (pas, minutes, répétitions, case à cocher), puis les infos secondaires (avancement,
+ * toutes les semaines, mes séances). Les deux entrées « Modifier » et « Nouveau programme » (parcours
+ * /sport/programme/nouveau, sans questions de profil) sont dans la barre d'action fixe, au-dessus de la barre de l'app.
  * Sans programme : état vide « Construis ton programme » (maquette 02).
  */
 export default async function Page() {
@@ -25,7 +27,7 @@ export default async function Page() {
 
   if (!prog) return sansProgramme(supabase, user.id);
 
-  const [{ data: brutes }, modeles, reglages] = await Promise.all([
+  const [{ data: brutes }, modeles, reglages, defis] = await Promise.all([
     supabase
       .from("seances")
       .select("id, jour, type, titre, etat, bloc, semaine, focus, duree_min, kcal, created_at, exercices_seance(id)")
@@ -33,6 +35,7 @@ export default async function Page() {
       .order("jour"),
     chargerModeles(supabase, user.id),
     parametresSport(supabase, user.id),
+    listerDefis(supabase, user.id, auj),
   ]);
   const seances = trierParJour(brutes ?? []);
   const r = (prog.rythme ?? {}) as Rythme;
@@ -73,8 +76,23 @@ export default async function Page() {
   const etat = pos?.avant ? "À venir" : pos?.apres ? "Terminé" : "Actif";
 
   return (
-    <ModuleFrame module="sport" surTitre={`Sport · ${objectif}`} titre="Programme">
-      <RealtimeRefresh tables={["seances", "programmes"]} />
+    <ModuleFrame
+      module="sport"
+      surTitre={`Sport · ${objectif}`}
+      titre="Programme"
+      pied={
+        <div className="flex gap-[var(--inline-sm)]">
+          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-secondary kv-btn-lg min-w-0 flex-1 !px-[var(--inset-sm)] shadow-raised">
+            <Icon name="tune" size={20} />
+            <span className="kv-btn-label truncate">Modifier</span>
+          </Link>
+          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg min-w-0 flex-[1.4] !px-[var(--inset-sm)] shadow-raised">
+            <span className="kv-btn-label truncate">Nouveau programme</span>
+          </Link>
+        </div>
+      }
+    >
+      <RealtimeRefresh tables={["seances", "programmes", "defis", "defis_suivi"]} />
       <div className="cascade flex flex-col gap-[var(--stack-lg)]">
         {/* Programme en cours */}
         <section
@@ -123,6 +141,8 @@ export default async function Page() {
         <Phases semaines={semainesFocus} semaineCourante={pos?.avant || pos?.apres ? null : semaineCourante} />
 
         <SemaineType jours={jours} note={`semaine ${semaineCourante} · touche une séance`} />
+
+        <DefisProgramme defis={defis} finProgramme={prog.fin} />
 
         {/* Infos secondaires */}
         <section className="grid grid-cols-3 gap-[var(--inline-md)]">
@@ -217,20 +237,6 @@ export default async function Page() {
         </section>
 
         <MesSeances modeles={Object.values(modeles)} perso={reglages.seances_perso} />
-
-        {/* Entrées : nouveau programme, modifier */}
-        <div className="flex flex-col gap-[var(--stack-sm)]">
-          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
-            <span className="kv-btn-label">Nouveau programme</span>
-            <span className="kv-btn-end">
-              <Icon name="arrow_forward" size={22} />
-            </span>
-          </Link>
-          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-tertiary kv-btn-lg kv-btn-block">
-            <Icon name="tune" size={20} />
-            <span className="kv-btn-label">Modifier le programme</span>
-          </Link>
-        </div>
       </div>
     </ModuleFrame>
   );
@@ -248,7 +254,19 @@ async function sansProgramme(supabase: Db, userId: string) {
     params.profil?.douleurs?.length ? `À ménager : ${params.profil.douleurs.join(", ")}` : null,
   ].filter(Boolean) as string[];
   return (
-    <ModuleFrame module="sport" surTitre="Sport" titre="Programme">
+    <ModuleFrame
+      module="sport"
+      surTitre="Sport"
+      titre="Programme"
+      pied={
+        <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end shadow-raised">
+          <span className="kv-btn-label">Créer mon programme</span>
+          <span className="kv-btn-end">
+            <Icon name="arrow_forward" size={22} />
+          </span>
+        </Link>
+      }
+    >
       <div className="flex flex-col gap-[var(--stack-lg)]">
         <Link
           href="/sport/programme/nouveau"
@@ -267,12 +285,6 @@ async function sansProgramme(supabase: Db, userId: string) {
                 Tu réponds à l’essentiel, l’IA s’occupe du reste : séances, charges, progression et ajustements chaque semaine.
               </p>
             </div>
-            <span className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
-              <span className="kv-btn-label">Créer mon programme</span>
-              <span className="kv-btn-end">
-                <Icon name="arrow_forward" size={22} />
-              </span>
-            </span>
           </div>
         </Link>
 

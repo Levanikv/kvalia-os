@@ -1174,12 +1174,17 @@ export async function modifierProgramme(db: KvaliaClient, userId: string, brut: 
  * TEMPORAIRE : sert aux tests de la v0 ; à retirer quand la v1 est validée.
  */
 export async function reinitialiserSport(db: KvaliaClient, userId: string) {
-  const compter = async (table: "seances" | "programmes" | "modeles_seance") => {
+  const compter = async (table: "seances" | "programmes" | "modeles_seance" | "defis") => {
     const { count } = await db.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId);
     return count ?? 0;
   };
-  const avant = { seances: await compter("seances"), programmes: await compter("programmes"), seances_perso: await compter("modeles_seance") };
-  for (const table of ["exercices_seance", "seances", "programmes", "modeles_seance_exercices", "modeles_seance"] as const) {
+  const avant = {
+    seances: await compter("seances"),
+    programmes: await compter("programmes"),
+    seances_perso: await compter("modeles_seance"),
+    defis: await compter("defis"),
+  };
+  for (const table of ["defis_suivi", "defis", "exercices_seance", "seances", "programmes", "modeles_seance_exercices", "modeles_seance"] as const) {
     const { error } = await db.from(table).delete().eq("user_id", userId);
     if (error) throw error;
   }

@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-29 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+34 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -69,6 +69,7 @@ Le condensé du jour : rendez-vous, séance, repas, tâches, habitudes, courses,
 - `habitudes` : liste de objet { id, nom, moment, non_negociable, fait }
 - `seance` : objet { id, type, titre, duree_min, etat, kcal, nb_exercices, nb_faits } | null
 - `seances` : liste de objet { id, type, titre, duree_min, etat, kcal, nb_exercices, nb_faits } — défaut `[]`
+- `defis` : liste de objet { id, nom, mesure, cible, valeur, atteint } — défaut `[]`
 - `repas` : liste de objet { repas, recette_id, recette, portions, pris }
 - `courses` : objet { liste_id, articles, manques } | null
 - `depenses_semaine` : nombre
@@ -377,13 +378,100 @@ Modifie le programme actif sans en créer un nouveau : jours de salle (0 = diman
 
 ## `reinitialiser_sport` — à confirmer
 
-TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.
+TEMPORAIRE (tests v0) : remet l'app Sport à zéro — supprime programmes, séances, séances perso, défis, réglages et onboarding Sport (pas les pesées ni la nutrition). Irréversible : ne l'appeler que si Levani le demande explicitement, après confirmation.
 
 **Entrée**
 - `confirmer` : literal
 
 **Sortie**
-- `supprime` : objet { seances, programmes, seances_perso }
+- `supprime` : objet { seances, programmes, seances_perso, defis }
+
+## `lister_defis`
+
+Liste les défis de l'utilisateur (ex. 10 000 pas par jour, 10 min de mobilité, 50 pompes, une case « pas de sucre ») et leur état pour un jour (aujourd'hui par défaut) : valeur notée, cible atteinte, série de jours tenus, bilan de la semaine. du_jour = le défi vaut ce jour-là.
+
+**Entrée**
+- `jour` : string (date) (optionnel) — YYYY-MM-DD (aujourd'hui par défaut)
+
+**Sortie**
+- liste de objet { id, nom, mesure, cible, jours_semaine, libelle_jours, debut, fin, actif, du_jour, termine, a_venir, unite, valeur, atteint, serie, semaine }
+
+## `creer_defi`
+
+Ajoute un défi au programme : un nom, une mesure (pas, minutes, repetitions, ou case pour juste cocher), une cible par jour, les jours de la semaine (tous par défaut). Il commence aujourd'hui et s'arrête à la fin du programme actif, sauf dates données. Demander la cible si elle n'est pas claire.
+
+**Entrée**
+- `nom` : string (trim) — Ce qu'il faut faire, ex. « Marcher », « Gainage », « Pas de sucre »
+- `mesure` : `pas` · `minutes` · `repetitions` · `case` — défaut `"case"` — pas, minutes, repetitions, ou case (juste fait / pas fait)
+- `cible` : entier (optionnel) — Objectif du jour (ex. 10000 pas, 10 minutes, 50 reps). Ignoré pour « case ».
+- `jours_semaine` : liste de entier (optionnel) — Jours où le défi vaut (0 = dimanche … 6 = samedi). Tous les jours par défaut.
+- `debut` : string (date) (optionnel) — Premier jour (aujourd'hui par défaut)
+- `fin` : string (date) | null (optionnel) — Dernier jour ; par défaut la fin du programme actif ; null = sans fin
+
+**Sortie**
+- `id` : string (uuid)
+- `nom` : string
+- `mesure` : `pas` · `minutes` · `repetitions` · `case`
+- `cible` : nombre
+- `jours_semaine` : liste de nombre
+- `libelle_jours` : string
+- `debut` : string
+- `fin` : string | null
+
+## `modifier_defi`
+
+Modifie un défi (nom, mesure, cible, jours, dates) ou le met en pause (actif=false) / le relance (actif=true). L'historique déjà noté ne bouge pas.
+
+**Entrée**
+- `nom` : string (trim) (optionnel) — Ce qu'il faut faire, ex. « Marcher », « Gainage », « Pas de sucre »
+- `mesure` : `pas` · `minutes` · `repetitions` · `case` — défaut `"case"` (optionnel) — pas, minutes, repetitions, ou case (juste fait / pas fait)
+- `cible` : entier (optionnel) (optionnel) — Objectif du jour (ex. 10000 pas, 10 minutes, 50 reps). Ignoré pour « case ».
+- `jours_semaine` : liste de entier (optionnel) (optionnel) — Jours où le défi vaut (0 = dimanche … 6 = samedi). Tous les jours par défaut.
+- `debut` : string (date) (optionnel) (optionnel) — Premier jour (aujourd'hui par défaut)
+- `fin` : string (date) | null (optionnel) (optionnel) — Dernier jour ; par défaut la fin du programme actif ; null = sans fin
+- `id` : string (uuid)
+- `actif` : booléen (optionnel) — false = mettre le défi en pause (l'historique reste)
+
+**Sortie**
+- `id` : string (uuid)
+- `nom` : string
+- `mesure` : `pas` · `minutes` · `repetitions` · `case`
+- `cible` : nombre
+- `jours_semaine` : liste de nombre
+- `libelle_jours` : string
+- `debut` : string
+- `fin` : string | null
+- `actif` : booléen
+
+## `noter_defi`
+
+Note la progression d'un défi pour un jour (aujourd'hui par défaut, jamais dans le futur) : « j'ai fait 8 500 pas » → valeur=8500 ; « +10 min de gainage » → ajouter=10 ; « défi pas de sucre tenu » → fait=true. Appeler lister_defis d'abord pour trouver l'id.
+
+**Entrée**
+- `defi_id` : string (uuid)
+- `jour` : string (date) (optionnel) — Jour concerné (aujourd'hui par défaut, jamais dans le futur)
+- `valeur` : nombre (optionnel) — Valeur totale du jour (remplace) — ex. 8500 pas
+- `ajouter` : nombre (optionnel) — Ajoute à la valeur du jour (négatif pour retirer) — ex. +1000 pas, +5 min
+- `fait` : booléen (optionnel) — Pour un défi à cocher (ou pour marquer la cible atteinte d'un coup)
+
+**Sortie**
+- `defi_id` : string (uuid)
+- `nom` : string
+- `jour` : string
+- `valeur` : nombre
+- `cible` : nombre
+- `atteint` : booléen
+
+## `supprimer_defi` — à confirmer
+
+Supprime un défi et tout son historique. Irréversible : pour simplement l'arrêter en gardant l'historique, préférer modifier_defi avec actif=false. Confirmer avant.
+
+**Entrée**
+- `id` : string (uuid)
+
+**Sortie**
+- `id` : string (uuid)
+- `supprime` : booléen
 
 ## `connecter_tiime`
 

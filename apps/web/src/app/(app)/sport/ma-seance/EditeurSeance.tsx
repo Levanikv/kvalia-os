@@ -355,7 +355,17 @@ export function EditeurSeance({ refs, dates, programmeActif, modele, joursPlanif
       </BottomSheet>
 
       {/* Au programme */}
-      <BottomSheet ouvert={planifier} onFermer={() => setPlanifier(false)} titre="Mettre au programme" module="sport">
+      <BottomSheet
+        ouvert={planifier}
+        onFermer={() => setPlanifier(false)}
+        titre="Mettre au programme"
+        module="sport"
+        pied={
+          <button type="button" onClick={mettreAuProgramme} disabled={occupe} className="kv-btn kv-btn-primary kv-btn-lg kv-btn-block">
+            <span className="kv-btn-label">{occupe ? "…" : "Ajouter"}</span>
+          </button>
+        }
+      >
         <div className="flex flex-col gap-[var(--stack-md)]">
           <div className="kv-seg" role="radiogroup" aria-label="Fréquence">
             <button
@@ -407,9 +417,6 @@ export function EditeurSeance({ refs, dates, programmeActif, modele, joursPlanif
             </>
           )}
           {!programmeActif && <p className="type-body-sm text-fg-tertiary">« Chaque semaine » demande un programme actif.</p>}
-          <button type="button" onClick={mettreAuProgramme} disabled={occupe} className="kv-btn kv-btn-primary kv-btn-lg kv-btn-block">
-            <span className="kv-btn-label">{occupe ? "…" : "Ajouter"}</span>
-          </button>
         </div>
       </BottomSheet>
 

@@ -118,6 +118,9 @@ export const VueJour = z.object({
   seance: SeanceVue.nullable(),
   /** Toutes les séances du jour (ex. muscu + boxe), salle d'abord. */
   seances: z.array(SeanceVue).default([]),
+  defis: z
+    .array(z.object({ id: z.string().uuid(), nom: z.string(), mesure: z.string(), cible: z.number(), valeur: z.number(), atteint: z.boolean() }))
+    .default([]),
   repas: z.array(
     z.object({
       repas: z.string(),

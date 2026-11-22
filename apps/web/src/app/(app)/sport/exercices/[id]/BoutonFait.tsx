@@ -6,7 +6,7 @@ import { cocher } from "../../actions";
 
 type Props = { ligneId: string; fait: boolean; desactive: boolean; suivant: string };
 
-/** Depuis la fiche : marquer l'exercice fait et enchaîner sur le suivant. */
+/** Depuis la fiche (barre d'action fixe en bas) : marquer l'exercice fait et enchaîner sur le suivant. */
 export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -14,7 +14,7 @@ export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
 
   if (desactive) return null;
   return (
-    <div className="mt-3 flex gap-2">
+    <div className="flex gap-[var(--inline-md)]">
       <button
         type="button"
         disabled={local}
@@ -25,17 +25,14 @@ export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
             router.push(suivant);
           })
         }
-        className={`tap flex flex-1 items-center justify-center gap-2 rounded-full font-semibold ${local ? "bg-feedback-success/20 text-feedback-success-text" : "bg-action-primary text-fg-on-brand"}`}
+        className={`kv-btn kv-btn-xl flex-1 shadow-raised ${local ? "kv-btn-secondary text-feedback-success-text" : "kv-btn-primary"}`}
       >
-        <Icon name={local ? "check_circle" : "check"} size={20} filled={local} /> {local ? "Fait" : "Fait → suivant"}
+        <Icon name={local ? "check_circle" : "check"} size={22} filled={local} />
+        <span className="kv-btn-label">{local ? "Fait" : "Fait → suivant"}</span>
       </button>
       {local && (
-        <button
-          type="button"
-          onClick={() => router.push(suivant)}
-          className="tap flex items-center gap-1 rounded-full bg-surface-sunken px-4 text-sm font-medium"
-        >
-          Suivant <Icon name="chevron_right" size={18} />
+        <button type="button" onClick={() => router.push(suivant)} className="kv-btn kv-btn-primary kv-btn-xl shadow-raised">
+          <span className="kv-btn-label">Suivant</span> <Icon name="chevron_right" size={22} />
         </button>
       )}
     </div>

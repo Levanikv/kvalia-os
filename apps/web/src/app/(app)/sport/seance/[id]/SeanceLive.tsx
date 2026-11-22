@@ -420,7 +420,21 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
       />
 
       {/* C01 · Des exercices ratés ? */}
-      <BottomSheet ouvert={feuille === "rates"} onFermer={() => setFeuille(null)} module="sport">
+      <BottomSheet
+        ouvert={feuille === "rates"}
+        onFermer={() => setFeuille(null)}
+        module="sport"
+        pied={
+          <div className="flex gap-[var(--inline-md)]">
+            <button type="button" onClick={() => setFeuille(null)} className="kv-btn kv-btn-tertiary kv-btn-lg flex-1">
+              Reprendre
+            </button>
+            <button type="button" onClick={() => setFeuille("ressenti")} className="kv-btn kv-btn-primary kv-btn-lg flex-1">
+              Terminer
+            </button>
+          </div>
+        }
+      >
         <span className="kv-tag kv-tag-warning">
           {exos.filter((e) => !e.fait).length} exercice{exos.filter((e) => !e.fait).length > 1 ? "s" : ""} non coché
           {exos.filter((e) => !e.fait).length > 1 ? "s" : ""}
@@ -449,18 +463,25 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
               );
             })}
         </ul>
-        <div className="mt-[var(--stack-lg)] flex gap-[var(--inline-md)]">
-          <button type="button" onClick={() => setFeuille(null)} className="kv-btn kv-btn-tertiary kv-btn-lg flex-1">
-            Reprendre
-          </button>
-          <button type="button" onClick={() => setFeuille("ressenti")} className="kv-btn kv-btn-primary kv-btn-lg flex-1">
-            Terminer
-          </button>
-        </div>
       </BottomSheet>
 
       {/* A09 · Ressenti */}
-      <BottomSheet ouvert={feuille === "ressenti"} onFermer={() => setFeuille(null)} titre="Comment c’était ?" module="sport">
+      <BottomSheet
+        ouvert={feuille === "ressenti"}
+        onFermer={() => setFeuille(null)}
+        titre="Comment c’était ?"
+        module="sport"
+        pied={
+          <div className="flex gap-[var(--inline-md)]">
+            <button type="button" onClick={() => setFeuille(null)} className="kv-btn kv-btn-outline kv-btn-lg flex-1">
+              Annuler
+            </button>
+            <button type="button" onClick={enregistrer} disabled={envoi} className="kv-btn kv-btn-primary kv-btn-lg flex-[2]">
+              {envoi ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        }
+      >
         <div className="grid grid-cols-5 gap-[var(--inline-xs)]" role="radiogroup" aria-label="Ressenti">
           {RESSENTIS.map((r) => (
             <button
@@ -492,14 +513,6 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
           seront ajoutées à ta cible nutrition du jour.
           {rates.length > 0 && ` ${rates.length} exercice${rates.length > 1 ? "s" : ""} reprogrammé${rates.length > 1 ? "s" : ""} par l’agent.`}
         </p>
-        <div className="mt-[var(--stack-lg)] flex gap-[var(--inline-md)]">
-          <button type="button" onClick={() => setFeuille(null)} className="kv-btn kv-btn-outline kv-btn-lg flex-1">
-            Annuler
-          </button>
-          <button type="button" onClick={enregistrer} disabled={envoi} className="kv-btn kv-btn-primary kv-btn-lg flex-[2]">
-            {envoi ? "Enregistrement…" : "Enregistrer"}
-          </button>
-        </div>
       </BottomSheet>
 
       {/* C03 · Quitter la séance */}

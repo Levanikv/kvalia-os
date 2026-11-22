@@ -17,7 +17,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
 │   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
 │   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
-│   │                                 (À faire · En cours · Terminée · Prévue · Repos), défi de la semaine, énergie, records ;
+│   │                                 (À faire · En cours · Terminée · Prévue · Repos), défis du jour (« + 1 000 pas »,
+│   │                                 cocher, feuille de saisie), défi de la semaine, énergie, records ;
 │   │                                 programme suivi,
 │   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
 │   │                                 (?jour=YYYY-MM-DD pour un autre jour)
@@ -32,9 +33,10 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
 │   ├── /sport/programme              Programme actif (maquette 14) : carte du programme (objectif, rythme, semaine n / N,
-│   │                                 fin), phases, semaine type, avancement, toutes les semaines ; « Nouveau programme »
-│   │                                 et « Modifier le programme », « Mes séances ». Sans programme : « Construis ton
-│   │                                 programme » (maquette 02)
+│   │                                 fin), phases, semaine type, défis (#defis : pas, minutes, répétitions ou case ; ajout
+│   │                                 et modification en feuille), avancement, toutes les semaines, « Mes séances » ;
+│   │                                 « Modifier » et « Nouveau programme » en barre d'action fixe. Sans programme :
+│   │                                 « Construis ton programme » (maquette 02)
 │   ├── /sport/programme/modifier     Modifier le programme actif (plein écran) : semaine type jour par jour (repos, séance
 │   │                                 générée, une de mes séances), durée, nombre de semaines, à partir de quand
 │   ├── /sport/ma-seance/nouvelle     Créer une séance perso (plein écran) : nom, type, exercices (bibliothèque), séries,

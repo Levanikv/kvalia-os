@@ -33,6 +33,7 @@ import {
   reinitialiserSport,
 } from "./sport";
 import { enregistrerParametresNutrition, parametresNutrition } from "./nutrition";
+import { creerDefi, listerDefis, modifierDefi, noterDefi, supprimerDefi } from "./defis";
 import { pilotageSasu, synchroniserTiime } from "./entreprise";
 import type { AuthTiime, ClientTiime, DefiConnexion } from "./tiime";
 
@@ -405,6 +406,29 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "modifier_programme": {
       return (await modifierProgramme(ctx.db, ctx.userId, entree as ToolInput<"modifier_programme">)) as ToolOutput<T>;
+    }
+
+    // ---------- Défis du programme ----------
+    case "lister_defis": {
+      const { jour } = entree as ToolInput<"lister_defis">;
+      const defis = await listerDefis(ctx.db, ctx.userId, jour ?? aujourdhuiIso());
+      return defis.map(({ icone: _i, increment: _p, ...d }) => d) as ToolOutput<T>;
+    }
+
+    case "creer_defi": {
+      return (await creerDefi(ctx.db, ctx.userId, entree as ToolInput<"creer_defi">)) as ToolOutput<T>;
+    }
+
+    case "modifier_defi": {
+      return (await modifierDefi(ctx.db, ctx.userId, entree as ToolInput<"modifier_defi">)) as ToolOutput<T>;
+    }
+
+    case "noter_defi": {
+      return (await noterDefi(ctx.db, ctx.userId, entree as ToolInput<"noter_defi">)) as ToolOutput<T>;
+    }
+
+    case "supprimer_defi": {
+      return (await supprimerDefi(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_defi">).id)) as ToolOutput<T>;
     }
 
     // ---------- Entreprise (Tiime, lecture seule) ----------

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { module, type ModuleKey } from "@kvalia/ui";
+import { barrePour, module, type ModuleKey } from "@kvalia/ui";
 import { MenuApps } from "./MenuApps";
 import { initialeUtilisateur } from "@/lib/session";
 
@@ -17,15 +17,25 @@ type Props = {
   barre?: ReactNode;
   /** Surtitre mono au-dessus du titre (« Sport · bloc force S3/8 »). Avec lui, le titre passe en grand (display). */
   surTitre?: ReactNode;
+  /**
+   * Barre d'action collée en bas (le ou les CTA de l'écran) : toujours visible, posée au-dessus de la barre de l'app
+   * et de l'indicateur d'accueil iPhone ; le contenu qui défile lui laisse la place.
+   */
+  pied?: ReactNode;
   children: ReactNode;
 };
+
+/** Bas de la barre de l'app (même calcul que `ModuleBar`), pour poser la barre d'action juste au-dessus. */
+const BAS_BARRE_APP = "max(var(--page-tabbar-offset), calc(env(safe-area-inset-bottom) + var(--stack-xs)))";
 
 /**
  * Cadre d'une mini-app : pose `data-module` (accent, thème), header avec menu apps + titre + avatar, contenu.
  * La barre inférieure de l'application et le bouton « + » vivent dans le layout (app), en dehors du cadre.
  */
-export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, surTitre, children }: Props) {
+export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, surTitre, pied, children }: Props) {
   const m = module(key);
+  const aBarreApp = barrePour(key).length > 0;
+  const basPied = aBarreApp ? `calc(${BAS_BARRE_APP} + var(--tabbar-h) + var(--stack-sm))` : "calc(env(safe-area-inset-bottom) + var(--stack-lg))";
   const initiale = await initialeUtilisateur();
   return (
     <div data-module={key} className="kv-ground relative min-h-dvh overflow-clip bg-surface-page text-fg-primary">
@@ -49,7 +59,20 @@ export async function ModuleFrame({ module: key, titre, sousTitre, action, gauch
         </div>
         {barre && <div className="mx-auto max-w-lg pb-2">{barre}</div>}
       </header>
-      <main className="kv-ground-content contenu mx-auto max-w-lg px-[var(--page-gutter)] pt-[var(--stack-sm)]">{children}</main>
+      <main
+        className="kv-ground-content contenu mx-auto max-w-lg px-[var(--page-gutter)] pt-[var(--stack-sm)]"
+        style={pied ? { paddingBottom: `calc(${basPied} + var(--control-xl) + var(--stack-xl))` } : undefined}
+      >
+        {children}
+      </main>
+      {pied && (
+        <div
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-surface-page from-55% to-transparent px-[var(--page-gutter)] pt-[var(--stack-xl)]"
+          style={{ paddingBottom: basPied }}
+        >
+          <div className="pointer-events-auto mx-auto max-w-lg">{pied}</div>
+        </div>
+      )}
     </div>
   );
 }

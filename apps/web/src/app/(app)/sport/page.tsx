@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { bilanJour, defiSemaine, parametresSport, poidsActuel } from "@kvalia/core";
+import { bilanJour, defiSemaine, listerDefis, parametresSport, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
+import { DefisDuJour } from "./Defis";
 import { enteteJour } from "./entete";
 import { EnergieJour } from "./EnergieJour";
 import { HeroSeance, TicketRepos } from "./HeroSeance";
@@ -17,7 +18,8 @@ type Props = { searchParams: Promise<{ jour?: string }> };
 
 /**
  * Sport — vue Jour (défaut), maquette « A01 · Home · séance du jour » : en-tête partagé avec Nutrition
- * (pastille du jour, semaine, bande de jours), ticket séance (5 états) → défi de la semaine → énergie → records.
+ * (pastille du jour, semaine, bande de jours), ticket séance (5 états) → défis du jour (pas, minutes, case…) →
+ * défi de la semaine → énergie → records.
  *
  * historique et énergie. Programme, Exercices et Nutrition sont dans la barre du bas : pas de carte en double.
  */
@@ -30,12 +32,13 @@ export default async function Page({ searchParams }: Props) {
   const lundi = decaler(jour, -((d.getUTCDay() + 6) % 7));
   const dimanche = decaler(lundi, 6);
 
-  const [entete, seances, params, { data: semaine }, bilan] = await Promise.all([
+  const [entete, seances, params, { data: semaine }, bilan, defis] = await Promise.all([
     enteteJour(supabase, jour, auj, "/sport"),
     seancesPourJour(supabase, jour),
     parametresSport(supabase, user.id),
     supabase.from("seances").select("id, jour, type, etat, kcal, created_at").gte("jour", lundi).lte("jour", dimanche).order("created_at"),
     bilanJour(supabase, user.id, jour),
+    listerDefis(supabase, user.id, jour),
   ]);
   const { programme, pos } = entete;
   // Première ouverture de Sport : ni programme, ni onboarding terminé ou passé → onboarding muscu.
@@ -85,10 +88,25 @@ export default async function Page({ searchParams }: Props) {
       ? "Sport · programme à venir"
       : "Sport";
   const etapesOnboarding = 13;
+  const defisDuJour = defis.filter((d) => d.du_jour);
+  const sansProgrammePret = !programme && !!ob?.termine;
 
   return (
-    <ModuleFrame module="sport" surTitre={surTitre} titre={titreDate.charAt(0).toUpperCase() + titreDate.slice(1)} action={entete.action} barre={entete.barre}>
-      <RealtimeRefresh tables={["seances", "exercices_seance"]} />
+    <ModuleFrame
+      module="sport"
+      surTitre={surTitre}
+      titre={titreDate.charAt(0).toUpperCase() + titreDate.slice(1)}
+      action={entete.action}
+      barre={entete.barre}
+      pied={
+        sansProgrammePret ? (
+          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block shadow-raised">
+            <Icon name="auto_awesome" size={20} /> <span className="kv-btn-label">Créer mon programme</span>
+          </Link>
+        ) : undefined
+      }
+    >
+      <RealtimeRefresh tables={["seances", "exercices_seance", "defis", "defis_suivi"]} />
       <Suspense>
         <ToastUrl />
       </Suspense>
@@ -145,6 +163,8 @@ export default async function Page({ searchParams }: Props) {
           <TicketRepos prochaine={prochaine} semaine={{ faites: defi.faites, total: defi.total }} semaineNo={dansProgramme ? pos.semaine : null} />
         )}
 
+        {defisDuJour.length > 0 && <DefisDuJour defis={defisDuJour} jour={jour} aujourdhui={auj} modifiable={jour <= auj} />}
+
         {/* Défi de la semaine : toutes les séances de salle de la semaine. */}
         {defi.total > 0 && (
           <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-accent p-[var(--inset-lg)] text-fg-primary shadow-card">
@@ -181,13 +201,10 @@ export default async function Page({ searchParams }: Props) {
           seancePrevue={kcalSeancePrevue}
         />
 
-        {!programme && ob?.termine && (
+        {sansProgrammePret && (
           <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)]">
             <p className="type-title-lg">Pas de programme actif</p>
             <p className="type-body-sm text-fg-secondary">Ton profil est prêt : l’agent recrée tes semaines en blocs de 4.</p>
-            <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg kv-btn-block mt-[var(--stack-xs)]">
-              <Icon name="auto_awesome" size={20} /> <span className="kv-btn-label">Créer mon programme</span>
-            </Link>
           </section>
         )}
 

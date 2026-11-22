@@ -49,6 +49,8 @@ const DEFAUTS: Record<string, Ligne> = {
   modeles_seance_exercices: { charge_kg: null, repos_s: 90, reps: "10", series: 3, ordre: 0 },
   programmes: { actif: true, fin: null, materiel: [], rythme: {}, genere_par: null, objectif_id: null },
   pesees: { note: null },
+  defis: { actif: true, fin: null, programme_id: null, jours_semaine: [0, 1, 2, 3, 4, 5, 6], mesure: "case", cible: 1 },
+  defis_suivi: { valeur: 0 },
   profils: { reglages: {}, prenom: null, contexte_agent: null },
 };
 
