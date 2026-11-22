@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { CHOIX_MORPHO, CHOIX_PREFERENCE_MATERIEL, type ParametresSport } from "@kvalia/core";
+import { CHOIX_PREFERENCE_MATERIEL, type ParametresSport } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { LigneChoix, TuileChoix } from "@/components/kv/Choix";
 import { Ground } from "@/components/kv/Ground";
 import { ChoixDate } from "@/components/kv/ChoixDate";
+import { CurseurMorpho } from "@/components/kv/CurseurMorpho";
 import { WheelPicker } from "@/components/kv/WheelPicker";
 import { passerOnboarding, sauverOnboarding, terminerOnboarding } from "../actions";
 
@@ -587,13 +588,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                   </div>
                 )}
 
-                {etape === 15 && (
-                  <div className="grid grid-cols-2 gap-[var(--inline-sm)]" role="radiogroup" aria-label="Morphologie">
-                    {CHOIX_MORPHO.map((o) => (
-                      <TuileChoix key={o.id} titre={o.titre} description={o.aide} actif={a.morpho === o.id} onClick={() => maj("morpho", o.id)} />
-                    ))}
-                  </div>
-                )}
+                {etape === 15 && <CurseurMorpho valeur={a.morpho} onChange={(m) => maj("morpho", m)} />}
                 {etape === 16 && (
                   <div role="radiogroup" aria-label="Matériel préféré">
                     {CHOIX_PREFERENCE_MATERIEL.map((o) => (

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
-  CHOIX_MORPHO,
   CHOIX_PREFERENCE_MATERIEL,
   LIBELLES,
   parametresDepuisReponses,
@@ -15,6 +14,7 @@ import {
 } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ChoixDate } from "@/components/kv/ChoixDate";
+import { CurseurMorpho } from "@/components/kv/CurseurMorpho";
 import { WheelPicker } from "@/components/kv/WheelPicker";
 import { creerProgramme } from "../../actions";
 import { libelleFocus } from "../../lib";
@@ -57,7 +57,7 @@ type Props = {
 
 /**
  * Parcours « Nouveau programme » / « Modifier le programme » (maquettes 03 → 05, 09, 08, 13), sans les questions
- * de profil (niveau, lieu, douleurs, repères : déjà connus). Objectif → matériel préféré et morphologie → échéance →
+ * de profil (niveau, lieu, douleurs, repères : déjà connus). Objectif → matériel préféré → morphologie (curseur) → échéance →
  * rythme et premier jour →
  * proposition (phases et semaine type calculées par le noyau) → génération → « C'est parti ».
  */
@@ -92,7 +92,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
   })();
   const date = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", o);
   const titreObjectif = OBJECTIFS.find((o) => o.id === r.objectif)?.t ?? LIBELLES.objectif[params.objectif];
-  const total = 5; // 4 questions + proposition
+  const total = 6; // 5 questions + proposition
   const vue = ecran === "generation" && resultat && gen >= ETAPES_GENERATION.length ? "pret" : ecran;
 
   function maj<K extends keyof ReponsesProgramme>(k: K, v: ReponsesProgramme[K]) {
@@ -184,33 +184,21 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                       />
                     ))}
                   </div>
-                  <div className="flex flex-col gap-[var(--stack-sm)]">
-                    <div>
-                      <h2 className="type-title-sm">Ta morphologie aujourd’hui</h2>
-                      <p className="type-body-sm text-fg-secondary">
-                        Le poids seul ne dit rien : elle ajuste tes calories, tes protéines et écarte les exercices mal adaptés.
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-[var(--inline-sm)]" role="radiogroup" aria-label="Morphologie">
-                      {CHOIX_MORPHO.map((o) => (
-                        <button
-                          key={o.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={r.morpho === o.id}
-                          onClick={() => maj("morpho", o.id)}
-                          className={`kv-goal ${r.morpho === o.id ? "is-on" : ""}`}
-                        >
-                          <span className="type-label-lg">{o.titre}</span>
-                          <span className="kv-goal-desc">{o.aide}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </>
               )}
 
               {etape === 2 && (
+                <>
+                  <Titre
+                    sur="Morphologie"
+                    titre="Tu te décrirais comment ?"
+                    aide="Le poids seul ne dit rien : elle ajuste tes calories, tes protéines et écarte les exercices mal adaptés."
+                  />
+                  <CurseurMorpho valeur={r.morpho} onChange={(m) => maj("morpho", m)} />
+                </>
+              )}
+
+              {etape === 3 && (
                 <>
                   <Titre sur="Échéance" titre="Tu as une date en tête ?" aide="Avec une échéance, l’IA découpe le programme en phases jusqu’au jour J." />
                   <div className="flex flex-col gap-[var(--stack-sm)]" role="radiogroup" aria-label="Échéance">
@@ -233,7 +221,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 </>
               )}
 
-              {etape === 3 && (
+              {etape === 4 && (
                 <>
                   <Titre
                     sur="Rythme"
@@ -330,7 +318,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 </>
               )}
 
-              {etape === 4 && (
+              {etape === 5 && (
                 <>
                   <div className="flex flex-col gap-[var(--stack-sm)]">
                     <span className="kv-overline text-fg-brand">Proposition · {params.semaines} semaines</span>
@@ -417,11 +405,11 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
             </div>
 
             {pied(
-              etape < 4 ? (
+              etape < 5 ? (
                 <button
                   type="button"
                   onClick={() => setEtape((e) => e + 1)}
-                  disabled={etape === 3 && r.jours.length === 0}
+                  disabled={etape === 4 && r.jours.length === 0}
                   className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block"
                 >
                   <span className="kv-btn-label">Continuer</span>

@@ -44,7 +44,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 reps, repos, charge, ordre
 │   ├── /sport/ma-seance/[id]         Ma séance : modifier, « Au programme » (chaque semaine un jour ou une fois), supprimer
 │   ├── /sport/programme/nouveau      Parcours plein écran (?modifier=1 : pré-rempli) : objectif → matériel préféré (mix, poids
-│   │                                 libres, machines, poulies) et morphologie → échéance → rythme (jours,
+│   │                                 libres, machines, poulies) → morphologie (silhouette + curseur) → échéance → rythme (jours,
 │   │                                 séance générée ou une de mes séances par jour, durée) + premier jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
