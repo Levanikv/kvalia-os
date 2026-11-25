@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { journalDuJour, repasDuMoment, suggererRepas, type AlimentSortie } from "@kvalia/core";
-import { Icon } from "@/components/Icon";
+import { derniersRepas, journalDuJour, parcoursRepas, repasDuMoment, suggererRepas, type AlimentSortie } from "@kvalia/core";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
@@ -8,18 +6,18 @@ import { EntreeCarte } from "../sport/EntreeCarte";
 import { enteteJour } from "../sport/entete";
 import { jourDepuis } from "../sport/lib";
 import { BoutonAjout, FournisseurAjout } from "./Ajout";
-import { RepasDuJour } from "./RepasDuJour";
-import { Suggestions } from "./Suggestions";
+import { Bilan } from "./Bilan";
+import { RepasDuJour } from "./Repas";
 
 type Props = { searchParams: Promise<{ jour?: string }> };
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
 
 /**
- * Nutrition — journal du jour (même en-tête que Sport : pastille du jour, semaine, bande de jours) :
- * anneau des calories restantes (cible = base + sport du jour), barres de macros, « À manger maintenant »
- * (suggestions selon le reste, le repas du moment et la séance), repas de la journée, puis les entrées secondaires.
- * « Ajouter un aliment » est en barre d'action fixe.
+ * Nutrition — accueil du jour (même en-tête que Sport : pastille du jour, semaine, bande de jours) :
+ * le bilan à même le fond (`Bilan` : calories restantes, anneau par macro, ce qu'il reste par macro, séances),
+ * puis les repas (`RepasDuJour` : un seul déplié, celui du moment, avec le chemin le plus court pour le noter),
+ * puis les entrées secondaires. La barre d'action fixe ajoute au repas du moment ou ouvre le scan.
  */
 export default async function Page({ searchParams }: Props) {
   const { supabase, user } = await session();
@@ -27,10 +25,11 @@ export default async function Page({ searchParams }: Props) {
   const auj = aujourdhui();
   const jour = jourDepuis(sp.jour, auj);
   const moment = repasDuMoment();
-  const [j, entete, suggestion, { data: recentsBruts }] = await Promise.all([
+  const [j, entete, suggestion, precedents, { data: recentsBruts }] = await Promise.all([
     journalDuJour(supabase, user.id, jour),
     enteteJour(supabase, jour, auj, "/nutrition"),
     suggererRepas(supabase, user.id, { jour, repas: moment }),
+    derniersRepas(supabase, user.id, jour),
     supabase.from("journal_repas").select("aliment_id, created_at").not("aliment_id", "is", null).order("created_at", { ascending: false }).limit(40),
   ]);
   // Aliments récents : les derniers utilisés, sans doublon, pour un ajout en deux gestes.
@@ -44,16 +43,20 @@ export default async function Page({ searchParams }: Props) {
     .map((a) => ({ ...a, kcal: Number(a.kcal), prot: Number(a.prot), gluc: Number(a.gluc), lip: Number(a.lip) })) as AlimentSortie[];
 
   const modifiable = jour <= auj;
-  const pct = j.cible > 0 ? Math.min(1, Math.max(0, j.consomme / j.cible)) : 0;
-  const depasse = j.reste < 0;
+  const estAujourdhui = jour === auj;
+  const parcours = parcoursRepas(j, estAujourdhui ? moment : null);
+  const cartes = j.repas.map((r, i) => ({
+    ...r,
+    etat: parcours.repas[i].etat,
+    conseille_kcal: parcours.repas[i].conseille_kcal,
+    precedent: precedents[r.repas],
+  }));
   const titreDate = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
   const macros = [
-    { nom: "Protéines", valeur: j.proteines, cible: j.macros_cible.prot, ton: "kv-tone-protein" },
-    { nom: "Glucides", valeur: j.glucides, cible: j.macros_cible.gluc, ton: "kv-tone-carbs" },
-    { nom: "Lipides", valeur: j.lipides, cible: j.macros_cible.lip, ton: "kv-tone-fat" },
+    { nom: "Protéines", valeur: j.proteines, cible: j.macros_cible.prot, couleur: "var(--nutrition-data-protein)", kcalParG: 4 },
+    { nom: "Glucides", valeur: j.glucides, cible: j.macros_cible.gluc, couleur: "var(--nutrition-data-carbs)", kcalParG: 4 },
+    { nom: "Lipides", valeur: j.lipides, cible: j.macros_cible.lip, couleur: "var(--nutrition-data-fat)", kcalParG: 9 },
   ];
-  const R = 52;
-  const tour = 2 * Math.PI * R;
 
   return (
     <FournisseurAjout jour={jour} repasDuMoment={moment} recents={recents}>
@@ -66,92 +69,18 @@ export default async function Page({ searchParams }: Props) {
         pied={modifiable ? <BoutonAjout /> : undefined}
       >
         <RealtimeRefresh tables={["seances", "journal_repas"]} />
-        <div className="cascade flex flex-col gap-[var(--stack-lg)]">
-          {/* Bilan : calories restantes et macros */}
-          <section className="flex flex-col gap-[var(--stack-md)] rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default p-[var(--inset-lg)] shadow-card">
-            <div className="flex items-center gap-[var(--inline-xl)]">
-              <div className="kv-ring h-32 w-32">
-                <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" role="img" aria-label={`${j.reste} kcal restantes sur ${j.cible}`}>
-                  <circle cx="60" cy="60" r={R} fill="none" strokeWidth="10" className="kv-ring-track" />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={R}
-                    fill="none"
-                    strokeWidth="10"
-                    strokeLinecap="round"
-                    className={`kv-ring-fill ${depasse ? "stroke-feedback-danger" : "kv-stroke-brand"}`}
-                    strokeDasharray={`${(pct * tour).toFixed(1)} ${tour.toFixed(1)}`}
-                  />
-                </svg>
-                <div className="kv-ring-center items-center justify-center">
-                  <span className="type-display-md tabular-nums">{nf(Math.abs(j.reste))}</span>
-                  <span className="kv-overline">{depasse ? "kcal en trop" : "kcal restantes"}</span>
-                </div>
-              </div>
-              <dl className="flex min-w-0 flex-1 flex-col gap-[var(--stack-xs)]">
-                <div className="flex items-baseline justify-between gap-[var(--inline-md)]">
-                  <dt className="type-body-sm text-fg-secondary">Mangées</dt>
-                  <dd className="type-label-lg tabular-nums">{nf(j.consomme)}</dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-[var(--inline-md)]">
-                  <dt className="type-body-sm text-fg-secondary">Base</dt>
-                  <dd className="type-label-lg tabular-nums">{nf(j.base)}</dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-[var(--inline-md)]">
-                  <dt className="flex items-center gap-[var(--inline-xs)] type-body-sm text-fg-secondary">
-                    <Icon name="local_fire_department" size={16} /> Sport
-                  </dt>
-                  <dd className={`type-label-lg tabular-nums ${j.brule > 0 ? "text-feedback-success-text" : "text-fg-tertiary"}`}>+{nf(j.brule)}</dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-[var(--inline-md)] border-t border-line-subtle pt-[var(--stack-xs)]">
-                  <dt className="type-label-md">Cible du jour</dt>
-                  <dd className="type-title-sm tabular-nums">{nf(j.cible)}</dd>
-                </div>
-              </dl>
-            </div>
-            <div className="grid grid-cols-3 gap-[var(--inline-md)]">
-              {macros.map((m) => (
-                <div key={m.nom} className="kv-progress">
-                  <div className="kv-progress-head">
-                    <span className="kv-overline">{m.nom}</span>
-                  </div>
-                  <div className="kv-progress-track" aria-hidden>
-                    <div className={`kv-progress-fill ${m.ton}`} style={{ width: `${Math.min(100, (m.valeur / Math.max(1, m.cible)) * 100)}%` }} />
-                  </div>
-                  <span className="kv-mono">
-                    <span className="text-fg-primary">{nf(m.valeur)}</span> / {nf(m.cible)} g
-                  </span>
-                </div>
-              ))}
-            </div>
-            {j.seances.length > 0 && (
-              <ul className="flex flex-col gap-[var(--stack-2xs)] border-t border-line-subtle pt-[var(--stack-sm)]">
-                {j.seances.map((s) => (
-                  <li key={s.id}>
-                    <Link href={`/sport/seance/${s.id}`} className="flex items-center justify-between gap-[var(--inline-md)] type-body-sm text-fg-secondary">
-                      <span className="flex min-w-0 items-center gap-[var(--inline-sm)]">
-                        <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={16} />
-                        <span className="truncate">
-                          {s.titre ?? s.type} · {s.etat === "faite" ? "terminée" : s.etat === "en_cours" ? "en cours" : "prévue"}
-                        </span>
-                      </span>
-                      <span className="kv-mono shrink-0">{s.kcal > 0 ? `+${nf(s.kcal)} kcal` : "à l’issue de la séance"}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+        <div className="cascade flex flex-col gap-[var(--stack-xl)]">
+          <Bilan cible={j.cible} base={j.base} brule={j.brule} consomme={j.consomme} reste={j.reste} macros={macros} seances={j.seances} />
 
-          <Suggestions
-            key={`${jour}-${j.consomme}`}
+          <RepasDuJour
+            key={jour}
             jour={jour}
+            consomme={j.consomme}
             modifiable={modifiable}
-            initial={{ repas: suggestion.repas, budget_kcal: suggestion.budget_kcal, message: suggestion.message, suggestions: suggestion.suggestions }}
+            repas={cartes}
+            focus={parcours.focus}
+            ideesFocus={estAujourdhui ? { message: suggestion.message, suggestions: suggestion.suggestions } : null}
           />
-
-          <RepasDuJour repas={j.repas} modifiable={modifiable} />
 
           <section className="grid grid-cols-2 gap-[var(--inline-md)]">
             <EntreeCarte href="/nutrition/recettes" icone="menu_book" titre="Recettes" detail="36 recettes" sous="Par repas, selon ton sport" />

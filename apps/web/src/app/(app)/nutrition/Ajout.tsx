@@ -17,8 +17,8 @@ import { Scanner } from "./Scanner";
  */
 
 /** `scan` : ouvrir directement sur la caméra. */
-type Contexte = { ouvrir: (repas?: Repas, scan?: boolean) => void };
-const ContexteAjout = createContext<Contexte>({ ouvrir: () => {} });
+type Contexte = { ouvrir: (repas?: Repas, scan?: boolean) => void; repasDuMoment: Repas };
+const ContexteAjout = createContext<Contexte>({ ouvrir: () => {}, repasDuMoment: "dejeuner" });
 export const useAjout = () => useContext(ContexteAjout);
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
@@ -40,7 +40,7 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
     },
     [repasDuMoment],
   );
-  const valeur = useMemo(() => ({ ouvrir }), [ouvrir]);
+  const valeur = useMemo(() => ({ ouvrir, repasDuMoment }), [ouvrir, repasDuMoment]);
   return (
     <ContexteAjout.Provider value={valeur}>
       {children}
@@ -63,14 +63,22 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
   );
 }
 
-/** Barre d'action : « Ajouter un aliment », et le scan du code-barres à un geste. */
+const AU_REPAS: Record<Repas, string> = {
+  petit_dej: "au petit-déjeuner",
+  collation: "à la collation",
+  dejeuner: "au déjeuner",
+  encas: "à l’encas",
+  diner: "au dîner",
+};
+
+/** Barre d'action : « Ajouter au <repas du moment> », et le scan du code-barres à un geste. */
 export function BoutonAjout() {
-  const { ouvrir } = useAjout();
+  const { ouvrir, repasDuMoment } = useAjout();
   return (
     <div className="flex gap-[var(--inline-md)]">
       <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl min-w-0 flex-1 shadow-raised">
         <Icon name="add" size={22} />
-        <span className="kv-btn-label">Ajouter un aliment</span>
+        <span className="kv-btn-label truncate">Ajouter {AU_REPAS[repasDuMoment]}</span>
       </button>
       <button
         type="button"

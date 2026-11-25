@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-41 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+42 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -558,6 +558,22 @@ Retire une ligne du journal alimentaire (id donné par journal_du_jour).
 **Sortie**
 - `id` : string (uuid)
 - `supprime` : booléen
+
+## `repeter_repas`
+
+Refait un repas à l'identique : recopie dans le journal du jour (aujourd'hui par défaut) ce qui avait été noté à ce repas la dernière fois, ou le jour `depuis`. « Même petit-déjeuner qu'hier » → cet outil.
+
+**Entrée**
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner` — Le repas à refaire
+- `jour` : string (date) (optionnel) — Jour où le noter (aujourd'hui par défaut)
+- `depuis` : string (date) (optionnel) — Jour à recopier (par défaut : la dernière fois que ce repas a été noté, dans les 14 jours)
+
+**Sortie**
+- `jour` : string
+- `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner`
+- `depuis` : string
+- `lignes` : nombre
+- `kcal` : nombre
 
 ## `lister_recettes`
 

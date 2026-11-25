@@ -6,7 +6,7 @@
  */
 import { z } from "zod";
 import { aliment } from "./aliments";
-import { aujourdhuiIso, FUSEAU } from "./dates";
+import { aujourdhuiIso, decalerJour, FUSEAU } from "./dates";
 import { RECETTES_BASE } from "./recettes-base";
 import type { KvaliaClient } from "./supabase";
 
@@ -235,6 +235,94 @@ export async function journalDuJour(db: KvaliaClient, userId: string, jour = auj
     return { repas: r, libelle: LIBELLES_REPAS[r], kcal: ls.reduce((a, l) => a + l.kcal, 0), lignes: ls };
   });
   return { ...bilan, repas };
+}
+
+// ---------- Parcours du jour : où en est chaque repas, refaire un repas ----------
+
+/** Où en est un repas dans la journée : déjà noté, passé sans rien, c'est le moment, ou à venir. */
+export type EtatRepas = "note" | "passe" | "maintenant" | "a_venir";
+
+/**
+ * Pour chaque repas du jour : son état et, tant qu'il n'est pas noté, les calories conseillées (`budgetRepas`).
+ * `moment` = repas du moment si le jour est aujourd'hui ; `null` pour un autre jour (rien n'est « maintenant »).
+ * `focus` = le repas à mettre en avant : celui du moment, sinon rien.
+ */
+export function parcoursRepas(
+  j: { cible: number; reste: number; repas: Array<{ repas: Repas; kcal: number; lignes: unknown[] }> },
+  moment: Repas | null,
+): { focus: Repas | null; repas: Array<{ repas: Repas; etat: EtatRepas; conseille_kcal: number }> } {
+  const saisis = j.repas.filter((r) => r.lignes.length).map((r) => r.repas);
+  const iMoment = moment ? REPAS.indexOf(moment) : -1;
+  return {
+    focus: moment,
+    repas: j.repas.map((r) => {
+      const i = REPAS.indexOf(r.repas);
+      const etat: EtatRepas = r.repas === moment ? "maintenant" : r.lignes.length ? "note" : moment && i > iMoment ? "a_venir" : "passe";
+      const conseille = etat === "note" || etat === "passe" ? 0 : budgetRepas({ repas: r.repas, cible: j.cible, reste: j.reste, repas_saisis: saisis });
+      return { repas: r.repas, etat, conseille_kcal: conseille };
+    }),
+  };
+}
+
+/** La dernière fois qu'un repas a été noté avant `jour` : de quoi le refaire d'un geste. */
+export type RepasPrecedent = { jour: string; kcal: number; libelles: string[] };
+
+const COLONNES_COPIE = "repas, jour, libelle, kcal, prot, gluc, lip, fibres, aliment_id, quantite_g, recette_id, portions";
+
+/** Pour chaque repas, sa dernière occurrence dans les 14 jours avant `jour` (rien si jamais noté). */
+export async function derniersRepas(db: KvaliaClient, userId: string, jour = aujourdhuiIso()): Promise<Partial<Record<Repas, RepasPrecedent>>> {
+  const { data, error } = await db
+    .from("journal_repas")
+    .select("repas, jour, libelle, kcal")
+    .eq("user_id", userId)
+    .lt("jour", jour)
+    .gte("jour", decalerJour(jour, -14))
+    .order("jour", { ascending: false })
+    .limit(300);
+  if (error) throw error;
+  const sortie: Partial<Record<Repas, RepasPrecedent>> = {};
+  for (const l of data ?? []) {
+    const r = Repas.safeParse(l.repas);
+    if (!r.success) continue;
+    const vu = sortie[r.data];
+    if (vu && vu.jour !== l.jour) continue;
+    const cible: RepasPrecedent = vu ?? { jour: l.jour, kcal: 0, libelles: [] };
+    sortie[r.data] = cible;
+    cible.kcal += Math.round(Number(l.kcal ?? 0));
+    cible.libelles.push(l.libelle ?? "Sans nom");
+  }
+  return sortie;
+}
+
+export const EntreeRepeterRepas = z.object({
+  repas: Repas.describe("Le repas à refaire"),
+  jour: z.string().date().optional().describe("Jour où le noter (aujourd'hui par défaut)"),
+  depuis: z.string().date().optional().describe("Jour à recopier (par défaut : la dernière fois que ce repas a été noté, dans les 14 jours)"),
+});
+
+/**
+ * Refait un repas : recopie dans `jour` les lignes de ce repas telles qu'elles ont été notées la dernière fois
+ * (ou le jour `depuis`), macros comprises.
+ */
+export async function repeterRepas(db: KvaliaClient, userId: string, entree: z.input<typeof EntreeRepeterRepas>) {
+  const e = EntreeRepeterRepas.parse(entree);
+  const jour = e.jour ?? aujourdhuiIso();
+  const depuis = e.depuis ?? (await derniersRepas(db, userId, jour))[e.repas]?.jour;
+  if (!depuis) throw new Error(`Aucun ${LIBELLES_REPAS[e.repas].toLowerCase()} noté ces 14 derniers jours : rien à refaire.`);
+  if (depuis === jour) throw new Error("Le jour à recopier est le jour lui-même.");
+  const { data, error } = await db
+    .from("journal_repas")
+    .select(COLONNES_COPIE)
+    .eq("user_id", userId)
+    .eq("jour", depuis)
+    .eq("repas", e.repas)
+    .order("created_at");
+  if (error) throw error;
+  if (!data?.length) throw new Error(`Rien de noté pour ${LIBELLES_REPAS[e.repas].toLowerCase()} le ${depuis}.`);
+  const lignes = data.map(({ jour: _jour, ...l }) => ({ ...l, user_id: userId, jour, source: "manuel" as const }));
+  const { error: errInsert } = await db.from("journal_repas").insert(lignes);
+  if (errInsert) throw errInsert;
+  return { jour, repas: e.repas, depuis, lignes: lignes.length, kcal: lignes.reduce((a, l) => a + Math.round(Number(l.kcal ?? 0)), 0) };
 }
 
 // ---------- Recettes ----------

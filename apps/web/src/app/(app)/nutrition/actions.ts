@@ -45,7 +45,17 @@ export async function supprimerDuJournalAction(id: string) {
   });
 }
 
-/** Suggestions pour un autre repas que celui du moment (puces de la carte « À manger maintenant »). */
+/** Refaire un repas comme la dernière fois qu'il a été noté. */
+export async function repeterRepasAction(jour: string, repas: string) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("repeter_repas", { jour, repas: Repas.parse(repas) }, { db: supabase, userId: user.id });
+    revalider();
+    return r;
+  });
+}
+
+/** Suggestions pour un autre repas que celui du moment (idées d'une carte de repas dépliée). */
 export async function suggererAction(jour: string, repas: string) {
   const { supabase, user } = await session();
   return tenter(() => executer("suggerer_repas", { jour, repas: Repas.parse(repas) }, { db: supabase, userId: user.id }));

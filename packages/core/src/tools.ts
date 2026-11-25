@@ -9,7 +9,7 @@ import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sp
 import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
 import { MethodeId } from "./methodes";
 import { AlimentSortie } from "./aliments";
-import { EntreeJournal, Repas } from "./nutrition";
+import { EntreeJournal, EntreeRepeterRepas, Repas } from "./nutrition";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -508,6 +508,13 @@ export const tools = {
     description: "Retire une ligne du journal alimentaire (id donné par journal_du_jour).",
     input: z.object({ id: z.string().uuid() }),
     output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
+  },
+
+  repeter_repas: {
+    description:
+      "Refait un repas à l'identique : recopie dans le journal du jour (aujourd'hui par défaut) ce qui avait été noté à ce repas la dernière fois, ou le jour `depuis`. « Même petit-déjeuner qu'hier » → cet outil.",
+    input: EntreeRepeterRepas,
+    output: z.object({ jour: z.string(), repas: Repas, depuis: z.string(), lignes: z.number(), kcal: z.number() }),
   },
 
   lister_recettes: {

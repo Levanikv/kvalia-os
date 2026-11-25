@@ -49,12 +49,13 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition
-│   ├── /nutrition                    Journal du jour · ?jour=YYYY-MM-DD : anneau des calories restantes (base + sport), barres de
-│   │                                 macros, « À manger maintenant » (suggestions selon le reste, le repas du moment et la séance ;
-│   │                                 puces pour changer de repas, ajout d'un geste), repas (petit-déjeuner, collation, déjeuner,
-│   │                                 encas, dîner), « Ajouter un aliment » en barre fixe → feuille : recherche (3 000 aliments
-│   │                                 CIQUAL + produits Open Food Facts, code-barres), récents, saisie rapide, quantité ; bouton « Scanner »
-│   │                                 à côté : caméra → code-barres (ou QR code GS1) → fiche Open Food Facts → quantité
+│   ├── /nutrition                    Accueil du jour · ?jour=YYYY-MM-DD : bilan à même le fond (calories restantes en grand, anneau
+│   │                                 du mangé découpé par macro, trois tuiles « reste » par macro, séances du jour), puis les repas
+│   │                                 en cartes, une seule dépliée — celle du moment : « Comme hier » (refaire le repas d'un geste),
+│   │                                 idées de recettes selon le reste et la séance, scanner / chercher ; repliée : ce qui est noté
+│   │                                 ou les calories conseillées. Barre fixe « Ajouter au <repas du moment> » + « Scanner » →
+│   │                                 feuille : recherche (CIQUAL + Open Food Facts), caméra (code-barres, QR code GS1), récents,
+│   │                                 saisie rapide, quantité
 │   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD — à venir
 │   ├── /nutrition/recettes           Recettes avec macros · ?repas= : filtres par repas et par usage (avant / après la séance,
 │   │                                 riche en protéines…), mises en avant selon l'objectif du programme sportif

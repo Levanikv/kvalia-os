@@ -40,6 +40,7 @@ import {
   parametresNutrition,
   suggererRepas,
   supprimerDuJournal,
+  repeterRepas,
 } from "./nutrition";
 import { chercherAliments } from "./aliments";
 import { creerDefi, listerDefis, modifierDefi, noterDefi, supprimerDefi } from "./defis";
@@ -470,6 +471,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "supprimer_du_journal": {
       return (await supprimerDuJournal(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_du_journal">).id)) as ToolOutput<T>;
+    }
+
+    case "repeter_repas": {
+      return (await repeterRepas(ctx.db, ctx.userId, entree as ToolInput<"repeter_repas">)) as ToolOutput<T>;
     }
 
     case "lister_recettes": {

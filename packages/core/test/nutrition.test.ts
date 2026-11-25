@@ -5,9 +5,12 @@ import {
   budgetRepas,
   cibleMacros,
   classerSuggestions,
+  derniersRepas,
   importerRecettesDeBase,
   journalDuJour,
   listerRecettes,
+  parcoursRepas,
+  repeterRepas,
   repasDuMoment,
   suggererRepas,
   supprimerDuJournal,
@@ -236,5 +239,60 @@ describe("suggestions", () => {
     const force = await suggererRepas(db, USER, { repas: "diner", budget_kcal: 300 });
     expect(force.budget_kcal).toBe(300);
     expect(force.suggestions.every((x) => x.kcal <= 330)).toBe(true);
+  });
+});
+
+describe("parcours du jour", () => {
+  const journal = (saisis: Record<string, number>) => ({
+    cible: 2400,
+    reste: 2400 - Object.values(saisis).reduce((a, b) => a + b, 0),
+    repas: (["petit_dej", "collation", "dejeuner", "encas", "diner"] as const).map((r) => ({ repas: r, kcal: saisis[r] ?? 0, lignes: saisis[r] ? [{}] : [] })),
+  });
+
+  it("états : noté, passé sans rien, maintenant, à venir — et calories conseillées tant que rien n'est noté", () => {
+    const p = parcoursRepas(journal({ petit_dej: 500 }), "dejeuner");
+    expect(p.focus).toBe("dejeuner");
+    expect(p.repas.map((r) => r.etat)).toEqual(["note", "passe", "maintenant", "a_venir", "a_venir"]);
+    // Déjeuner : reste 1 900 − dîner réservé (600) = 1 300, plafonné à 1,4 × 32 % de 2 400.
+    expect(p.repas[2].conseille_kcal).toBe(1075);
+    expect(p.repas[0].conseille_kcal).toBe(0);
+    expect(p.repas[4].conseille_kcal).toBeGreaterThan(0);
+  });
+
+  it("un autre jour qu'aujourd'hui : rien n'est « maintenant », les repas vides sont passés", () => {
+    const p = parcoursRepas(journal({ diner: 700 }), null);
+    expect(p.focus).toBeNull();
+    expect(p.repas.map((r) => r.etat)).toEqual(["passe", "passe", "passe", "passe", "note"]);
+  });
+
+  it("refaire un repas : recopie la dernière occurrence, macros comprises ; erreur claire s'il n'y a rien", async () => {
+    const ligne = (jour: string, repas: string, libelle: string, kcal: number) => ({
+      user_id: USER,
+      jour,
+      repas,
+      libelle,
+      kcal,
+      prot: 10,
+      gluc: 20,
+      lip: 5,
+      portions: 1,
+    });
+    const db = base({
+      journal_repas: [
+        ligne("2026-11-15", "petit_dej", "Vieux porridge", 400),
+        ligne("2026-11-17", "petit_dej", "Skyr", 120),
+        ligne("2026-11-17", "petit_dej", "Banane", 90),
+        ligne("2026-11-17", "diner", "Poulet riz", 650),
+      ],
+    });
+    const derniers = await derniersRepas(db, USER, "2026-11-18");
+    expect(derniers.petit_dej).toEqual({ jour: "2026-11-17", kcal: 210, libelles: ["Skyr", "Banane"] });
+    expect(derniers.dejeuner).toBeUndefined();
+    const r = await executer("repeter_repas", { repas: "petit_dej" }, { db, userId: USER });
+    expect(r).toEqual({ jour: "2026-11-18", repas: "petit_dej", depuis: "2026-11-17", lignes: 2, kcal: 210 });
+    const j = await journalDuJour(db, USER, "2026-11-18");
+    expect(j.repas[0]).toMatchObject({ kcal: 210 });
+    expect(j.repas[0].lignes.map((l) => l.libelle)).toEqual(["Skyr", "Banane"]);
+    await expect(repeterRepas(db, USER, { repas: "dejeuner" })).rejects.toThrow("rien à refaire");
   });
 });
