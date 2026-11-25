@@ -3,20 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copier-wasm.mjs && next dev",
+    "build": "node scripts/copier-wasm.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.4.5",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
     "@kvalia/core": "workspace:*",
     "@kvalia/ui": "workspace:*",
+    "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.58.0",
-    "@supabase/ssr": "^0.7.0"
+    "barcode-detector": "^3.2.5",
+    "next": "16.4.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

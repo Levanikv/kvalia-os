@@ -6,15 +6,18 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Toast";
 import { ajouterAuJournalAction, chercherAlimentAction } from "./actions";
+import { Scanner } from "./Scanner";
 
 /**
  * Ajout d'un aliment au journal (feuille plein-hauteur, ouverte depuis la barre d'action ou depuis un repas) :
  * choix du repas, recherche dans la base (aliments génériques tout de suite, produits de marque d'Open Food Facts
- * juste après), récents, saisie rapide de calories ; puis la quantité, avec les macros qui suivent.
+ * juste après), scan du code-barres à la caméra (`Scanner` → fiche Open Food Facts → quantité), récents, saisie
+ * rapide de calories ; puis la quantité, avec les macros qui suivent.
  * `FournisseurAjout` partage l'ouverture de la feuille entre la barre d'action et la liste des repas.
  */
 
-type Contexte = { ouvrir: (repas?: Repas) => void };
+/** `scan` : ouvrir directement sur la caméra. */
+type Contexte = { ouvrir: (repas?: Repas, scan?: boolean) => void };
 const ContexteAjout = createContext<Contexte>({ ouvrir: () => {} });
 export const useAjout = () => useContext(ContexteAjout);
 
@@ -27,10 +30,12 @@ type Props = { jour: string; repasDuMoment: Repas; recents: AlimentSortie[]; chi
 export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Props) {
   const [ouvert, setOuvert] = useState(false);
   const [repas, setRepas] = useState<Repas>(repasDuMoment);
+  const [scanDabord, setScanDabord] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const ouvrir = useCallback(
-    (r?: Repas) => {
+    (r?: Repas, scan = false) => {
       setRepas(r ?? repasDuMoment);
+      setScanDabord(scan);
       setOuvert(true);
     },
     [repasDuMoment],
@@ -45,6 +50,7 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
           repas={repas}
           setRepas={setRepas}
           recents={recents}
+          scanDabord={scanDabord}
           onFermer={() => setOuvert(false)}
           onAjoute={(message) => {
             setOuvert(false);
@@ -57,14 +63,24 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
   );
 }
 
-/** Bouton de la barre d'action : « Ajouter un aliment ». */
+/** Barre d'action : « Ajouter un aliment », et le scan du code-barres à un geste. */
 export function BoutonAjout() {
   const { ouvrir } = useAjout();
   return (
-    <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block shadow-raised">
-      <Icon name="add" size={22} />
-      <span className="kv-btn-label">Ajouter un aliment</span>
-    </button>
+    <div className="flex gap-[var(--inline-md)]">
+      <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl min-w-0 flex-1 shadow-raised">
+        <Icon name="add" size={22} />
+        <span className="kv-btn-label">Ajouter un aliment</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => ouvrir(undefined, true)}
+        aria-label="Scanner un code-barres"
+        className="kv-btn kv-btn-secondary kv-btn-xl aspect-square shrink-0 px-0 shadow-raised"
+      >
+        <Icon name="barcode_scanner" size={24} />
+      </button>
+    </div>
   );
 }
 
@@ -73,6 +89,7 @@ function FeuilleAjout({
   repas,
   setRepas,
   recents,
+  scanDabord,
   onFermer,
   onAjoute,
 }: {
@@ -80,6 +97,7 @@ function FeuilleAjout({
   repas: Repas;
   setRepas: (r: Repas) => void;
   recents: AlimentSortie[];
+  scanDabord: boolean;
   onFermer: () => void;
   onAjoute: (message: string) => void;
 }) {
@@ -90,6 +108,7 @@ function FeuilleAjout({
   const [choisi, setChoisi] = useState<AlimentSortie | null>(null);
   const [grammes, setGrammes] = useState(100);
   const [libre, setLibre] = useState(false);
+  const [scan, setScan] = useState<"non" | "camera" | "recherche">(scanDabord ? "camera" : "non");
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, start] = useTransition();
   const dernier = useRef("");
@@ -121,6 +140,21 @@ function FeuilleAjout({
     setGrammes(a.portion_g ?? 100);
     setErreur(null);
   };
+  /** Code lu par la caméra : la fiche du produit (base, sinon Open Food Facts), puis directement la quantité. */
+  const surCode = async (code: string) => {
+    setScan("recherche");
+    setErreur(null);
+    const r = await chercherAlimentAction(code, true);
+    setScan("non");
+    if (r.ok && r.valeur.aliments[0]) return choisir(r.valeur.aliments[0]);
+    setErreur(
+      !r.ok
+        ? r.erreur
+        : r.valeur.open_food_facts === "indisponible"
+          ? `Open Food Facts ne répond pas (code ${code}). Réessaie, ou cherche le produit par son nom.`
+          : `Produit inconnu d’Open Food Facts (code ${code}). Cherche-le par son nom ou passe par la saisie rapide.`,
+    );
+  };
   const ajouter = (entree: Record<string, unknown>, nom: string) =>
     start(async () => {
       setErreur(null);
@@ -140,7 +174,7 @@ function FeuilleAjout({
     <BottomSheet
       ouvert
       onFermer={onFermer}
-      titre={choisi ? "Quelle quantité ?" : libre ? "Saisie rapide" : "Ajouter un aliment"}
+      titre={choisi ? "Quelle quantité ?" : scan !== "non" ? "Scanner un produit" : libre ? "Saisie rapide" : "Ajouter un aliment"}
       pleine
       module="nutrition"
       pied={
@@ -183,6 +217,15 @@ function FeuilleAjout({
 
         {choisi ? (
           <Quantite aliment={choisi} grammes={grammes} setGrammes={setGrammes} />
+        ) : scan === "camera" ? (
+          <Scanner onCode={surCode} onAnnuler={() => setScan("non")} />
+        ) : scan === "recherche" ? (
+          <p
+            className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)] text-center type-body-sm text-fg-secondary"
+            aria-live="polite"
+          >
+            Code lu. Recherche du produit…
+          </p>
         ) : libre ? (
           <SaisieLibre occupe={occupe} onRetour={() => setLibre(false)} onAjouter={(e) => ajouter(e, String(e.libelle))} />
         ) : (
@@ -194,13 +237,25 @@ function FeuilleAjout({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Skyr, riz basmati, code-barres…"
                 className="kv-field-input"
-                autoFocus
+                autoFocus={!scanDabord}
                 enterKeyHint="search"
                 aria-label="Chercher un aliment"
               />
-              {q && (
+              {q ? (
                 <button type="button" onClick={() => setQ("")} aria-label="Effacer" className="text-icon-tertiary">
                   <Icon name="close" size={18} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErreur(null);
+                    setScan("camera");
+                  }}
+                  aria-label="Scanner un code-barres"
+                  className="text-icon-primary"
+                >
+                  <Icon name="barcode_scanner" size={22} />
                 </button>
               )}
             </label>
@@ -250,7 +305,7 @@ function FeuilleAjout({
             ) : (
               <p className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)] text-center type-body-sm text-fg-secondary">
                 {trouves
-                  ? "Rien trouvé. Essaie un mot plus simple, le code-barres, ou la saisie rapide."
+                  ? "Rien trouvé. Essaie un mot plus simple, scanne le code-barres, ou passe par la saisie rapide."
                   : "Tape le nom d’un aliment ou d’un produit : la base couvre les aliments courants et les produits de marque."}
               </p>
             )}

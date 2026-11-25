@@ -9,6 +9,9 @@ dist/
 .turbo/
 *.tsbuildinfo
 
+# décodeur de codes-barres copié depuis node_modules (apps/web/scripts/copier-wasm.mjs)
+apps/web/public/zxing/
+
 # env — jamais de secrets dans le repo
 .env
 .env.*

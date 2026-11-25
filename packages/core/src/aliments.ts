@@ -65,7 +65,9 @@ const nombre = (v: unknown): number | null => {
 export function depuisOpenFoodFacts(p: ProduitOff): TablesInsert<"aliments"> | null {
   const nom = (p.product_name_fr || p.product_name || "").trim();
   const n = p.nutriments ?? {};
-  const kcal = nombre(n["energy-kcal_100g"]);
+  // Certaines fiches n'ont que l'énergie en kilojoules.
+  const kj = nombre(n["energy-kj_100g"]) ?? nombre(n.energy_100g);
+  const kcal = nombre(n["energy-kcal_100g"]) ?? (kj === null ? null : kj / 4.184);
   if (!p.code || !nom || kcal === null || kcal < 0 || kcal > 950) return null;
   const arrondi = (v: unknown) => {
     const x = nombre(v);
@@ -93,6 +95,22 @@ export function depuisOpenFoodFacts(p: ProduitOff): TablesInsert<"aliments"> | n
     nutriscore: p.nutriscore_grade && /^[a-e]$/.test(p.nutriscore_grade) ? p.nutriscore_grade : null,
   };
 }
+
+/**
+ * Ce que lit la caméra → code-barres à chercher, ou `null` si ce n'est pas un code produit.
+ * Accepte les codes EAN / UPC (8 à 14 chiffres) et les QR codes GS1 (« …/01/03017620422003… ») ; un GTIN-14 qui
+ * commence par 0 est ramené à l'EAN-13 imprimé sur l'emballage.
+ */
+export function codeBarresDepuisScan(lu: string): string | null {
+  const texte = lu.trim();
+  const gs1 = texte.match(/(?:\/01\/|^\(01\)|^01)(\d{14})(?!\d)/);
+  const brut = gs1 ? gs1[1] : texte.replace(/[\s-]/g, "");
+  if (!/^\d{8,14}$/.test(brut)) return null;
+  return brut.length === 14 && brut.startsWith("0") ? brut.slice(1) : brut;
+}
+
+/** Les écritures d'un même code : tel que lu, et complété à 13 chiffres (un UPC à 12 chiffres est rangé ainsi). */
+const variantesCode = (code: string) => [...new Set([code, code.length < 13 && code.length > 8 ? code.padStart(13, "0") : code])];
 
 async function interrogerOff(url: string, fetchImpl: FetchLike): Promise<ProduitOff[]> {
   const rep = await fetchImpl(url, { signal: AbortSignal.timeout(7000), headers: ENTETES });
@@ -141,7 +159,7 @@ export async function chercherAliments(
 
   // Code-barres : la base d'abord, sinon la fiche produit d'Open Food Facts.
   if (/^\d{8,14}$/.test(code)) {
-    const { data: connu, error } = await db.from("aliments").select(COLONNES).eq("code_barres", code).limit(1);
+    const { data: connu, error } = await db.from("aliments").select(COLONNES).in("code_barres", variantesCode(code)).limit(1);
     if (error) throw error;
     if (connu?.length) return { aliments: connu.map(versSortie), open_food_facts: "ignore" };
     if (!fetchImpl) return { aliments: [], open_food_facts: "indisponible" };

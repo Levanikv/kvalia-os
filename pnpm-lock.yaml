@@ -63,6 +63,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.58.0
         version: 2.119.0
+      barcode-detector:
+        specifier: ^3.2.5
+        version: 3.2.5(@types/emscripten@1.41.6)
       next:
         specifier: 16.4.5
         version: 16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1031,6 +1034,9 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/emscripten@1.41.6':
+    resolution: {integrity: sha512-uN+9i8bFT5CUcZfyIEYDrSueACEyKGbUs5kC/72DGlZZoinh84sJfVV0i8UOJD1asdzkvLPBRrKs41kZ8MdEXg==}
+
   '@types/estree@1.0.10':
     resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
 
@@ -1347,6 +1353,9 @@ packages:
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
+
+  barcode-detector@3.2.5:
+    resolution: {integrity: sha512-TuJdsjU5U+b8+O5G1/ZgR8VeLHd1T/5GpjPDJLoafNZYuf438vVP6jriuvR1S9PWVbR2ZoOKleKEzG5ltdaM5g==}
 
   baseline-browser-mapping@2.11.35:
     resolution: {integrity: sha512-GNk8KX52CHqeNKGk8+7tZnQab/2k1t/BgrUHPKNdijzpEhF1saPQZHVKb6m5loSAxB39gyrTYw34Qf9CQ3u1qQ==}
@@ -2926,6 +2935,11 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zxing-wasm@3.1.8:
+    resolution: {integrity: sha512-FpxLK7/lfZrlnmqoRUZd+4qpVlYabsuPx6tRxzN7V/E9IwijQ1dOJSlJGHoA2Yc62hkdvzDD8+qjRPGUx+5j+g==}
+    peerDependencies:
+      '@types/emscripten': '>=1.39.6'
+
 snapshots:
 
   '@alloc/quick-lru@5.3.0': {}
@@ -3636,6 +3650,8 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/emscripten@1.41.6': {}
+
   '@types/estree@1.0.10': {}
 
   '@types/json-schema@7.0.15': {}
@@ -3975,6 +3991,12 @@ snapshots:
   balanced-match@1.0.2: {}
 
   balanced-match@4.0.4: {}
+
+  barcode-detector@3.2.5(@types/emscripten@1.41.6):
+    dependencies:
+      zxing-wasm: 3.1.8(@types/emscripten@1.41.6)
+    transitivePeerDependencies:
+      - '@types/emscripten'
 
   baseline-browser-mapping@2.11.35: {}
 
@@ -5875,3 +5897,7 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zxing-wasm@3.1.8(@types/emscripten@1.41.6):
+    dependencies:
+      '@types/emscripten': 1.41.6

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chercherAliments, depuisOpenFoodFacts, normaliser } from "../src/aliments";
+import { chercherAliments, codeBarresDepuisScan, depuisOpenFoodFacts, normaliser } from "../src/aliments";
 import {
   ajouterAuJournal,
   budgetRepas,
@@ -99,6 +99,26 @@ describe("aliments", () => {
     const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ product: { product_name: "Barre", nutriments: { "energy-kcal_100g": 400 } } }) }));
     expect((await chercherAliments(db, "3017620422003", { fetch })).aliments[0]).toMatchObject({ id: "off:3017620422003", kcal: 400 });
     await chercherAliments(db, "3017620422003", { fetch });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("scan : codes EAN / UPC et QR codes GS1 → code à chercher ; le reste est ignoré", () => {
+    expect(codeBarresDepuisScan(" 3017620422003 ")).toBe("3017620422003");
+    expect(codeBarresDepuisScan("96385074")).toBe("96385074");
+    expect(codeBarresDepuisScan("https://id.gs1.org/01/03017620422003/10/LOT1?17=270101")).toBe("3017620422003");
+    expect(codeBarresDepuisScan("(01)03017620422003(17)270101")).toBe("3017620422003");
+    expect(codeBarresDepuisScan("https://exemple.fr/promo")).toBeNull();
+    expect(codeBarresDepuisScan("1234")).toBeNull();
+  });
+
+  it("code-barres : un UPC à 12 chiffres retrouve la fiche rangée sur 13 ; énergie en kJ convertie", async () => {
+    const db = base();
+    const fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ product: { code: "0012345678905", product_name: "Beurre de cacahuète", nutriments: { "energy-kj_100g": 2510 } } }),
+    }));
+    expect((await chercherAliments(db, "012345678905", { fetch })).aliments[0]).toMatchObject({ id: "off:0012345678905", kcal: 600 });
+    expect((await chercherAliments(db, "012345678905", { fetch })).aliments).toHaveLength(1);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
