@@ -19,3 +19,4 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0012](0012-methodes-de-reference.md)              | Sport : chaque programme suit une méthode de référence sourcée, choisie par profil ou par l'agent  | acceptée |
 | [0013](0013-base-aliments-ciqual-open-food-facts.md) | Nutrition : aliments CIQUAL en base + Open Food Facts à la recherche ; suggestions par règles    | acceptée |
 | [0014](0014-scan-code-barres-zxing-wasm.md)        | Nutrition : scan du code-barres à la caméra, décodé sur le téléphone (ZXing wasm) → Open Food Facts | acceptée |
+| [0015](0015-photo-repas-vision-claude.md)          | Nutrition : estimer un repas à partir d'une photo (vision Claude, paquet `packages/vision`)         | acceptée |

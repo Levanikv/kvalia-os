@@ -54,7 +54,7 @@ Config de build : `railpack.json` (racine, agent) et `apps/web/railpack.json` (w
 
 ## Variables d'environnement
 
-Voir `.env.example`. Côté Railway : `web` a les deux `NEXT_PUBLIC_*` + `PORT=3000` + `RAILPACK_CONFIG_FILE` ; `agent` a `SUPABASE_*`, `KVALIA_USER_ID`, `MCP_TOKEN`, `PORT=8787`, `KVALIA_TZ` (optionnel, défaut Europe/Paris). Modifier une variable → `set-variables` puis redéploiement automatique.
+Voir `.env.example`. Côté Railway : `web` a les deux `NEXT_PUBLIC_*` + `PORT=3000` + `RAILPACK_CONFIG_FILE` ; `agent` a `SUPABASE_*`, `KVALIA_USER_ID`, `MCP_TOKEN`, `PORT=8787`, `KVALIA_TZ` (optionnel, défaut Europe/Paris). `ANTHROPIC_API_KEY` sur `web` et `agent` active la photo de repas (ADR 0015) ; sans elle, seule cette fonction répond par une erreur. Modifier une variable → `set-variables` puis redéploiement automatique.
 
 Rotation du `MCP_TOKEN` : nouvelle valeur dans Railway, puis mettre à jour l'URL du connecteur dans claude.ai (Réglages → Connecteurs).
 

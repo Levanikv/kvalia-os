@@ -5,19 +5,22 @@ import { LIBELLES_REPAS, REPAS, type AlimentSortie, type Repas } from "@kvalia/c
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Toast";
-import { ajouterAuJournalAction, chercherAlimentAction } from "./actions";
+import { ajouterAuJournalAction, ajouterElementsAction, chercherAlimentAction } from "./actions";
+import { Photo } from "./Photo";
 import { Scanner } from "./Scanner";
 
 /**
  * Ajout d'un aliment au journal (feuille plein-hauteur, ouverte depuis la barre d'action ou depuis un repas) :
  * choix du repas, recherche dans la base (aliments génériques tout de suite, produits de marque d'Open Food Facts
- * juste après), scan du code-barres à la caméra (`Scanner` → fiche Open Food Facts → quantité), récents, saisie
+ * juste après), scan du code-barres à la caméra (`Scanner` → fiche Open Food Facts → quantité), photo du repas
+ * (`Photo` → estimation par le modèle de vision → éléments ajustables), récents, saisie
  * rapide de calories ; puis la quantité, avec les macros qui suivent.
  * `FournisseurAjout` partage l'ouverture de la feuille entre la barre d'action et la liste des repas.
  */
 
-/** `scan` : ouvrir directement sur la caméra. */
-type Contexte = { ouvrir: (repas?: Repas, scan?: boolean) => void; repasDuMoment: Repas };
+/** `mode` : ouvrir directement sur le scan du code-barres, ou prendre le repas en photo. */
+type Mode = "scan" | "photo";
+type Contexte = { ouvrir: (repas?: Repas, mode?: Mode) => void; repasDuMoment: Repas };
 const ContexteAjout = createContext<Contexte>({ ouvrir: () => {}, repasDuMoment: "dejeuner" });
 export const useAjout = () => useContext(ContexteAjout);
 
@@ -31,11 +34,16 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
   const [ouvert, setOuvert] = useState(false);
   const [repas, setRepas] = useState<Repas>(repasDuMoment);
   const [scanDabord, setScanDabord] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const appareil = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<string | null>(null);
   const ouvrir = useCallback(
-    (r?: Repas, scan = false) => {
+    (r?: Repas, mode?: Mode) => {
       setRepas(r ?? repasDuMoment);
-      setScanDabord(scan);
+      setScanDabord(mode === "scan");
+      setPhoto(null);
+      // Photo : l'appareil du téléphone s'ouvre tout de suite (dans le geste) ; la feuille suit, la photo choisie.
+      if (mode === "photo") return appareil.current?.click();
       setOuvert(true);
     },
     [repasDuMoment],
@@ -44,6 +52,20 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
   return (
     <ContexteAjout.Provider value={valeur}>
       {children}
+      <input
+        ref={appareil}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f) return;
+          setPhoto(f);
+          setOuvert(true);
+        }}
+      />
       {ouvert && (
         <FeuilleAjout
           jour={jour}
@@ -51,6 +73,7 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
           setRepas={setRepas}
           recents={recents}
           scanDabord={scanDabord}
+          photoDabord={photo}
           onFermer={() => setOuvert(false)}
           onAjoute={(message) => {
             setOuvert(false);
@@ -82,11 +105,19 @@ export function BoutonAjout() {
       </button>
       <button
         type="button"
-        onClick={() => ouvrir(undefined, true)}
+        onClick={() => ouvrir(undefined, "scan")}
         aria-label="Scanner un code-barres"
         className="kv-btn kv-btn-secondary kv-btn-xl aspect-square shrink-0 px-0 shadow-raised"
       >
         <Icon name="barcode_scanner" size={24} />
+      </button>
+      <button
+        type="button"
+        onClick={() => ouvrir(undefined, "photo")}
+        aria-label="Prendre le repas en photo"
+        className="kv-btn kv-btn-secondary kv-btn-xl aspect-square shrink-0 px-0 shadow-raised"
+      >
+        <Icon name="photo_camera" size={24} />
       </button>
     </div>
   );
@@ -98,6 +129,7 @@ function FeuilleAjout({
   setRepas,
   recents,
   scanDabord,
+  photoDabord,
   onFermer,
   onAjoute,
 }: {
@@ -106,6 +138,7 @@ function FeuilleAjout({
   setRepas: (r: Repas) => void;
   recents: AlimentSortie[];
   scanDabord: boolean;
+  photoDabord: File | null;
   onFermer: () => void;
   onAjoute: (message: string) => void;
 }) {
@@ -117,6 +150,7 @@ function FeuilleAjout({
   const [grammes, setGrammes] = useState(100);
   const [libre, setLibre] = useState(false);
   const [scan, setScan] = useState<"non" | "camera" | "recherche">(scanDabord ? "camera" : "non");
+  const [photo, setPhoto] = useState<File | null>(photoDabord);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, start] = useTransition();
   const dernier = useRef("");
@@ -182,11 +216,11 @@ function FeuilleAjout({
     <BottomSheet
       ouvert
       onFermer={onFermer}
-      titre={choisi ? "Quelle quantité ?" : scan !== "non" ? "Scanner un produit" : libre ? "Saisie rapide" : "Ajouter un aliment"}
+      titre={photo ? "Photo du repas" : choisi ? "Quelle quantité ?" : scan !== "non" ? "Scanner un produit" : libre ? "Saisie rapide" : "Ajouter un aliment"}
       pleine
       module="nutrition"
       pied={
-        choisi ? (
+        choisi && !photo ? (
           <div className="flex gap-[var(--inline-md)]">
             <button type="button" onClick={() => setChoisi(null)} className="kv-btn kv-btn-tertiary kv-btn-lg flex-1">
               Retour
@@ -223,7 +257,22 @@ function FeuilleAjout({
           <p className="rounded-[var(--radius-input)] bg-feedback-danger-subtle p-[var(--inset-sm)] type-body-sm text-feedback-danger-text">{erreur}</p>
         )}
 
-        {choisi ? (
+        {photo ? (
+          <Photo
+            fichier={photo}
+            occupe={occupe}
+            onRetour={() => setPhoto(null)}
+            onAjouter={(elements, plat) =>
+              start(async () => {
+                setErreur(null);
+                const r = await ajouterElementsAction(jour, repas, elements);
+                if (!r.ok) return setErreur(r.erreur);
+                router.refresh();
+                onAjoute(`${plat} ajouté · ${nf(r.valeur.kcal)} kcal`);
+              })
+            }
+          />
+        ) : choisi ? (
           <Quantite aliment={choisi} grammes={grammes} setGrammes={setGrammes} />
         ) : scan === "camera" ? (
           <Scanner onCode={surCode} onAnnuler={() => setScan("non")} />
@@ -245,7 +294,7 @@ function FeuilleAjout({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Skyr, riz basmati, code-barres…"
                 className="kv-field-input"
-                autoFocus={!scanDabord}
+                autoFocus={!scanDabord && !photoDabord}
                 enterKeyHint="search"
                 aria-label="Chercher un aliment"
               />
@@ -254,17 +303,36 @@ function FeuilleAjout({
                   <Icon name="close" size={18} />
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErreur(null);
-                    setScan("camera");
-                  }}
-                  aria-label="Scanner un code-barres"
-                  className="text-icon-primary"
-                >
-                  <Icon name="barcode_scanner" size={22} />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErreur(null);
+                      setScan("camera");
+                    }}
+                    aria-label="Scanner un code-barres"
+                    className="text-icon-primary"
+                  >
+                    <Icon name="barcode_scanner" size={22} />
+                  </button>
+                  <label className="cursor-pointer text-icon-primary" aria-label="Prendre le repas en photo">
+                    <Icon name="photo_camera" size={22} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) {
+                          setErreur(null);
+                          setPhoto(f);
+                        }
+                      }}
+                    />
+                  </label>
+                </>
               )}
             </label>
 

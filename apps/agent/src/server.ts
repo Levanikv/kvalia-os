@@ -11,6 +11,7 @@ import { serve } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createServiceClient, executer, tools, toolsAvecConfirmation, type ToolName } from "@kvalia/core";
+import { analyseurClaude } from "@kvalia/vision";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { contexteTiime } from "./tiime";
@@ -45,7 +46,7 @@ function messageErreur(err: unknown): string {
 }
 
 /** Entrées à ne pas journaliser telles quelles dans `appels_outils` (codes de vérification). */
-const CHAMPS_MASQUES: Partial<Record<ToolName, string[]>> = { valider_code_tiime: ["code"] };
+const CHAMPS_MASQUES: Partial<Record<ToolName, string[]>> = { valider_code_tiime: ["code"], estimer_repas_photo: ["image_base64"] };
 
 function masquer(nom: ToolName, entree: unknown): unknown {
   const champs = CHAMPS_MASQUES[nom];
@@ -57,6 +58,7 @@ function creerServeurMcp() {
   const mcp = new McpServer({ name: "kvalia-os", version: "0.0.1" });
   const db = createServiceClient();
   const tiime = contexteTiime(db, USER_ID) ?? undefined;
+  const vision = analyseurClaude();
 
   for (const nom of Object.keys(tools) as ToolName[]) {
     const def = tools[nom];
@@ -71,7 +73,7 @@ function creerServeurMcp() {
         const debut = Date.now();
         try {
           const entree = def.input.parse(args ?? {});
-          const sortie = await executer(nom, entree as never, { db, userId: USER_ID, tiime });
+          const sortie = await executer(nom, entree as never, { db, userId: USER_ID, tiime, vision });
           await db.from("appels_outils").insert({
             user_id: USER_ID,
             outil: nom,

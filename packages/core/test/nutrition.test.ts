@@ -15,6 +15,7 @@ import {
   suggererRepas,
   supprimerDuJournal,
 } from "../src/nutrition";
+import { ajusterElement, estimerRepasPhoto, nettoyerEstimation } from "../src/photo";
 import { RECETTES_BASE } from "../src/recettes-base";
 import { executer } from "../src/actions";
 import { USER, fausseDb } from "./fausse-db";
@@ -294,5 +295,49 @@ describe("parcours du jour", () => {
     expect(j.repas[0]).toMatchObject({ kcal: 210 });
     expect(j.repas[0].lignes.map((l) => l.libelle)).toEqual(["Skyr", "Banane"]);
     await expect(repeterRepas(db, USER, { repas: "dejeuner" })).rejects.toThrow("rien à refaire");
+  });
+});
+
+describe("photo d'un repas", () => {
+  const image_base64 = "A".repeat(200);
+  const vu = {
+    est_un_repas: true,
+    plat: "Poulet, riz et brocolis",
+    elements: [
+      { libelle: "Blanc de poulet grillé", quantite_g: 150, kcal: 248, prot: 46, gluc: 0, lip: 5.4 },
+      // Calories annoncées incohérentes avec les macros (≈ 234) : recalculées.
+      { libelle: "Riz basmati cuit", quantite_g: 180, kcal: 900, prot: 4.9, gluc: 52, lip: 0.7 },
+      { libelle: "", quantite_g: 50, kcal: 10, prot: 0, gluc: 2, lip: 0 },
+      { libelle: "Brocolis vapeur", quantite_g: 0, kcal: 0, prot: 0, gluc: 0, lip: 0 },
+    ],
+    confiance: "moyenne",
+    remarque: "Huile de cuisson non visible.",
+  };
+
+  it("nettoie la réponse du modèle : éléments vides écartés, calories recalculées si incohérentes, total", async () => {
+    const analyseur = vi.fn(async () => vu);
+    const r = await executer("estimer_repas_photo", { image_base64, precision: "riz basmati" }, { db: base(), userId: USER, vision: analyseur });
+    expect(analyseur).toHaveBeenCalledWith({ donnees: image_base64, type: "image/jpeg", precision: "riz basmati" });
+    expect(r.elements.map((e) => e.libelle)).toEqual(["Blanc de poulet grillé", "Riz basmati cuit"]);
+    expect(r.elements[1].kcal).toBe(234);
+    expect(r.total).toEqual({ kcal: 482, prot: 50.9, gluc: 52, lip: 6.1 });
+    expect(r.confiance).toBe("moyenne");
+  });
+
+  it("pas un repas, réponse hors schéma ou analyse non configurée : erreurs claires", async () => {
+    expect(() => nettoyerEstimation({ ...vu, est_un_repas: false, elements: [] })).toThrow("pas de repas");
+    expect(() => nettoyerEstimation({ plat: "?" })).toThrow();
+    await expect(estimerRepasPhoto(undefined, { image_base64 })).rejects.toThrow("ANTHROPIC_API_KEY");
+  });
+
+  it("ajuster la quantité d'un élément : calories et macros suivent en proportion", () => {
+    expect(ajusterElement({ libelle: "Riz", quantite_g: 180, kcal: 234, prot: 4.9, gluc: 52, lip: 0.7 }, 90)).toEqual({
+      libelle: "Riz",
+      quantite_g: 90,
+      kcal: 117,
+      prot: 2.5,
+      gluc: 26,
+      lip: 0.4,
+    });
   });
 });

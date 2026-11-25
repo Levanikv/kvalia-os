@@ -18,6 +18,7 @@ Un seul utilisateur en v0/v1. Tout est en **français** (code, commits, docs, UI
 apps/web        PWA Next.js 16 (App Router, React 19, Tailwind 4). Pages = server components, interactions = client components + server actions.
 apps/agent      Serveur MCP (Hono + @modelcontextprotocol/sdk, stateless, tsx). Expose `tools` de core. /mcp/<MCP_TOKEN>. Hébergé sur Railway.
 packages/core   Contrat (tools.ts, schemas.ts), règles (actions.ts, sport.ts, nutrition.ts), clients Supabase, database.types.ts (généré).
+packages/vision Analyseur de photo de repas (SDK Anthropic, serveur uniquement) — injecté dans `executer()` par web et agent.
 packages/ui     Registre des modules + navigation (index.ts), design system généré depuis Figma (tokens/, src/tokens.css, src/tailwind.css — voir DESIGN_SYSTEM.md).
 supabase/       migrations/ (SQL, appliquées au projet distant), seed/ (référentiel d'exercices).
 docs/           sitemap, architecture, conventions, runbook, glossaire, décisions (ADR), recettes pas-à-pas, outils-agent (généré).

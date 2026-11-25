@@ -10,6 +10,7 @@ import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis"
 import { MethodeId } from "./methodes";
 import { AlimentSortie } from "./aliments";
 import { EntreeJournal, EntreeRepeterRepas, Repas } from "./nutrition";
+import { EntreePhotoRepas, SortiePhotoRepas } from "./photo";
 
 const ExerciceSeanceSortie = z.object({
   id: z.string().uuid(),
@@ -508,6 +509,13 @@ export const tools = {
     description: "Retire une ligne du journal alimentaire (id donné par journal_du_jour).",
     input: z.object({ id: z.string().uuid() }),
     output: z.object({ id: z.string().uuid(), supprime: z.boolean() }),
+  },
+
+  estimer_repas_photo: {
+    description:
+      "Estime un repas à partir de sa photo : les aliments de l'assiette, leur poids, leurs calories et leurs macros, avec un niveau de confiance. Ne note rien : après ajustement, chaque élément se note avec ajouter_au_journal (libelle + kcal + prot / gluc / lip). `precision` sert à dire ce que la photo ne montre pas (« cuit à l'huile », « riz complet »).",
+    input: EntreePhotoRepas,
+    output: SortiePhotoRepas,
   },
 
   repeter_repas: {

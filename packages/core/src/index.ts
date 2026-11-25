@@ -8,6 +8,7 @@ export * from "./defis";
 export * from "./methodes";
 export * from "./nutrition";
 export * from "./aliments";
+export * from "./photo";
 export { RECETTES_BASE, type RecetteBase } from "./recettes-base";
 export * from "./tiime";
 export * from "./entreprise";

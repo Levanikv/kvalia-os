@@ -12,7 +12,7 @@ import { ajouterAuJournalAction, repeterRepasAction, supprimerDuJournalAction, s
 /**
  * Les repas de la journée, un seul déplié à la fois. Replié : ce qui a été mangé en une ligne, ou les calories
  * conseillées tant que rien n'est noté. Déplié — par défaut le repas du moment — : les lignes, puis le chemin le
- * plus court pour noter : refaire le même repas que la dernière fois, scanner, chercher, ou une idée de recette
+ * plus court pour noter : refaire le même repas que la dernière fois, le prendre en photo, scanner, chercher, ou une idée de recette
  * choisie selon le reste du jour et la séance (règles : `parcoursRepas`, `suggererRepas`, `repeterRepas` du noyau).
  */
 export type CarteRepas = {
@@ -182,13 +182,17 @@ export function RepasDuJour({ jour, consomme, modifiable, repas, focus, ideesFoc
                     )}
                     {/* Le repas du moment se note depuis la barre d'action fixe : pas de doublon ici. */}
                     {!maintenant && (
-                      <div className="grid grid-cols-2 gap-[var(--inline-md)]">
-                        <button type="button" onClick={() => ouvrir(r.repas, true)} className="kv-btn kv-btn-secondary kv-btn-lg">
-                          <Icon name="barcode_scanner" size={20} />
+                      <div className="grid grid-cols-3 gap-[var(--inline-sm)]">
+                        <button type="button" onClick={() => ouvrir(r.repas, "photo")} className="kv-btn kv-btn-secondary kv-btn-md px-0">
+                          <Icon name="photo_camera" size={18} />
+                          <span className="kv-btn-label">Photo</span>
+                        </button>
+                        <button type="button" onClick={() => ouvrir(r.repas, "scan")} className="kv-btn kv-btn-tertiary kv-btn-md px-0">
+                          <Icon name="barcode_scanner" size={18} />
                           <span className="kv-btn-label">Scanner</span>
                         </button>
-                        <button type="button" onClick={() => ouvrir(r.repas)} className="kv-btn kv-btn-tertiary kv-btn-lg">
-                          <Icon name="search" size={20} />
+                        <button type="button" onClick={() => ouvrir(r.repas)} className="kv-btn kv-btn-tertiary kv-btn-md px-0">
+                          <Icon name="search" size={18} />
                           <span className="kv-btn-label">Chercher</span>
                         </button>
                       </div>

@@ -32,6 +32,7 @@ import {
   supprimerModeleSeance,
   reinitialiserSport,
 } from "./sport";
+import { type AnalyseurPhoto, estimerRepasPhoto } from "./photo";
 import {
   ajouterAuJournal,
   enregistrerParametresNutrition,
@@ -56,6 +57,8 @@ export type ContexteOutil = {
   userId: string;
   tiime?: { auth: AuthTiime; client: ClientTiime };
   /** `fetch` de remplacement pour les appels sortants (Open Food Facts) — tests sans réseau. */
+  /** Modèle de vision pour `estimer_repas_photo` (clé côté serveur) ; absent → l'outil dit quoi configurer. */
+  vision?: AnalyseurPhoto;
   fetch?: Parameters<typeof chercherAliments>[2] extends infer O ? (O extends { fetch?: infer F } ? F : never) : never;
 };
 type Ctx = ContexteOutil;
@@ -471,6 +474,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "supprimer_du_journal": {
       return (await supprimerDuJournal(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_du_journal">).id)) as ToolOutput<T>;
+    }
+
+    case "estimer_repas_photo": {
+      return (await estimerRepasPhoto(ctx.vision, entree as ToolInput<"estimer_repas_photo">)) as ToolOutput<T>;
     }
 
     case "repeter_repas": {

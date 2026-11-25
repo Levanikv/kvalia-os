@@ -54,7 +54,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 en cartes, une seule dépliée — celle du moment : « Comme hier » (refaire le repas d'un geste),
 │   │                                 idées de recettes selon le reste et la séance, scanner / chercher ; repliée : ce qui est noté
 │   │                                 ou les calories conseillées. Barre fixe « Ajouter au <repas du moment> » + « Scanner » →
-│   │                                 feuille : recherche (CIQUAL + Open Food Facts), caméra (code-barres, QR code GS1), récents,
+│   │                                 feuille : recherche (CIQUAL + Open Food Facts), caméra (code-barres, QR code GS1), photo du
+│   │                                 repas (estimation par IA : aliments, grammes, calories — ajustables avant l'ajout), récents,
 │   │                                 saisie rapide, quantité
 │   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD — à venir
 │   ├── /nutrition/recettes           Recettes avec macros · ?repas= : filtres par repas et par usage (avant / après la séance,
@@ -124,7 +125,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 | Home | Jour · réordonnancement des widgets | Semaine, mode focus |
 | Quotidien | Courses (+ mode magasin) · Produits & stock · Tâches · Habitudes | Agenda complet |
 | Sport | Programme · Séance plein écran · Fiche exercice · Historique | Charge / récupération |
-| Nutrition | Journal (suggestions, ajout d’aliment, scan du code-barres) · Recettes · Fiche recette — Plan semaine et pesée à venir | Photo d’un plat |
+| Nutrition | Journal (suggestions, ajout d’aliment, scan du code-barres, photo du repas) · Recettes · Fiche recette — Plan semaine et pesée à venir | Photo affinée par la base d’aliments |
 | Finances | À catégoriser · Transactions · Budgets · Comptes | Abonnements oubliés, épargne |
 | Entreprise | Pilotage · Factures · Charges · Échéances (+ simulateur en feuille) | Conseils de l'agent (juridique, investissement), devis, relances auto |
 | Documents | Coffre · Aperçu · Ajout | Mode voyage |

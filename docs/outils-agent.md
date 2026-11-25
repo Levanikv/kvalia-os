@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-42 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+43 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -558,6 +558,22 @@ Retire une ligne du journal alimentaire (id donné par journal_du_jour).
 **Sortie**
 - `id` : string (uuid)
 - `supprime` : booléen
+
+## `estimer_repas_photo`
+
+Estime un repas à partir de sa photo : les aliments de l'assiette, leur poids, leurs calories et leurs macros, avec un niveau de confiance. Ne note rien : après ajustement, chaque élément se note avec ajouter_au_journal (libelle + kcal + prot / gluc / lip). `precision` sert à dire ce que la photo ne montre pas (« cuit à l'huile », « riz complet »).
+
+**Entrée**
+- `image_base64` : string — La photo du repas, encodée en base64 (sans préfixe « data: »), 5 Mo au plus
+- `type_image` : `image/jpeg` · `image/png` · `image/webp` — défaut `"image/jpeg"`
+- `precision` : string (trim) (optionnel) — Ce que la photo ne montre pas : « riz complet », « cuit à l'huile d'olive », « assiette de 27 cm »
+
+**Sortie**
+- `plat` : string
+- `elements` : liste de objet { libelle, quantite_g, kcal, prot, gluc, lip }
+- `total` : objet { kcal, prot, gluc, lip }
+- `confiance` : `haute` · `moyenne` · `faible`
+- `remarque` : string
 
 ## `repeter_repas`
 
