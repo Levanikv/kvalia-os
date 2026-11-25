@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { bilanJour, defiSemaine, listerDefis, parametresSport, poidsActuel } from "@kvalia/core";
+import { bilanJour, defiSemaine, executer, listerDefis, parametresSport, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
@@ -32,6 +32,10 @@ export default async function Page({ searchParams }: Props) {
   const d = new Date(jour + "T12:00:00Z");
   const lundi = decaler(jour, -((d.getUTCDay() + 6) % 7));
   const dimanche = decaler(lundi, 6);
+
+  // Au jour le jour : une séance prévue un jour passé et jamais commencée n'est pas perdue — la file reprend où elle
+  // en était (outil recaler_programme). Sans séance manquée, c'est une seule lecture.
+  await executer("recaler_programme", {}, { db: supabase, userId: user.id }).catch(() => null);
 
   const [entete, seances, params, { data: semaine }, bilan, defis] = await Promise.all([
     enteteJour(supabase, jour, auj, "/sport"),

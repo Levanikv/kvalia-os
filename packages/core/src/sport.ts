@@ -146,12 +146,12 @@ export const LIBELLES = {
     cardio: "Cardio",
   } as Record<string, string>,
   type: {
-    upper: "Haut du corps",
-    lower: "Bas du corps",
+    upper: "Upper",
+    lower: "Lower",
     push: "Push",
     pull: "Pull",
-    legs: "Jambes",
-    full: "Full body",
+    legs: "Legs",
+    full: "Full Body",
     boxe: "Boxe",
     hiit: "HIIT",
     maison: "Maison",
@@ -633,6 +633,79 @@ const NOMS_CLASSIQUES = new Set(Object.values(CLASSIQUES).flat());
 const FARFELU =
   /ball|prone|supine|zottman|anti gravity|iron cross|spell caster|otis|landmine|cambered|commando|between chairs|straps|\bring\b|rotation|twist|kneeling|one.?arm|one.?leg|single|alternat|donkey|scapula|behind|drag curl|pronate|bicycle|jackknife|pilates|scissor|v-up|sissy|clean and press|reverse hyper|wall|deep push|bench pull|decline|hammer press|hammer grip|arnold|inner curl|old school|step-up|chair|weighted|concentration|kickback|wrist/i;
 
+/**
+ * Le nom qu'on entend en salle (ADR 0018) : en anglais, sans le jargon du référentiel (« Lever », « Sled 45 Degree »…).
+ * Les classiques ont leur nom d'usage ; les autres sont seulement nettoyés. Les descriptions restent en français.
+ */
+const NOMS_USUELS: Record<string, string> = {
+  "Lever Lying Chest Press": "Machine Chest Press",
+  "Lever Incline Hammer Chest Press": "Incline Machine Press",
+  "Cable Standing Fly": "Cable Fly",
+  "Seated Cable Row (V-Grip)": "Seated Cable Row",
+  "Seated Cable Row (Wide-Grip)": "Wide-Grip Cable Row",
+  "Dumbbell Bent-Over Row": "Dumbbell Row",
+  "Lever T-Bar Row": "T-Bar Row",
+  "Barbell Underhand Bent-Over Row": "Barbell Row",
+  "Lever High Row": "Machine High Row",
+  "Dumbbell Incline Row": "Chest-Supported Dumbbell Row",
+  "Wide Grip Cable Lat Pulldown": "Lat Pulldown",
+  "Pull-Up / Chin-Up": "Pull-Up",
+  "Reverse Grip Machine Lat Pulldown": "Reverse-Grip Lat Pulldown",
+  "Band Assisted Pull-up": "Band-Assisted Pull-Up",
+  "Seated Dumbbell Shoulder Press": "Dumbbell Shoulder Press",
+  "Military Press": "Overhead Press",
+  "Smith Seated Shoulder Press": "Smith Shoulder Press",
+  "Lever Lateral Raise": "Machine Lateral Raise",
+  "Lever Seated Reverse Fly": "Reverse Pec Deck",
+  "Cable Rear Delt Row (with rope)": "Face Pull",
+  "EZ Bar Biceps Curl": "EZ Bar Curl",
+  "Dumbbell Biceps Curl": "Dumbbell Curl",
+  "Dumbbell Cross Body Hammer Curl": "Hammer Curl",
+  "Dumbbell Incline Curl": "Incline Dumbbell Curl",
+  "Lever Preacher Curl": "Preacher Curl",
+  "Cable Rope Triceps Pushdown": "Rope Pushdown",
+  "Cable Triceps Pushdown": "Triceps Pushdown",
+  "EZ Bar Lying Triceps Extension": "Skull Crusher",
+  "Dumbbell Seated Triceps Extension": "Overhead Dumbbell Extension",
+  "Cable Rope Overhead Triceps Extension": "Overhead Rope Extension",
+  "Lever Triceps Extension": "Machine Triceps Extension",
+  "Triceps Dips": "Dips",
+  "Barbell Back Squat": "Back Squat",
+  "Sled 45 Degree Wide Leg Press": "Leg Press",
+  "Sled Hack Squat": "Hack Squat",
+  "Lever Horizontal Leg Press": "Horizontal Leg Press",
+  "Dumbbell Goblet Squat": "Goblet Squat",
+  "Lever Leg Extension": "Leg Extension",
+  "Barbell Straight Leg Deadlift": "Romanian Deadlift",
+  "Dumbbell Stiff Leg Deadlift": "Dumbbell Romanian Deadlift",
+  "45 Degree Hyperextension": "Back Extension",
+  "Lever Back Extension": "Machine Back Extension",
+  "Lever Seated Leg Curl": "Seated Leg Curl",
+  "Lever Lying Leg Curl": "Lying Leg Curl",
+  "Lever Standing Hip Extension": "Glute Kickback Machine",
+  "Lever Standing Calf Raise": "Standing Calf Raise",
+  "Lever Seated Calf Raise": "Seated Calf Raise",
+  "Dumbbell Standing Calf Raise": "Dumbbell Calf Raise",
+  "Sled 45 Degree Calf Press": "Calf Press",
+  "Cable Kneeling Crunch": "Cable Crunch",
+  "Floor Crunch": "Crunch",
+  "Lever Seated Crunch": "Machine Crunch",
+  "Front Plank": "Plank",
+  "Lever Shrug": "Machine Shrug",
+  "Elliptical Trainer": "Elliptical",
+  "Treadmill Running": "Treadmill",
+};
+export function nomUsuel(nom: string): string {
+  return (
+    NOMS_USUELS[nom] ??
+    nom
+      .replace(/\bLever\b/g, "Machine")
+      .replace(/\bSled( 45 Degree)?\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
 /** L'exercice est-il un classique (simple à installer, connu de tous) ou un farfelu à éviter ? */
 export function simplicite(nom: string): "classique" | "farfelu" | "neutre" {
   return NOMS_CLASSIQUES.has(nom) ? "classique" : FARFELU.test(nom) ? "farfelu" : "neutre";
@@ -640,27 +713,27 @@ export function simplicite(nom: string): "classique" | "farfelu" | "neutre" {
 
 type Modele = { type: string; titre: string; slots: Slot[] };
 const MODELES: Record<string, Modele> = {
-  upperA: { type: "upper", titre: "Haut du corps A", slots: [S.pecsCompose, S.dosHorizontal, S.epaulesCompose, S.dosVertical, S.pecsIso, S.triceps, S.biceps] },
-  lowerA: { type: "lower", titre: "Bas du corps A", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.mollets, S.abdos] },
+  upperA: { type: "upper", titre: "Upper A", slots: [S.pecsCompose, S.dosHorizontal, S.epaulesCompose, S.dosVertical, S.pecsIso, S.triceps, S.biceps] },
+  lowerA: { type: "lower", titre: "Lower A", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.mollets, S.abdos] },
   upperB: {
     type: "upper",
-    titre: "Haut du corps B",
+    titre: "Upper B",
     slots: [S.dosVertical, S.pecsIncline, S.dosHorizontal, S.epaulesLateral, S.arriereEpaules, S.biceps, S.triceps],
   },
-  lowerB: { type: "lower", titre: "Bas du corps B", slots: [S.ischiosCompose, S.quadsCompose, S.fessiers, S.ischiosIso, S.mollets, S.obliques] },
+  lowerB: { type: "lower", titre: "Lower B", slots: [S.ischiosCompose, S.quadsCompose, S.fessiers, S.ischiosIso, S.mollets, S.obliques] },
   push: { type: "push", titre: "Push", slots: [S.pecsCompose, S.epaulesCompose, S.pecsIncline, S.pecsIso, S.epaulesLateral, S.triceps, S.triceps] },
   pull: { type: "pull", titre: "Pull", slots: [S.dosVertical, S.dosHorizontal, S.dosHorizontal, S.arriereEpaules, S.trapezes, S.biceps, S.biceps] },
-  legs: { type: "legs", titre: "Jambes", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.fessiers, S.mollets, S.abdos] },
-  full: { type: "full", titre: "Full body", slots: [S.quadsCompose, S.pecsCompose, S.dosHorizontal, S.ischiosCompose, S.epaulesCompose, S.abdos] },
+  legs: { type: "legs", titre: "Legs", slots: [S.quadsCompose, S.ischiosCompose, S.quadsIso, S.ischiosIso, S.fessiers, S.mollets, S.abdos] },
+  full: { type: "full", titre: "Full Body", slots: [S.quadsCompose, S.pecsCompose, S.dosHorizontal, S.ischiosCompose, S.epaulesCompose, S.abdos] },
   // Corps entier en deux versions complémentaires : à 2 ou 3 séances par semaine, chaque muscle revient au moins 2 fois.
   fullA: {
     type: "full",
-    titre: "Corps entier A",
+    titre: "Full Body A",
     slots: [S.quadsCompose, S.pecsCompose, S.dosHorizontal, S.ischiosCompose, S.epaulesCompose, S.triceps, S.abdos],
   },
   fullB: {
     type: "full",
-    titre: "Corps entier B",
+    titre: "Full Body B",
     slots: [S.ischiosCompose, S.dosVertical, S.pecsIncline, S.quadsCompose, S.epaulesLateral, S.biceps, S.mollets],
   },
 };
@@ -683,12 +756,12 @@ function splitPour(nbJours: number): string[] {
 /** Pourquoi ce découpage, en une phrase à afficher (proposition de programme) ou à répéter (agent). */
 export function explicationSplit(nbJours: number): string {
   if (nbJours <= 0) return "Aucune séance de salle générée.";
-  if (nbJours === 1) return "1 séance : corps entier, pour entretenir tous les muscles avec le temps disponible.";
-  if (nbJours === 2) return "2 séances : corps entier A et B — chaque muscle est travaillé 2 fois par semaine, ce qu’un haut / bas ne permettrait pas.";
-  if (nbJours === 3) return "3 séances : corps entier en alternance A / B — chaque muscle revient 3 fois par semaine, avec un jour de repos entre deux.";
-  if (nbJours === 4) return "4 séances : haut / bas, deux fois chacun — chaque muscle 2 fois par semaine, avec plus de volume par séance.";
-  if (nbJours === 5) return "5 séances : push / pull / jambes puis un haut et un bas — chaque muscle 2 fois par semaine.";
-  return "6 séances : push / pull / jambes deux fois — chaque muscle 2 fois par semaine, séances plus ciblées.";
+  if (nbJours === 1) return "1 séance : Full Body, pour entretenir tous les muscles avec le temps disponible.";
+  if (nbJours === 2) return "2 séances : Full Body A et B — chaque muscle est travaillé 2 fois par semaine, ce qu’un Upper / Lower ne permettrait pas.";
+  if (nbJours === 3) return "3 séances : Full Body en alternance A / B — chaque muscle revient 3 fois par semaine, avec un jour de repos entre deux.";
+  if (nbJours === 4) return "4 séances : Upper / Lower, deux fois chacun — chaque muscle 2 fois par semaine, avec plus de volume par séance.";
+  if (nbJours === 5) return "5 séances : Push / Pull / Legs puis Upper et Lower — chaque muscle 2 fois par semaine.";
+  return "6 séances : Push / Pull / Legs deux fois — chaque muscle 2 fois par semaine, séances plus ciblées.";
 }
 
 const RANG_NIVEAU: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
@@ -1968,6 +2041,12 @@ export const DeplacementSeance = z.object({
     .describe(
       "Si une autre séance de salle est déjà prévue ce jour-là : « decaler » la pousse au créneau suivant (et les suivantes au besoin), « echanger » intervertit les deux",
     ),
+  suite: z
+    .enum(["garder", "avancer"])
+    .default("garder")
+    .describe(
+      "Quand la séance est avancée à un jour libre : « avancer » fait remonter toutes les suivantes d'un créneau (la séance d'après prend le jour libéré, etc.), « garder » ne touche pas aux autres",
+    ),
 });
 export type DeplacementSeance = z.input<typeof DeplacementSeance>;
 
@@ -2011,7 +2090,15 @@ export async function deplacerSeance(db: KvaliaClient, userId: string, brut: Dep
     const salle = autres ?? [];
     if (salle.some((x) => x.jour === e.jour && x.etat !== "prevue")) throw new Error("Tu as déjà une séance de salle ce jour-là.");
     const enPlace = salle.find((x) => x.jour === e.jour);
-    if (enPlace && e.si_occupe === "echanger") {
+    if (!enPlace && e.suite === "avancer" && e.jour < se.jour) {
+      // S'entraîner un jour en plus : la file avance d'un cran. Chaque séance suivante prend le jour de la précédente ;
+      // l'ordre (Push, Pull, Legs…) ne change pas, le dernier créneau du programme se libère.
+      let libre = se.jour;
+      for (const x of salle.filter((y) => y.etat === "prevue" && y.jour > se.jour)) {
+        deplacees.push({ id: x.id, titre: x.titre, de: x.jour, vers: libre });
+        libre = x.jour;
+      }
+    } else if (enPlace && e.si_occupe === "echanger") {
       deplacees.push({ id: enPlace.id, titre: enPlace.titre, de: enPlace.jour, vers: se.jour });
     } else if (enPlace) {
       const params = await parametresSport(db, userId);
@@ -2036,8 +2123,10 @@ export async function deplacerSeance(db: KvaliaClient, userId: string, brut: Dep
     }
   }
 
-  // Du plus lointain au plus proche : aucun jour ne porte deux séances de salle, même un instant.
-  for (const d of [...deplacees].sort((a, b) => b.vers.localeCompare(a.vers))) {
+  // Dans l'ordre qui ne pose jamais deux séances de salle le même jour, même un instant : du plus lointain au plus
+  // proche quand on repousse, l'inverse quand on avance.
+  const avance = deplacees.length > 1 && deplacees[1].vers < deplacees[1].de && e.si_occupe !== "echanger";
+  for (const d of [...deplacees].sort((a, b) => (avance ? a.vers.localeCompare(b.vers) : b.vers.localeCompare(a.vers)))) {
     const { error: errMaj } = await db.from("seances").update({ jour: d.vers }).eq("id", d.id).eq("user_id", userId);
     if (errMaj) throw errMaj;
   }
@@ -2052,4 +2141,56 @@ export async function deplacerSeance(db: KvaliaClient, userId: string, brut: Dep
     }
   }
   return { seance_id: se.id, jour: e.jour, deplacees, fin };
+}
+
+/**
+ * Séances manquées (prévues un jour passé, jamais commencées) : rien n'est perdu, la file reprend où elle en était.
+ * La plus ancienne manquée prend le prochain créneau, les suivantes suivent dans l'ordre, et le programme s'allonge
+ * d'autant de créneaux (prochains jours de salle habituels). Sans séance manquée, ne fait rien.
+ */
+export async function recalerSeancesManquees(db: KvaliaClient, userId: string) {
+  const auj = aujourdhuiIso();
+  const { data, error } = await db
+    .from("seances")
+    .select("id, jour, etat, type, titre, programme_id")
+    .eq("user_id", userId)
+    .neq("type", "boxe")
+    .gte("jour", decalerJour(auj, -60))
+    .order("jour")
+    .limit(600);
+  if (error) throw error;
+  const toutes = data ?? [];
+  const file = toutes.filter((x) => x.etat === "prevue");
+  const manquees = file.filter((x) => x.jour < auj);
+  if (!manquees.length)
+    return { recalees: 0, deplacees: [] as Array<{ id: string; titre: string | null; de: string; vers: string }>, fin: null as string | null };
+
+  const params = await parametresSport(db, userId);
+  const habituels = [...new Set([...params.jours_salle, ...params.seances_perso.map((x) => x.jour)])];
+  const pris = new Set(toutes.filter((x) => x.etat !== "prevue" && x.jour >= auj).map((x) => x.jour));
+  const creneaux = file.filter((x) => x.jour >= auj).map((x) => x.jour);
+  // Autant de créneaux en plus que de séances manquées, après le dernier (ou à partir d'aujourd'hui s'il n'y en a plus).
+  let curseur = creneaux.at(-1) ?? decalerJour(auj, -1);
+  for (let garde = 0; creneaux.length < file.length && garde < 2000; garde++) {
+    curseur = decalerJour(curseur, 1);
+    if (pris.has(curseur)) continue;
+    if (!habituels.length || habituels.includes(new Date(`${curseur}T12:00:00Z`).getUTCDay())) creneaux.push(curseur);
+  }
+  const deplacees = file.map((x, i) => ({ id: x.id, titre: x.titre, de: x.jour, vers: creneaux[i] })).filter((d) => d.de !== d.vers);
+  for (const d of [...deplacees].sort((a, b) => b.vers.localeCompare(a.vers))) {
+    const { error: errMaj } = await db.from("seances").update({ jour: d.vers }).eq("id", d.id).eq("user_id", userId);
+    if (errMaj) throw errMaj;
+  }
+  const programmeId = manquees[0].programme_id;
+  const dernier = creneaux.at(-1) ?? auj;
+  let fin: string | null = null;
+  if (programmeId) {
+    const { data: prog } = await db.from("programmes").select("fin").eq("id", programmeId).eq("user_id", userId).maybeSingle();
+    fin = prog?.fin ?? null;
+    if (prog?.fin && dernier > prog.fin) {
+      await db.from("programmes").update({ fin: dernier }).eq("id", programmeId).eq("user_id", userId);
+      fin = dernier;
+    }
+  }
+  return { recalees: manquees.length, deplacees, fin };
 }

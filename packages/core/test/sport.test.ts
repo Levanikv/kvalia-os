@@ -39,6 +39,8 @@ import {
   masseMaigre,
   CLASSIQUES,
   deplacerSeance,
+  nomUsuel,
+  recalerSeancesManquees,
   simplicite,
 } from "../src/sport";
 import { METHODES, choisirMethode } from "../src/methodes";
@@ -810,13 +812,13 @@ describe("le découpage s'adapte au nombre de séances", () => {
 
   it("2 jours : deux séances corps entier complémentaires, pas un haut / bas", () => {
     const { titres, plan } = types(2, [1, 4]);
-    expect(titres).toEqual(["Corps entier A", "Corps entier B"]);
+    expect(titres).toEqual(["Full Body A", "Full Body B"]);
     expect(plan.explication).toMatch(/2 fois par semaine/);
   });
 
   it("3 jours : corps entier A / B / A ; 4 jours : haut / bas deux fois", () => {
-    expect(types(3, [1, 3, 5]).titres).toEqual(["Corps entier A", "Corps entier B", "Corps entier A"]);
-    expect(types(4, [1, 2, 4, 5]).titres).toEqual(["Haut du corps A", "Bas du corps A", "Haut du corps B", "Bas du corps B"]);
+    expect(types(3, [1, 3, 5]).titres).toEqual(["Full Body A", "Full Body B", "Full Body A"]);
+    expect(types(4, [1, 2, 4, 5]).titres).toEqual(["Upper A", "Lower A", "Upper B", "Lower B"]);
   });
 
   it("à 2 jours, pectoraux, dos et jambes sont travaillés dans les deux séances", async () => {
@@ -929,7 +931,7 @@ describe("simple et efficace : des classiques, pas de farfelus", () => {
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82 }, "2026-11-09");
     const exos = (semaine: number) =>
       db.tables.seances
-        .filter((x: any) => x.semaine === semaine && x.titre === "Haut du corps A")
+        .filter((x: any) => x.semaine === semaine && x.titre === "Upper A")
         .flatMap((x: any) => db.tables.exercices_seance.filter((e: any) => e.seance_id === x.id).map((e: any) => e.exercice_id))
         .sort();
     // Le nombre d'exercices peut varier avec le volume de la semaine ; ceux qui restent sont les mêmes.
@@ -1026,6 +1028,55 @@ describe("déplacer une séance : empêchement ou jour en plus, le programme sui
     expect(le(db, "2026-11-12")).toEqual([]);
     expect(peutDemarrer(le(db, "2026-11-11")[0])).toBe(true);
     await expect(demarrerSeance(db, USER, jeudi.id)).resolves.toMatchObject({ etat: "en_cours" });
+  });
+
+  it("un jour en plus, « avancer » : la file remonte d'un cran dans l'ordre (PPL + Upper / Lower sur mar. → sam., on s'entraîne lundi)", async () => {
+    const db = base();
+    const params = { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82, rythme: { salle: 5, boxe: 0 }, jours_salle: [2, 3, 4, 5, 6], jours_boxe: [] };
+    await genererProgramme(db, USER, params, "2026-11-10");
+    const avant = salle(db).map((x: any) => ({ id: x.id, titre: x.titre, jour: x.jour }));
+    expect(avant.slice(0, 5).map((x: any) => x.titre)).toEqual(["Push", "Pull", "Legs", "Upper A", "Lower B"]);
+    expect(avant[0].jour).toBe("2026-11-10");
+    // Lundi 9 : pas de séance prévue, mais on y va.
+    const r = await executer("deplacer_seance", { seance_id: avant[0].id, jour: "2026-11-09", suite: "avancer" }, { db, userId: USER });
+    const apres = salle(db);
+    expect(apres.map((x: any) => x.id)).toEqual(avant.map((x: any) => x.id));
+    expect(apres.slice(0, 6).map((x: any) => [x.titre, x.jour])).toEqual([
+      ["Push", "2026-11-09"],
+      ["Pull", "2026-11-10"],
+      ["Legs", "2026-11-11"],
+      ["Upper A", "2026-11-12"],
+      ["Lower B", "2026-11-13"],
+      ["Push", "2026-11-14"],
+    ]);
+    expect(sansDoublon(db)).toBe(true);
+    expect(r.deplacees).toHaveLength(avant.length);
+  });
+
+  it("séances manquées : la file reprend où elle en était, rien n'est perdu, le programme s'allonge d'autant", async () => {
+    const db = await programme();
+    const avant = salle(db).map((x: any) => ({ id: x.id, jour: x.jour }));
+    expect(await recalerSeancesManquees(db, USER)).toMatchObject({ recalees: 0 });
+    // Jeudi 12 : les séances de lundi et mardi n'ont pas été faites.
+    vi.setSystemTime(new Date("2026-11-12T09:00:00Z"));
+    const r = await executer("recaler_programme", {}, { db, userId: USER });
+    expect(r.recalees).toBe(2);
+    const apres = salle(db);
+    expect(apres.map((x: any) => x.id)).toEqual(avant.map((x: any) => x.id));
+    // La séance de lundi est celle d'aujourd'hui, celle de mardi vendredi, puis la suite.
+    expect(apres.slice(0, 4).map((x: any) => x.jour)).toEqual(["2026-11-12", "2026-11-13", "2026-11-16", "2026-11-17"]);
+    expect(apres.every((x: any) => x.jour >= "2026-11-12")).toBe(true);
+    expect(sansDoublon(db)).toBe(true);
+    expect(db.tables.programmes[0].fin >= apres.at(-1).jour).toBe(true);
+    expect((await recalerSeancesManquees(db, USER)).recalees).toBe(0);
+  });
+
+  it("noms d'usage en anglais : ceux qu'on entend en salle", () => {
+    expect(nomUsuel("Barbell Bench Press")).toBe("Barbell Bench Press");
+    expect(nomUsuel("Sled 45 Degree Wide Leg Press")).toBe("Leg Press");
+    expect(nomUsuel("Barbell Straight Leg Deadlift")).toBe("Romanian Deadlift");
+    expect(nomUsuel("Wide Grip Cable Lat Pulldown")).toBe("Lat Pulldown");
+    expect(nomUsuel("Lever Kneeling Leg Curl")).toBe("Machine Kneeling Leg Curl");
   });
 
   it("refus : séance déjà commencée, jour passé, même jour", async () => {

@@ -280,10 +280,10 @@ export async function supprimerDefiAction(id: string) {
 }
 
 /** Reporter une séance ou l'amener à un autre jour (outil deplacer_seance). L'erreur revient en clair. */
-export async function deplacerSeanceAction(seanceId: string, jour: string, si_occupe: "decaler" | "echanger") {
+export async function deplacerSeanceAction(seanceId: string, jour: string, si_occupe: "decaler" | "echanger", suite: "garder" | "avancer" = "garder") {
   const { supabase, user } = await session();
   try {
-    const valeur = await executer("deplacer_seance", { seance_id: seanceId, jour, si_occupe }, { db: supabase, userId: user.id });
+    const valeur = await executer("deplacer_seance", { seance_id: seanceId, jour, si_occupe, suite }, { db: supabase, userId: user.id });
     revalidatePath("/sport");
     revalidatePath("/sport/programme");
     revalidatePath("/nutrition");

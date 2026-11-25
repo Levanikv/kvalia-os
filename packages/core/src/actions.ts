@@ -23,6 +23,7 @@ import {
   terminerSeance,
   demarrerSeance,
   deplacerSeance,
+  recalerSeancesManquees,
   chronoSeance,
   validerSerie,
   chargerModeles,
@@ -332,6 +333,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "deplacer_seance": {
       return (await deplacerSeance(ctx.db, ctx.userId, entree as ToolInput<"deplacer_seance">)) as ToolOutput<T>;
+    }
+
+    case "recaler_programme": {
+      return (await recalerSeancesManquees(ctx.db, ctx.userId)) as ToolOutput<T>;
     }
 
     case "demarrer_seance": {

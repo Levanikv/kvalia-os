@@ -22,11 +22,11 @@ type Props = {
 
 const TYPES: Array<[string, string]> = [
   ["full", "Full body"],
-  ["upper", "Haut du corps"],
-  ["lower", "Bas du corps"],
+  ["upper", "Upper"],
+  ["lower", "Lower"],
   ["push", "Push"],
   ["pull", "Pull"],
-  ["legs", "Jambes"],
+  ["legs", "Legs"],
   ["hiit", "HIIT"],
   ["cardio", "Cardio"],
   ["maison", "Maison"],

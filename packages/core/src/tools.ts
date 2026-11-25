@@ -205,11 +205,22 @@ export const tools = {
 
   deplacer_seance: {
     description:
-      "Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.",
+      "Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Pour s'entraîner un jour en plus sans casser l'ordre (Push puis Pull puis Legs…), passer `suite` = « avancer » : toutes les séances suivantes remontent d'un créneau. Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.",
     input: DeplacementSeance,
     output: z.object({
       seance_id: z.string().uuid(),
       jour: z.string(),
+      deplacees: z.array(z.object({ id: z.string().uuid(), titre: z.string().nullable(), de: z.string(), vers: z.string() })),
+      fin: z.string().nullable(),
+    }),
+  },
+
+  recaler_programme: {
+    description:
+      "Remet le programme d'aplomb après des séances manquées (prévues un jour passé, jamais commencées) : la plus ancienne prend le prochain créneau, les suivantes suivent dans l'ordre, le programme s'allonge d'autant. Rien n'est supprimé. Sans séance manquée, ne fait rien. L'app le fait toute seule à l'ouverture de Sport ; à appeler quand l'utilisateur dit qu'il a raté des séances.",
+    input: z.object({}),
+    output: z.object({
+      recalees: z.number(),
       deplacees: z.array(z.object({ id: z.string().uuid(), titre: z.string().nullable(), de: z.string(), vers: z.string() })),
       fin: z.string().nullable(),
     }),

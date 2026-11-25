@@ -9,8 +9,8 @@ import { deplacerSeanceAction } from "./actions";
 /**
  * Déplacer une séance (outil `deplacer_seance`) : sous la séance du jour, « Reporter » ouvre une feuille avec les
  * sept prochains jours — libre ou déjà pris. Jour libre : seule cette séance bouge. Jour pris : on choisit de décaler
- * la suite d'un créneau (le programme suit) ou d'échanger les deux. Un jour de repos, « La faire aujourd'hui » amène
- * la prochaine séance à aujourd'hui, d'un geste.
+ * la suite d'un créneau (le programme suit) ou d'échanger les deux. Un jour sans séance, « Faire <séance> » amène
+ * la prochaine à aujourd'hui et fait remonter les suivantes d'un créneau : on s'entraîne au jour le jour, dans l'ordre.
  */
 type Seance = { id: string; titre: string | null; jour: string };
 /** Séances de salle prévues dans les jours qui viennent : jour → titre. */
@@ -141,7 +141,7 @@ export function ReporterSeance({ seance, aujourdhui, occupes }: { seance: Seance
   );
 }
 
-/** Jour de repos : amène la prochaine séance à aujourd'hui (son jour d'origine devient un jour de repos). */
+/** Jour sans séance : la prochaine vient à aujourd'hui et toutes les suivantes remontent d'un créneau, dans l'ordre. */
 export function FaireAujourdhui({ seance, aujourdhui }: { seance: Seance; aujourdhui: string }) {
   const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
@@ -153,7 +153,8 @@ export function FaireAujourdhui({ seance, aujourdhui }: { seance: Seance; aujour
         disabled={occupe}
         onClick={() =>
           start(async () => {
-            const r = await deplacerSeanceAction(seance.id, aujourdhui, "decaler");
+            // La file avance d'un cran : cette séance aujourd'hui, la suivante à sa place, etc. — l'ordre ne change pas.
+            const r = await deplacerSeanceAction(seance.id, aujourdhui, "decaler", "avancer");
             if (!r.ok) return setToast(r.erreur);
             router.refresh();
           })
@@ -161,7 +162,7 @@ export function FaireAujourdhui({ seance, aujourdhui }: { seance: Seance; aujour
         className="kv-btn kv-btn-tertiary kv-btn-lg kv-btn-block border border-line-default"
       >
         <Icon name="bolt" size={20} />
-        <span className="kv-btn-label">{occupe ? "…" : "Dispo aujourd’hui ? Faire cette séance"}</span>
+        <span className="kv-btn-label">{occupe ? "…" : `Dispo aujourd’hui ? Faire ${seance.titre ?? "cette séance"}`}</span>
       </button>
       <Toast message={toast} onFermer={() => setToast(null)} bas={BAS_TOAST} />
     </>

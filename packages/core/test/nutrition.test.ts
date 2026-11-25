@@ -226,7 +226,7 @@ describe("suggestions", () => {
   it("suggerer_repas (outil) : lit le reste du jour, la séance et le programme", async () => {
     const db = base({
       programmes: [{ id: "p1", user_id: USER, actif: true, rythme: { objectif: "hypertrophie" } }],
-      seances: [{ id: "s1", user_id: USER, jour: "2026-11-18", etat: "faite", type: "upper", titre: "Haut du corps A", kcal: 400 }],
+      seances: [{ id: "s1", user_id: USER, jour: "2026-11-18", etat: "faite", type: "upper", titre: "Upper A", kcal: 400 }],
     });
     await ajouterAuJournal(db, USER, { repas: "petit_dej", libelle: "Petit-déjeuner", kcal: 600, prot: 30 });
     await ajouterAuJournal(db, USER, { repas: "dejeuner", libelle: "Déjeuner", kcal: 800, prot: 50 });

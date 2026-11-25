@@ -53,7 +53,7 @@ docs/           sitemap, architecture, conventions, runbook, glossaire, décisio
 - Pas de nouvelle dépendance lourde (UI kit, ORM, state manager) sans ADR. Tailwind + composants maison suffisent.
 - Pas de `any` dans `src/` (autorisé dans `test/` et `scripts/`). Pas de `// eslint-disable` sans raison écrite.
 - Pas de migration appliquée « à la main » sans fichier dans `supabase/migrations/` (horodaté `YYYYMMDDHHMMSS_nom.sql`).
-- Pas de texte anglais dans l'UI. Les noms d'exercices du référentiel sont en anglais : passe par `nomAffiche()` / `nom_fr`.
+- Pas de texte anglais dans l'UI, sauf les **noms de séances et d'exercices**, en anglais comme en salle (Push, Upper A, Lat Pulldown — ADR 0018) : passe par `nomAffiche()` / `nomUsuel()`. Descriptions, consignes et libellés restent en français.
 - Pas de modale centrée : feuilles qui montent du bas (`BottomSheet`). Pas de tab bar globale : menu « Applications » + barre par app (`packages/ui`).
 - Pas d'élément caché par l'iPhone : en-têtes sous `env(safe-area-inset-top)` (barre d'état, Dynamic Island), tout ce qui est fixé en bas au-dessus de `env(safe-area-inset-bottom)` entier (indicateur d'accueil), contenu qui défile avec la marge correspondante. Détail : `docs/conventions.md` § UI « Zones sûres iPhone ».
 

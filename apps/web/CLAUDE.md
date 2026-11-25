@@ -22,7 +22,7 @@ Next.js 16 (App Router), React 19, Tailwind 4. Mobile-first (max-w-lg centré), 
 - **Optimiste** : `useOptimistic` + `useTransition` pour cocher / modifier ; `router.refresh()` après une action qui change d'autres écrans. `RealtimeRefresh` pour ce qui vient de l'agent.
 - **Zones sûres iPhone** : en haut `pt-safe` (ou `env(safe-area-inset-top)`) sur tout en-tête collé et tout écran plein écran sans `ModuleFrame` ; en bas, tout élément `fixed` (barre d'action, `ModuleBar`, `Fab`, `Toast`, vidéo plein écran) ajoute `env(safe-area-inset-bottom)` en entier, et le contenu qui défile réserve la même hauteur. Jamais de 34 px en dur. Règle complète : `docs/conventions.md`.
 - **Toast** (`components/Toast.tsx`, `.kv-toast`) : confirmation brève au-dessus de la barre d'action, action « Annuler » facultative.
-- **Textes** : français, tutoiement, courts. Pas d'anglais sauf noms propres. `nomAffiche()` pour les exercices.
+- **Textes** : français, tutoiement, courts. Pas d'anglais sauf noms propres et noms de séances / d'exercices (anglais, comme en salle : `nomAffiche()`).
 - **Pas de `<img>` externe non protégé** côté perf : `loading="lazy"` ; vidéos `muted loop playsInline autoPlay preload="metadata"`.
 
 ## Vérifier

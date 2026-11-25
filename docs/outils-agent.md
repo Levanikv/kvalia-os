@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-44 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+45 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -189,16 +189,29 @@ Coche (ou décoche) un exercice d'une séance. Le premier coché démarre la sé
 
 ## `deplacer_seance`
 
-Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.
+Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Pour s'entraîner un jour en plus sans casser l'ordre (Push puis Pull puis Legs…), passer `suite` = « avancer » : toutes les séances suivantes remontent d'un créneau. Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.
 
 **Entrée**
 - `seance_id` : string (uuid)
 - `jour` : string (date) — Nouveau jour de la séance (aujourd'hui ou plus tard)
 - `si_occupe` : `decaler` · `echanger` — défaut `"decaler"` — Si une autre séance de salle est déjà prévue ce jour-là : « decaler » la pousse au créneau suivant (et les suivantes au besoin), « echanger » intervertit les deux
+- `suite` : `garder` · `avancer` — défaut `"garder"` — Quand la séance est avancée à un jour libre : « avancer » fait remonter toutes les suivantes d'un créneau (la séance d'après prend le jour libéré, etc.), « garder » ne touche pas aux autres
 
 **Sortie**
 - `seance_id` : string (uuid)
 - `jour` : string
+- `deplacees` : liste de objet { id, titre, de, vers }
+- `fin` : string | null
+
+## `recaler_programme`
+
+Remet le programme d'aplomb après des séances manquées (prévues un jour passé, jamais commencées) : la plus ancienne prend le prochain créneau, les suivantes suivent dans l'ordre, le programme s'allonge d'autant. Rien n'est supprimé. Sans séance manquée, ne fait rien. L'app le fait toute seule à l'ouverture de Sport ; à appeler quand l'utilisateur dit qu'il a raté des séances.
+
+**Entrée**
+- (aucune)
+
+**Sortie**
+- `recalees` : nombre
 - `deplacees` : liste de objet { id, titre, de, vers }
 - `fin` : string | null
 
