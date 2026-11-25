@@ -429,6 +429,8 @@ type Slot = {
   requis?: RegExp; // motif de nom obligatoire (évite les hors-sujet dans un créneau précis)
   exclure?: RegExp;
   isolation?: boolean; // pour le repos et l'ordre de coupe
+  /** Clé dans `CLASSIQUES` : les exercices de référence de ce créneau, choisis en priorité. */
+  cle?: string;
 };
 
 const STRETCH = /stretch|pose|yoga|rotation|mobility|warm-up/i;
@@ -551,6 +553,91 @@ const S = {
   } as Slot,
 };
 
+for (const [cle, slot] of Object.entries(S)) slot.cle = cle;
+
+/**
+ * Simple et efficace (ADR 0016) : pour chaque créneau, les exercices que tout le monde connaît, qui s'installent en
+ * quelques secondes et se chargent facilement — du plus recommandé au moins recommandé (noms du référentiel). Le
+ * générateur prend le premier disponible avec le matériel, le niveau et le profil ; le reste du référentiel ne sert
+ * que s'il n'y en a aucun (peu de matériel).
+ */
+export const CLASSIQUES: Record<string, string[]> = {
+  pecsCompose: ["Barbell Bench Press", "Lever Lying Chest Press", "Push-Up"],
+  pecsIncline: ["Dumbbell Incline Bench Press", "Barbell Incline Bench Press", "Lever Incline Hammer Chest Press", "Incline Push-Up"],
+  pecsIso: ["Pec Deck Fly", "Cable Standing Fly", "Dumbbell Fly"],
+  dosHorizontal: [
+    "Seated Cable Row (V-Grip)",
+    "Dumbbell Bent-Over Row",
+    "Lever T-Bar Row",
+    "Barbell Underhand Bent-Over Row",
+    "Seated Cable Row (Wide-Grip)",
+    "Lever High Row",
+    "Dumbbell Incline Row",
+    "Band Seated Row",
+  ],
+  dosVertical: ["Wide Grip Cable Lat Pulldown", "Pull-Up / Chin-Up", "Cable Pulldown", "Reverse Grip Machine Lat Pulldown", "Band Assisted Pull-up"],
+  epaulesCompose: ["Seated Dumbbell Shoulder Press", "Military Press", "Smith Seated Shoulder Press"],
+  epaulesLateral: ["Dumbbell Lateral Raise", "Cable Lateral Raise", "Lever Lateral Raise"],
+  arriereEpaules: ["Lever Seated Reverse Fly", "Cable Rear Delt Row (with rope)", "Dumbbell Rear Delt Row", "Band Bent-Over Rear Lateral Raise"],
+  biceps: ["Barbell Curl", "Dumbbell Biceps Curl", "EZ Bar Biceps Curl", "Dumbbell Cross Body Hammer Curl", "Dumbbell Incline Curl", "Lever Preacher Curl"],
+  triceps: [
+    "Cable Rope Triceps Pushdown",
+    "EZ Bar Lying Triceps Extension",
+    "Cable Triceps Pushdown",
+    "Dumbbell Seated Triceps Extension",
+    "Cable Rope Overhead Triceps Extension",
+    "Lever Triceps Extension",
+    "Triceps Dips",
+    "Band Triceps Pushdown",
+    "Bench Dips",
+  ],
+  quadsCompose: [
+    "Barbell Back Squat",
+    "Sled 45 Degree Wide Leg Press",
+    "Sled Hack Squat",
+    "Lever Horizontal Leg Press",
+    "Dumbbell Goblet Squat",
+    "Dumbbell Lunge",
+  ],
+  quadsIso: ["Lever Leg Extension", "Band Seated Leg Extension"],
+  ischiosCompose: [
+    "Barbell Straight Leg Deadlift",
+    "Dumbbell Stiff Leg Deadlift",
+    "45 Degree Hyperextension",
+    "Lever Back Extension",
+    "Dumbbell Deadlift",
+    "Glute Bridge",
+  ],
+  ischiosIso: ["Lever Seated Leg Curl", "Lever Lying Leg Curl", "Band Standing Leg Curl"],
+  fessiers: ["Dumbbell Lunge", "Barbell Lunge", "Lever Standing Hip Extension", "Glute Bridge"],
+  mollets: [
+    "Lever Standing Calf Raise",
+    "Lever Seated Calf Raise",
+    "Dumbbell Standing Calf Raise",
+    "Smith Machine Calf Raise",
+    "Sled 45 Degree Calf Press",
+    "Band Standing Calf Raise",
+  ],
+  abdos: ["Cable Kneeling Crunch", "Floor Crunch", "Lying Leg Raise", "Lever Seated Crunch", "Front Plank", "Reverse Crunch"],
+  obliques: ["Side Plank", "Dumbbell Side Bend", "Twisting Crunch"],
+  trapezes: ["Dumbbell Shrug", "Barbell Shrug", "Lever Shrug"],
+  cardioFin: ["Stationary Bike", "Elliptical Trainer", "Treadmill Running"],
+};
+const NOMS_CLASSIQUES = new Set(Object.values(CLASSIQUES).flat());
+
+/**
+ * Exercices « farfelus » : installation pénible (ballon, banc incliné à plat ventre, sangles, chaises, landmine),
+ * variantes à un bras ou une jambe, à genoux, en rotation, ou gestes que personne ne fait en salle. Jamais choisis
+ * par le générateur tant qu'il reste autre chose pour le créneau, et relégués dans les équivalents proposés.
+ */
+const FARFELU =
+  /ball|prone|supine|zottman|anti gravity|iron cross|spell caster|otis|landmine|cambered|commando|between chairs|straps|\bring\b|rotation|twist|kneeling|one.?arm|one.?leg|single|alternat|donkey|scapula|behind|drag curl|pronate|bicycle|jackknife|pilates|scissor|v-up|sissy|clean and press|reverse hyper|wall|deep push|bench pull|decline|hammer press|hammer grip|arnold|inner curl|old school|step-up|chair|weighted|concentration|kickback|wrist/i;
+
+/** L'exercice est-il un classique (simple à installer, connu de tous) ou un farfelu à éviter ? */
+export function simplicite(nom: string): "classique" | "farfelu" | "neutre" {
+  return NOMS_CLASSIQUES.has(nom) ? "classique" : FARFELU.test(nom) ? "farfelu" : "neutre";
+}
+
 type Modele = { type: string; titre: string; slots: Slot[] };
 const MODELES: Record<string, Modele> = {
   upperA: { type: "upper", titre: "Haut du corps A", slots: [S.pecsCompose, S.dosHorizontal, S.epaulesCompose, S.dosVertical, S.pecsIso, S.triceps, S.biceps] },
@@ -636,6 +723,27 @@ export function deconseille(r: Pick<Ref, "nom" | "equipement" | "partie_corps">,
 
 function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set<string>, graine: number): Ref | null {
   const niveauMax = RANG_NIVEAU[params.niveau] ?? 1;
+  const famille = FAMILLE_MATERIEL[params.profil?.preference_materiel ?? "mix"];
+  const dansFamille = (r: Ref) => famille.includes(r.equipement ?? "");
+
+  // Simple et efficace : d'abord les classiques du créneau, dans l'ordre de recommandation — ceux du matériel
+  // préféré s'il y en a. On alterne entre les deux premiers d'un bloc à l'autre, pas plus.
+  const classiques = (CLASSIQUES[slot.cle ?? ""] ?? [])
+    .map((nom) => refs.find((r) => r.nom === nom))
+    .filter(
+      (r): r is Ref =>
+        !!r &&
+        !dejaPris.has(r.id) &&
+        !!r.equipement &&
+        params.materiel.includes(r.equipement) &&
+        (RANG_NIVEAU[r.difficulte ?? "beginner"] ?? 0) <= niveauMax &&
+        !deconseille(r, params.profil),
+    );
+  if (classiques.length) {
+    const preferes = classiques.filter(dansFamille);
+    const retenus = (preferes.length ? preferes : classiques).slice(0, 2);
+    return retenus[graine % retenus.length];
+  }
   const possibles = refs.filter((r) => {
     if (dejaPris.has(r.id)) return false;
     if (!r.equipement || !params.materiel.includes(r.equipement)) return false;
@@ -653,10 +761,11 @@ function choisir(refs: Ref[], slot: Slot, params: ParametresSport, dejaPris: Set
   // Morphologie et douleurs : on écarte les exercices déconseillés, sauf s'il ne reste rien d'autre pour ce créneau.
   const adaptes = possibles.filter((r) => !deconseille(r, params.profil));
   let cands = adaptes.length ? adaptes : possibles;
+  // Pas de classique disponible : on évite au moins les farfelus, s'il reste autre chose.
+  const sobres = cands.filter((r) => !FARFELU.test(r.nom));
+  if (sobres.length) cands = sobres;
   // Matériel préféré : s'il offre un bon exercice pour ce créneau (motif préféré), on ne choisit que dans cette
   // famille ; sinon elle garde un avantage au score, sans imposer un exercice hors sujet.
-  const famille = FAMILLE_MATERIEL[params.profil?.preference_materiel ?? "mix"];
-  const dansFamille = (r: Ref) => famille.includes(r.equipement ?? "");
   const bons = cands.filter((r) => dansFamille(r) && (!slot.prefere || slot.prefere.test(r.nom)));
   if (bons.length) cands = bons;
   // score : motif préféré, matériel « sérieux » d'abord, difficulté proche du niveau
@@ -938,7 +1047,7 @@ async function planifierSeances(
           const slots = [...modele.slots];
           if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
           slots.forEach((slot, ordre) => {
-            const ref = choisir(refs, slot, params, pris, (bloc - 1) * 2 + idxSalle + (slot.isolation ? s % 2 : 0));
+            const ref = choisir(refs, slot, params, pris, bloc - 1 + idxSalle);
             if (!ref) return;
             pris.add(ref.id);
             const p = prescription(params, bloc, semaineDansBloc, slot, ordre === 0);
@@ -1786,6 +1895,12 @@ export async function equivalents(db: KvaliaClient, exerciceId: string, materiel
     if (c.equipement === orig.equipement) score += 1;
     else raisons.push(LIBELLES.materiel[c.equipement ?? ""] ?? c.equipement ?? "");
     score -= Math.abs((RANG_NIVEAU[c.difficulte ?? "beginner"] ?? 0) - (RANG_NIVEAU[orig.difficulte ?? "beginner"] ?? 0));
+    // Simple et efficace : les classiques remontent, les farfelus descendent.
+    const genre = simplicite(c.nom);
+    if (genre === "classique") {
+      score += 3;
+      raisons.unshift("classique");
+    } else if (genre === "farfelu") score -= 3;
     if (score >= 5) out.push({ ...c, score, raison: raisons.filter(Boolean).join(" · ") });
   }
   out.sort((a, b) => b.score - a.score || a.nom.localeCompare(b.nom));

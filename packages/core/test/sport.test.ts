@@ -37,6 +37,8 @@ import {
   ciblesDepuisProfil,
   deconseille,
   masseMaigre,
+  CLASSIQUES,
+  simplicite,
 } from "../src/sport";
 import { METHODES, choisirMethode } from "../src/methodes";
 import { executer } from "../src/actions";
@@ -884,5 +886,61 @@ describe("méthodes de référence", () => {
     expect(r.recommandee).toBe("double_progression");
     expect(r.methodes.map((m) => m.id)).toContain("cinq_trois_un");
     expect(r.methodes.every((m) => m.sources.every((x) => x.url.startsWith("https://")))).toBe(true);
+  });
+});
+
+describe("simple et efficace : des classiques, pas de farfelus", () => {
+  const noms = async (params: Partial<ParametresSport>) => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82, ...params }, "2026-11-09");
+    const parId = new Map(exercicesRef().map((e) => [e.id, e]));
+    return db.tables.exercices_seance.map((e: any) => parId.get(e.exercice_id)!.nom as string);
+  };
+
+  it("tous les classiques existent dans le référentiel, et aucun n'est classé farfelu", () => {
+    const connus = new Set(exercicesRef().map((e) => e.nom));
+    expect(
+      Object.values(CLASSIQUES)
+        .flat()
+        .filter((n) => !connus.has(n)),
+    ).toEqual([]);
+    expect(simplicite("Barbell Bench Press")).toBe("classique");
+    expect(simplicite("Dumbbell Fly On Exercise Ball")).toBe("farfelu");
+    expect(simplicite("Barbell Prone Incline Curl")).toBe("farfelu");
+    expect(simplicite("Lever Kneeling Leg Curl")).toBe("farfelu");
+  });
+
+  it("en salle (4 ou 5 séances) : uniquement des classiques, développé couché et tirage en tête de séance", async () => {
+    for (const salle of [4, 5]) {
+      const tous = await noms({ rythme: { salle, boxe: 0 }, jours_salle: [1, 2, 3, 4, 5].slice(0, salle), jours_boxe: [] });
+      expect([...new Set(tous.filter((n) => simplicite(n) !== "classique"))]).toEqual([]);
+      expect(tous).toContain("Barbell Bench Press");
+    }
+  });
+
+  it("à la maison avec peu de matériel : jamais de farfelu", async () => {
+    const tous = await noms({ rythme: { salle: 3, boxe: 0 }, jours_boxe: [], materiel: ["dumbbell", "body weight", "band"] });
+    expect(tous.filter((n) => simplicite(n) === "farfelu")).toEqual([]);
+  });
+
+  it("un même créneau garde le même exercice toutes les semaines d'un bloc (on progresse dessus)", async () => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82 }, "2026-11-09");
+    const exos = (semaine: number) =>
+      db.tables.seances
+        .filter((x: any) => x.semaine === semaine && x.titre === "Haut du corps A")
+        .flatMap((x: any) => db.tables.exercices_seance.filter((e: any) => e.seance_id === x.id).map((e: any) => e.exercice_id))
+        .sort();
+    // Le nombre d'exercices peut varier avec le volume de la semaine ; ceux qui restent sont les mêmes.
+    const memes = (a: string[], b: string[]) => (a.length <= b.length ? a.every((x) => b.includes(x)) : b.every((x) => a.includes(x)));
+    expect(memes(exos(1), exos(2))).toBe(true);
+    expect(memes(exos(2), exos(3))).toBe(true);
+  });
+
+  it("équivalents : les classiques d'abord, les farfelus relégués", async () => {
+    const curl = exercicesRef().find((e) => e.nom === "Barbell Prone Incline Curl")!;
+    const eq = await equivalents(base(), curl.id, PARAMETRES_SPORT_DEFAUT.materiel);
+    expect(simplicite(eq[0].nom)).toBe("classique");
+    expect(eq.slice(0, 3).filter((e) => simplicite(e.nom) === "farfelu")).toEqual([]);
   });
 });

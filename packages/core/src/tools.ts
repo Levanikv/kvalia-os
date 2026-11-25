@@ -295,7 +295,7 @@ export const tools = {
 
   equivalents_exercice: {
     description:
-      "Propose des exercices équivalents (même muscle cible, matériel disponible, même nature) pour remplacer un exercice d'une séance — machine prise, douleur, envie de varier.",
+      "Propose des exercices équivalents (même muscle cible, matériel disponible, même nature) pour remplacer un exercice d'une séance — machine prise, douleur, envie de varier. Les classiques (simples à installer) sortent en premier : proposer ceux-là d'abord.",
     input: z.object({ exercice_seance_id: z.string().uuid(), limite: z.number().int().min(1).max(20).default(8) }),
     output: z.array(
       z.object({
@@ -339,7 +339,7 @@ export const tools = {
 
   creer_seance_perso: {
     description:
-      "Crée une séance personnalisée réutilisable (« Mes séances ») : nom, type (full, upper, lower, push, pull, legs, hiit, cardio, maison) et exercices du référentiel dans l'ordre (séries, reps, repos en s, charge facultative). Elle n'est pas planifiée : pour la mettre au programme, appeler planifier_seance_perso.",
+      "Crée une séance personnalisée réutilisable (« Mes séances ») : nom, type (full, upper, lower, push, pull, legs, hiit, cardio, maison) et exercices du référentiel dans l'ordre (séries, reps, repos en s, charge facultative). Rester simple et efficace : 5 à 6 exercices classiques, faciles à installer (développé couché, rowing, tirage vertical, squat ou presse, soulevé de terre jambes tendues, curl, extension à la poulie…), gros mouvements d'abord ; pas de variantes exotiques (ballon, à un bras, à genoux, à plat ventre sur banc incliné) sauf demande explicite. Elle n'est pas planifiée : pour la mettre au programme, appeler planifier_seance_perso.",
     input: ModeleSeanceEntree,
     output: z.object({ id: z.string().uuid(), nom: z.string(), nb_exercices: z.number(), duree_min: z.number() }),
   },
