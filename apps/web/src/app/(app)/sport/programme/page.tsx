@@ -100,11 +100,11 @@ export default async function Page() {
       titre="Programme"
       pied={
         <div className="flex gap-[var(--inline-sm)]">
-          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-secondary kv-btn-lg min-w-0 flex-1 !px-[var(--inset-sm)] shadow-raised">
+          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-secondary kv-btn-lg min-w-0 flex-1 !px-[var(--inset-sm)]">
             <Icon name="tune" size={20} />
             <span className="kv-btn-label truncate">Modifier</span>
           </Link>
-          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg min-w-0 flex-[1.4] !px-[var(--inset-sm)] shadow-raised">
+          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg min-w-0 flex-[1.4] !px-[var(--inset-sm)]">
             <span className="kv-btn-label truncate">Nouveau programme</span>
           </Link>
         </div>
@@ -116,7 +116,7 @@ export default async function Page() {
         <section
           data-module="sport"
           data-theme="dark"
-          className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised"
+          className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
         >
           <div className="kv-ground-content flex flex-col gap-[var(--stack-md)] p-[var(--inset-lg)]">
             <div className="flex items-center justify-between gap-[var(--inline-md)]">
@@ -161,7 +161,7 @@ export default async function Page() {
         <SemaineType jours={jours} note={`semaine ${semaineCourante} · touche une séance`} />
 
         {/* Méthode d'entraînement et ses sources */}
-        <details className="group overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+        <details className="group overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
           <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
               <Icon name="menu_book" size={20} />
@@ -220,7 +220,7 @@ export default async function Page() {
 
         <section className="flex flex-col gap-[var(--stack-sm)]">
           <h2 className="px-[var(--inline-xs)] type-title-lg">Toutes les semaines</h2>
-          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
             {[...parSemaine.keys()]
               .sort((a, b) => a - b)
               .map((n) => {
@@ -308,7 +308,7 @@ async function sansProgramme(supabase: Db, userId: string) {
       surTitre="Sport"
       titre="Programme"
       pied={
-        <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end shadow-raised">
+        <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
           <span className="kv-btn-label">Créer mon programme</span>
           <span className="kv-btn-end">
             <Icon name="arrow_forward" size={22} />
@@ -321,7 +321,7 @@ async function sansProgramme(supabase: Db, userId: string) {
           href="/sport/programme/nouveau"
           data-module="sport"
           data-theme="dark"
-          className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised active:opacity-95"
+          className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle active:opacity-95"
         >
           <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
             <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ async function sansProgramme(supabase: Db, userId: string) {
 
         <section className="flex flex-col gap-[var(--stack-sm)]">
           <h2 className="px-[var(--inline-xs)] type-title-lg">Comment ça marche</h2>
-          <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+          <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
             {[
               ["3 questions", "Objectif, échéance, rythme. Ton profil est déjà connu."],
               ["Proposition", "Phases, semaine type et durée : tu vois avant de valider."],
@@ -360,7 +360,7 @@ async function sansProgramme(supabase: Db, userId: string) {
         {connu.length > 0 && (
           <section className="flex flex-col gap-[var(--stack-sm)]">
             <h2 className="px-[var(--inline-xs)] type-title-lg">Ce que l’IA sait déjà</h2>
-            <div className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+            <div className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
               <p className="type-body-sm text-fg-secondary">Récupéré depuis ton profil et tes autres apps : pas besoin de le redemander.</p>
               <div className="flex flex-wrap gap-[var(--inline-sm)]">
                 {connu.map((c) => (
@@ -411,7 +411,7 @@ function MesSeances({
           </span>
         </Link>
       ) : (
-        <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+        <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
           {modeles.map((m) => {
             const jours = perso.filter((x) => x.modele_id === m.id).map((x) => NOMS_JOURS[x.jour]);
             return (

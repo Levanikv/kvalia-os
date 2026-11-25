@@ -18,6 +18,9 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
 │   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
 │   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
+│   │                                 + « Pas dispo ? Reporter » (feuille : 7 jours, libre ou pris ; jour pris → décaler la suite
+│   │                                 d'un créneau ou échanger) et, un jour de repos, « Faire cette séance » (la prochaine vient à
+│   │                                 aujourd'hui) ;
 │   │                                 (À faire · En cours · Terminée · Prévue · Repos), défis du jour (« + 1 000 pas »,
 │   │                                 cocher, feuille de saisie), défi de la semaine, énergie, records ;
 │   │                                 programme suivi,
@@ -49,11 +52,11 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
 │   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
 ├── /nutrition            Mini-app Nutrition
-│   ├── /nutrition                    Accueil du jour · ?jour=YYYY-MM-DD : bilan à même le fond (calories restantes en grand, anneau
-│   │                                 du mangé découpé par macro, trois tuiles « reste » par macro, séances du jour), puis les repas
-│   │                                 en cartes, une seule dépliée — celle du moment : « Comme hier » (refaire le repas d'un geste),
-│   │                                 idées de recettes selon le reste et la séance, scanner / chercher ; repliée : ce qui est noté
-│   │                                 ou les calories conseillées. Barre fixe « Ajouter au <repas du moment> » + « Scanner » →
+│   ├── /nutrition                    Accueil du jour · ?jour=YYYY-MM-DD, épuré : bilan à même le fond (calories restantes en grand,
+│   │                                 anneau du mangé découpé par macro, trois jauges fines), puis les repas en une seule liste, un
+│   │                                 seul déplié — celui du moment : « Comme hier » (refaire le repas d'un geste) et la meilleure
+│   │                                 idée de recette ; replié : le nom, ce qui est noté, le total. Lien « Recettes ». Barre fixe
+│   │                                 « Ajouter » + scan + photo →
 │   │                                 feuille : recherche (CIQUAL + Open Food Facts), caméra (code-barres, QR code GS1), photo du
 │   │                                 repas (estimation par IA : aliments, grammes, calories — ajustables avant l'ajout), récents,
 │   │                                 saisie rapide, quantité

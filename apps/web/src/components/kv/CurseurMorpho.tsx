@@ -127,7 +127,7 @@ export function CurseurMorpho({ valeur, onChange }: Props) {
 
   return (
     <div className="flex flex-col gap-[var(--stack-sm)]">
-      <div className="relative flex flex-col items-center overflow-hidden rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default pb-[var(--inset-md)] pt-[var(--inset-sm)] shadow-card">
+      <div className="relative flex flex-col items-center overflow-hidden rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default pb-[var(--inset-md)] pt-[var(--inset-sm)]">
         <span className="kv-overline absolute left-[var(--inset-md)] top-[var(--inset-md)]">Silhouette</span>
         <span className="kv-mono absolute right-[var(--inset-md)] top-[var(--inset-md)]">
           {String(proche + 1).padStart(2, "0")} / {String(max + 1).padStart(2, "0")}
@@ -154,7 +154,7 @@ export function CurseurMorpho({ valeur, onChange }: Props) {
           ))}
           <span
             aria-hidden
-            className={`absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-action-primary shadow-raised ring-4 ring-surface-page ${
+            className={`absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-action-primary ring-4 ring-surface-page ${
               glisse ? "scale-110" : "transition-[left,transform] duration-200"
             }`}
             style={{ left: gauche(pos), width: POUCE, height: POUCE }}

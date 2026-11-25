@@ -382,7 +382,7 @@ function Contenu({ exo, index, total, modifiable, peutModifier, onApercu, enPaus
         <section
           data-theme="dark"
           data-module="sport"
-          className="rounded-[var(--radius-card)] bg-surface-container-inverse p-[var(--inset-md)] text-fg-primary shadow-floating"
+          className="rounded-[var(--radius-card)] bg-surface-container-inverse p-[var(--inset-md)] text-fg-primary"
         >
           <div className="flex justify-between gap-[var(--inline-md)]">
             <span className="kv-overline text-fg-secondary">

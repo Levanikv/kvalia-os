@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { Ligne, Priorite, Tache, VueJour } from "./schemas";
-import { ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
+import { DeplacementSeance, ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
 import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
 import { MethodeId } from "./methodes";
 import { AlimentSortie } from "./aliments";
@@ -201,6 +201,18 @@ export const tools = {
     description: "Coche (ou décoche) un exercice d'une séance. Le premier coché démarre la séance ; les kcal de la séance sont recalculées.",
     input: z.object({ exercice_seance_id: z.string().uuid(), fait: z.boolean().default(true) }),
     output: z.object({ seance_id: z.string().uuid(), kcal: z.number() }),
+  },
+
+  deplacer_seance: {
+    description:
+      "Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.",
+    input: DeplacementSeance,
+    output: z.object({
+      seance_id: z.string().uuid(),
+      jour: z.string(),
+      deplacees: z.array(z.object({ id: z.string().uuid(), titre: z.string().nullable(), de: z.string(), vers: z.string() })),
+      fin: z.string().nullable(),
+    }),
   },
 
   demarrer_seance: {

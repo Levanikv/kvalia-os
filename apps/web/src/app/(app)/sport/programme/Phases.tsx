@@ -17,7 +17,7 @@ type Props = { semaines: Array<{ semaine: number; focus: string }>; semaineCoura
 export function Phases({ semaines, semaineCourante }: Props) {
   const groupes = plagesPhases(semaines);
   return (
-    <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+    <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
       <h2 className="kv-overline">Phases</h2>
       <ol className="flex gap-[3px]" aria-label="Phases semaine par semaine">
         {[...semaines]
@@ -60,7 +60,7 @@ export function SemaineType({ jours, note }: { jours: JourType[]; note?: string 
         <h2 className="type-title-lg">Semaine type</h2>
         {note && <span className="kv-mono">{note}</span>}
       </div>
-      <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+      <ul className="cascade overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
         {jours.map((j) => {
           const contenu = (
             <>

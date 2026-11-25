@@ -56,7 +56,7 @@ export default async function Page({ searchParams }: Props) {
           role="tab"
           aria-selected={a === annee}
           className={`tap flex flex-1 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-            a === annee ? "bg-surface-canvas text-fg-primary shadow-sm" : "text-fg-secondary"
+            a === annee ? "bg-surface-canvas text-fg-primary" : "text-fg-secondary"
           }`}
         >
           {a}

@@ -31,7 +31,7 @@ export function AjouterRecette({ recetteId, nom, kcal, jour, repasInitial }: Pro
 
   return (
     <>
-      <button type="button" onClick={() => setOuvert(true)} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block shadow-raised">
+      <button type="button" onClick={() => setOuvert(true)} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
         <Icon name="add" size={22} />
         <span className="kv-btn-label">Ajouter au journal · {nf(kcal)} kcal</span>
       </button>

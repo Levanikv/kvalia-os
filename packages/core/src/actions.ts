@@ -22,6 +22,7 @@ import {
   seancePrincipale,
   terminerSeance,
   demarrerSeance,
+  deplacerSeance,
   chronoSeance,
   validerSerie,
   chargerModeles,
@@ -327,6 +328,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
     case "terminer_seance": {
       const e = entree as ToolInput<"terminer_seance">;
       return (await terminerSeance(ctx.db, ctx.userId, e.seance_id, e.ressenti, e.notes, e.rates)) as ToolOutput<T>;
+    }
+
+    case "deplacer_seance": {
+      return (await deplacerSeance(ctx.db, ctx.userId, entree as ToolInput<"deplacer_seance">)) as ToolOutput<T>;
     }
 
     case "demarrer_seance": {

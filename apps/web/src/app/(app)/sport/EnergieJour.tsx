@@ -16,7 +16,7 @@ export function EnergieJour({ jour, cible, consomme, brule, seancePrevue }: Prop
     <section
       data-module="sport"
       data-theme="dark"
-      className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised"
+      className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
     >
       <div className="kv-ground-content flex flex-col gap-[var(--stack-md)] p-[var(--inset-lg)]">
         <div className="flex items-center justify-between">

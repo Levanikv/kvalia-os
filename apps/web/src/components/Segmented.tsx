@@ -18,7 +18,7 @@ export function Segmented({ items }: { items: Item[] }) {
             role="tab"
             aria-selected={actif}
             className={`tap flex flex-1 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-              actif ? "bg-surface-canvas text-fg-primary shadow-sm" : "text-fg-secondary"
+              actif ? "bg-surface-canvas text-fg-primary" : "text-fg-secondary"
             }`}
           >
             {it.label}

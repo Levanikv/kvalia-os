@@ -84,7 +84,7 @@ export function ListeRecettes({ recettes, objectif, repasInitial }: Props) {
             <li key={r.id}>
               <Link
                 href={`/nutrition/recettes/${r.id}${repas ? `?repas=${repas}` : ""}`}
-                className="flex flex-col gap-[var(--stack-xs)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card active:opacity-90"
+                className="flex flex-col gap-[var(--stack-xs)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] active:opacity-90"
               >
                 <div className="flex items-start justify-between gap-[var(--inline-md)]">
                   <h2 className="type-title-sm">{r.nom}</h2>

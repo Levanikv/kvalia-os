@@ -278,3 +278,18 @@ export async function supprimerDefiAction(id: string) {
     return r;
   });
 }
+
+/** Reporter une séance ou l'amener à un autre jour (outil deplacer_seance). L'erreur revient en clair. */
+export async function deplacerSeanceAction(seanceId: string, jour: string, si_occupe: "decaler" | "echanger") {
+  const { supabase, user } = await session();
+  try {
+    const valeur = await executer("deplacer_seance", { seance_id: seanceId, jour, si_occupe }, { db: supabase, userId: user.id });
+    revalidatePath("/sport");
+    revalidatePath("/sport/programme");
+    revalidatePath("/nutrition");
+    revalidatePath("/");
+    return { ok: true as const, valeur };
+  } catch (e) {
+    return { ok: false as const, erreur: e instanceof Error ? e.message : "Déplacement impossible." };
+  }
+}

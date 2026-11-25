@@ -117,7 +117,7 @@ export function EditeurProgramme({ programme, initial, modeles, dates }: Props) 
             {nbSeances} séance{nbSeances > 1 ? "s" : ""} / sem.
           </span>
         </div>
-        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
           {JOURS.map((j) => {
             const c = jours[j.v];
             return (
@@ -174,7 +174,7 @@ export function EditeurProgramme({ programme, initial, modeles, dates }: Props) 
       </section>
 
       {/* Semaines */}
-      <section className="flex items-center justify-between gap-[var(--inline-md)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+      <section className="flex items-center justify-between gap-[var(--inline-md)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
         <div>
           <p className="kv-overline">Durée du programme</p>
           <p className="type-display-md">

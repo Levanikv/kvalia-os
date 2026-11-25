@@ -20,6 +20,32 @@
   --radius-3xl: var(--radius-sheet); /* 36 */
 }
 
+/*
+  Pas d'ombres portées (décision du 25 nov. 2026, conventions § UI) : un composant se détache par une bordure fine
+  ou directement par sa couleur de fond. Les élévations du design system sont neutralisées ici, en un seul endroit —
+  les jetons générés depuis Figma (packages/ui) ne sont pas modifiés. « 0 0 #0000 » plutôt que « none » : la valeur
+  doit rester valide dans une liste d'ombres (utilitaires Tailwind). L'anneau de focus n'est pas concerné.
+*/
+html:root,
+html [data-module],
+html[data-module],
+html [data-theme] {
+  --elevation-card: 0 0 #0000;
+  --elevation-raised: 0 0 #0000;
+  --elevation-floating: 0 0 #0000;
+  --elevation-glass: 0 0 #0000;
+  --elevation-brand-glow: 0 0 #0000;
+  --shadow-1: 0 0 #0000;
+  --shadow-2: 0 0 #0000;
+  --shadow-3: 0 0 #0000;
+  --shadow-4: 0 0 #0000;
+}
+/* Ce qui flottait grâce à son ombre se détache maintenant par un trait. */
+.kv-card-hero:not(.kv-glass),
+.kv-switch-thumb {
+  border: var(--border-width-default) solid var(--border-subtle);
+}
+
 /* Constantes du shell (hors Figma) : hauteur de la barre d'app = control/xl, en-tête 56 px. */
 :root {
   --tabbar-h: var(--control-xl);

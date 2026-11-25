@@ -230,7 +230,7 @@ export function EditeurSeance({ refs, dates, programmeActif, modele, joursPlanif
             return (
               <li
                 key={`${e.exercice_id}-${i}`}
-                className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default p-[var(--inset-sm)] shadow-card"
+                className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default p-[var(--inset-sm)]"
               >
                 <div className="flex items-center gap-[var(--inline-md)]">
                   <span className="kv-exo-thumb !h-12 !w-12" style={r?.image ? { backgroundImage: `url(${r.image})` } : undefined} aria-hidden />

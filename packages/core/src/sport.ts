@@ -1956,3 +1956,100 @@ export async function remplacerExercice(db: KvaliaClient, userId: string, exerci
   }
   return { remplaces: ids.length, ancien, nouveau: nouveau.id, nom: nouveau.nom, portee };
 }
+
+// ---------- Déplacer une séance (empêchement, envie de s'entraîner un autre jour) ----------
+
+export const DeplacementSeance = z.object({
+  seance_id: z.string().uuid(),
+  jour: z.string().date().describe("Nouveau jour de la séance (aujourd'hui ou plus tard)"),
+  si_occupe: z
+    .enum(["decaler", "echanger"])
+    .default("decaler")
+    .describe(
+      "Si une autre séance de salle est déjà prévue ce jour-là : « decaler » la pousse au créneau suivant (et les suivantes au besoin), « echanger » intervertit les deux",
+    ),
+});
+export type DeplacementSeance = z.input<typeof DeplacementSeance>;
+
+const estSalle = (type: string) => type !== "boxe";
+
+/**
+ * Déplace une séance pas encore commencée à un autre jour, sans jamais empiler deux séances de salle le même jour :
+ * - jour libre → seule cette séance bouge (son ancien jour devient un jour de repos) ;
+ * - jour occupé, « echanger » → les deux séances intervertissent leurs jours ;
+ * - jour occupé, « decaler » → la séance en place glisse au créneau suivant (le prochain jour de salle habituel, ou
+ *   le jour libéré s'il vient avant), et ainsi de suite jusqu'au premier créneau libre. L'ordre des séances et leur
+ *   contenu ne changent pas ; si la dernière dépasse la fin du programme, la fin suit.
+ * La boxe se déplace seule (elle peut partager un jour avec la salle).
+ */
+export async function deplacerSeance(db: KvaliaClient, userId: string, brut: DeplacementSeance) {
+  const e = DeplacementSeance.parse(brut);
+  const { data: se, error } = await db
+    .from("seances")
+    .select("id, jour, etat, type, titre, programme_id")
+    .eq("id", e.seance_id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!se) throw new Error("Séance introuvable.");
+  if (se.etat !== "prevue") throw new Error("Seule une séance pas encore commencée peut être déplacée.");
+  if (e.jour < aujourdhuiIso()) throw new Error("Une séance ne se déplace pas dans le passé.");
+  if (e.jour === se.jour) throw new Error("La séance est déjà prévue ce jour-là.");
+
+  const deplacees: Array<{ id: string; titre: string | null; de: string; vers: string }> = [{ id: se.id, titre: se.titre, de: se.jour, vers: e.jour }];
+  if (estSalle(se.type)) {
+    const { data: autres, error: errAutres } = await db
+      .from("seances")
+      .select("id, jour, etat, type, titre")
+      .eq("user_id", userId)
+      .gte("jour", e.jour)
+      .neq("id", se.id)
+      .neq("type", "boxe")
+      .order("jour")
+      .limit(400);
+    if (errAutres) throw errAutres;
+    const salle = autres ?? [];
+    if (salle.some((x) => x.jour === e.jour && x.etat !== "prevue")) throw new Error("Tu as déjà une séance de salle ce jour-là.");
+    const enPlace = salle.find((x) => x.jour === e.jour);
+    if (enPlace && e.si_occupe === "echanger") {
+      deplacees.push({ id: enPlace.id, titre: enPlace.titre, de: enPlace.jour, vers: se.jour });
+    } else if (enPlace) {
+      const params = await parametresSport(db, userId);
+      const habituels = [...new Set([...params.jours_salle, ...params.seances_perso.map((x) => x.jour)])];
+      const parJour = new Map(salle.map((x) => [x.jour, x]));
+      /** Créneau suivant : le prochain jour de salle habituel, ou le jour libéré par la séance déplacée s'il vient avant. */
+      const creneauApres = (jour: string) => {
+        for (let i = 1; i <= 14; i++) {
+          const j = decalerJour(jour, i);
+          if (parJour.get(j)?.etat && parJour.get(j)?.etat !== "prevue") continue;
+          if (j === se.jour || !habituels.length || habituels.includes(new Date(`${j}T12:00:00Z`).getUTCDay())) return j;
+        }
+        return decalerJour(jour, 1);
+      };
+      let courante: (typeof salle)[number] | undefined = enPlace;
+      for (let garde = 0; courante && garde < 400; garde++) {
+        const vers = creneauApres(courante.jour);
+        deplacees.push({ id: courante.id, titre: courante.titre, de: courante.jour, vers });
+        // Le jour libéré par la séance déplacée n'est plus occupé ; sinon, la séance qui s'y trouve glisse à son tour.
+        courante = vers === se.jour ? undefined : parJour.get(vers);
+      }
+    }
+  }
+
+  // Du plus lointain au plus proche : aucun jour ne porte deux séances de salle, même un instant.
+  for (const d of [...deplacees].sort((a, b) => b.vers.localeCompare(a.vers))) {
+    const { error: errMaj } = await db.from("seances").update({ jour: d.vers }).eq("id", d.id).eq("user_id", userId);
+    if (errMaj) throw errMaj;
+  }
+  let fin: string | null = null;
+  if (se.programme_id) {
+    const { data: prog } = await db.from("programmes").select("fin").eq("id", se.programme_id).eq("user_id", userId).maybeSingle();
+    const dernier = deplacees.reduce((a, d) => (d.vers > a ? d.vers : a), "");
+    fin = prog?.fin ?? null;
+    if (prog?.fin && dernier > prog.fin) {
+      await db.from("programmes").update({ fin: dernier }).eq("id", se.programme_id).eq("user_id", userId);
+      fin = dernier;
+    }
+  }
+  return { seance_id: se.id, jour: e.jour, deplacees, fin };
+}

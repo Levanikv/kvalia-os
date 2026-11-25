@@ -1,8 +1,9 @@
 import { derniersRepas, journalDuJour, parcoursRepas, repasDuMoment, suggererRepas, type AlimentSortie } from "@kvalia/core";
+import Link from "next/link";
+import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
-import { EntreeCarte } from "../sport/EntreeCarte";
 import { enteteJour } from "../sport/entete";
 import { jourDepuis } from "../sport/lib";
 import { BoutonAjout, FournisseurAjout } from "./Ajout";
@@ -11,13 +12,11 @@ import { RepasDuJour } from "./Repas";
 
 type Props = { searchParams: Promise<{ jour?: string }> };
 
-const nf = (n: number) => n.toLocaleString("fr-FR");
-
 /**
  * Nutrition — accueil du jour (même en-tête que Sport : pastille du jour, semaine, bande de jours) :
- * le bilan à même le fond (`Bilan` : calories restantes, anneau par macro, ce qu'il reste par macro, séances),
- * puis les repas (`RepasDuJour` : un seul déplié, celui du moment, avec le chemin le plus court pour le noter),
- * puis les entrées secondaires. La barre d'action fixe ajoute au repas du moment ou ouvre le scan.
+ * le bilan à même le fond (`Bilan` : calories restantes, anneau par macro, trois jauges fines), les repas en une
+ * seule liste (`RepasDuJour` : un seul déplié, celui du moment, avec le chemin le plus court pour le noter), puis le
+ * lien vers les recettes. La barre d'action fixe ajoute au repas du moment, ou ouvre le scan ou l'appareil photo.
  */
 export default async function Page({ searchParams }: Props) {
   const { supabase, user } = await session();
@@ -70,7 +69,7 @@ export default async function Page({ searchParams }: Props) {
       >
         <RealtimeRefresh tables={["seances", "journal_repas"]} />
         <div className="cascade flex flex-col gap-[var(--stack-xl)]">
-          <Bilan cible={j.cible} base={j.base} brule={j.brule} consomme={j.consomme} reste={j.reste} macros={macros} seances={j.seances} />
+          <Bilan cible={j.cible} brule={j.brule} consomme={j.consomme} reste={j.reste} macros={macros} />
 
           <RepasDuJour
             key={jour}
@@ -82,16 +81,15 @@ export default async function Page({ searchParams }: Props) {
             ideesFocus={estAujourdhui ? { message: suggestion.message, suggestions: suggestion.suggestions } : null}
           />
 
-          <section className="grid grid-cols-2 gap-[var(--inline-md)]">
-            <EntreeCarte href="/nutrition/recettes" icone="menu_book" titre="Recettes" detail="36 recettes" sous="Par repas, selon ton sport" />
-            <EntreeCarte
-              href="/reglages/nutrition"
-              icone="tune"
-              titre="Cibles"
-              detail={`${nf(j.base)} kcal`}
-              sous={`${nf(j.proteines_cible)} g de protéines`}
-            />
-          </section>
+          <Link
+            href="/nutrition/recettes"
+            className="tap flex items-center justify-between rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-sm)]"
+          >
+            <span className="flex items-center gap-[var(--inline-md)] type-title-sm">
+              <Icon name="menu_book" size={22} className="text-fg-brand" /> Recettes
+            </span>
+            <Icon name="chevron_right" size={20} className="text-icon-tertiary" />
+          </Link>
         </div>
       </ModuleFrame>
     </FournisseurAjout>

@@ -21,3 +21,4 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0014](0014-scan-code-barres-zxing-wasm.md)        | Nutrition : scan du code-barres à la caméra, décodé sur le téléphone (ZXing wasm) → Open Food Facts | acceptée |
 | [0015](0015-photo-repas-vision-claude.md)          | Nutrition : estimer un repas à partir d'une photo (vision Claude, paquet `packages/vision`)         | acceptée |
 | [0016](0016-exercices-classiques.md)                | Sport : exercices classiques par créneau, simples à installer — pas de farfelus                    | acceptée |
+| [0017](0017-deplacer-une-seance.md)                 | Sport : déplacer une séance (reporter, avancer) — le programme suit, jamais deux séances le même jour | acceptée |

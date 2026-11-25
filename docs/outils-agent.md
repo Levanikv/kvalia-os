@@ -3,7 +3,7 @@
 > Généré depuis `packages/core/src/tools.ts` par `pnpm doc:outils` — ne pas éditer à la main.
 > Chaque outil est exposé tel quel par `apps/agent` (serveur MCP) et appelé par l'app via `executer()` : même entrée, même sortie, même règle.
 
-43 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
+44 outils. Ceux marqués **à confirmer** modifient beaucoup de données : l'agent demande avant.
 
 ## `ajouter_produit`
 
@@ -186,6 +186,21 @@ Coche (ou décoche) un exercice d'une séance. Le premier coché démarre la sé
 **Sortie**
 - `seance_id` : string (uuid)
 - `kcal` : nombre
+
+## `deplacer_seance`
+
+Déplace une séance pas encore commencée à un autre jour : empêchement (« je ne peux pas aujourd'hui, reporte à demain ») ou envie de s'entraîner un jour sans séance (déplacer la prochaine séance à aujourd'hui). Jamais deux séances de salle le même jour : si le jour visé est pris, `si_occupe` = « decaler » (défaut) pousse la séance en place et les suivantes d'un créneau — le programme suit, sa fin recule au besoin — ou « echanger » intervertit les deux. Rend la liste des séances déplacées : la résumer à l'utilisateur.
+
+**Entrée**
+- `seance_id` : string (uuid)
+- `jour` : string (date) — Nouveau jour de la séance (aujourd'hui ou plus tard)
+- `si_occupe` : `decaler` · `echanger` — défaut `"decaler"` — Si une autre séance de salle est déjà prévue ce jour-là : « decaler » la pousse au créneau suivant (et les suivantes au besoin), « echanger » intervertit les deux
+
+**Sortie**
+- `seance_id` : string (uuid)
+- `jour` : string
+- `deplacees` : liste de objet { id, titre, de, vers }
+- `fin` : string | null
 
 ## `demarrer_seance`
 

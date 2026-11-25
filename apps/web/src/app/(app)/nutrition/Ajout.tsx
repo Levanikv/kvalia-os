@@ -86,28 +86,20 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
   );
 }
 
-const AU_REPAS: Record<Repas, string> = {
-  petit_dej: "au petit-déjeuner",
-  collation: "à la collation",
-  dejeuner: "au déjeuner",
-  encas: "à l’encas",
-  diner: "au dîner",
-};
-
-/** Barre d'action : « Ajouter au <repas du moment> », et le scan du code-barres à un geste. */
+/** Barre d'action : « Ajouter » (au repas du moment), et le scan du code-barres ou la photo à un geste. */
 export function BoutonAjout() {
-  const { ouvrir, repasDuMoment } = useAjout();
+  const { ouvrir } = useAjout();
   return (
     <div className="flex gap-[var(--inline-md)]">
-      <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl min-w-0 flex-1 shadow-raised">
+      <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl min-w-0 flex-1">
         <Icon name="add" size={22} />
-        <span className="kv-btn-label truncate">Ajouter {AU_REPAS[repasDuMoment]}</span>
+        <span className="kv-btn-label">Ajouter</span>
       </button>
       <button
         type="button"
         onClick={() => ouvrir(undefined, "scan")}
         aria-label="Scanner un code-barres"
-        className="kv-btn kv-btn-secondary kv-btn-xl aspect-square shrink-0 px-0 shadow-raised"
+        className="kv-btn kv-btn-tertiary kv-btn-xl aspect-square shrink-0 border border-line-default px-0"
       >
         <Icon name="barcode_scanner" size={24} />
       </button>
@@ -115,7 +107,7 @@ export function BoutonAjout() {
         type="button"
         onClick={() => ouvrir(undefined, "photo")}
         aria-label="Prendre le repas en photo"
-        className="kv-btn kv-btn-secondary kv-btn-xl aspect-square shrink-0 px-0 shadow-raised"
+        className="kv-btn kv-btn-tertiary kv-btn-xl aspect-square shrink-0 border border-line-default px-0"
       >
         <Icon name="photo_camera" size={24} />
       </button>

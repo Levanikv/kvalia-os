@@ -53,7 +53,7 @@ export function BandeJours({ jour, auj, base, marques, rayon = 21 }: Props) {
                 aria-current={actif ? "date" : undefined}
                 aria-label={`${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}${m?.length ? ` · ${m.length} séance${m.length > 1 ? "s" : ""}` : ""}`}
                 scroll={false}
-                className={`relative flex h-[66px] w-[var(--date-pill-w)] flex-col items-center justify-center gap-[var(--stack-2xs)] rounded-[var(--radius-control)] transition-colors ${actif ? "bg-action-primary text-fg-on-brand shadow-brand-glow" : "border border-line-subtle bg-surface-container-default"} ${!actif && estAuj ? "border-[length:var(--border-width-strong)] border-focus-ring" : ""}`}
+                className={`relative flex h-[66px] w-[var(--date-pill-w)] flex-col items-center justify-center gap-[var(--stack-2xs)] rounded-[var(--radius-control)] transition-colors ${actif ? "bg-action-primary text-fg-on-brand" : "border border-line-subtle bg-surface-container-default"} ${!actif && estAuj ? "border-[length:var(--border-width-strong)] border-focus-ring" : ""}`}
               >
                 <span className={`font-mono text-[10px] uppercase tracking-[0.08em] ${actif ? "text-fg-on-brand" : "text-fg-tertiary"}`}>
                   {premierDuMois

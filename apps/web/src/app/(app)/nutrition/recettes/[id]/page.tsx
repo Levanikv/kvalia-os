@@ -84,7 +84,7 @@ export default async function Page({ params, searchParams }: Props) {
             <h2 className="type-title-lg">Ingrédients</h2>
             <span className="kv-mono">pour 1 portion</span>
           </div>
-          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
             {ingredients.map((i) => (
               <li
                 key={i.nom}
@@ -100,7 +100,7 @@ export default async function Page({ params, searchParams }: Props) {
         {etapes.length > 0 && (
           <section className="flex flex-col gap-[var(--stack-sm)]">
             <h2 className="px-[var(--inline-xs)] type-title-lg">Préparation</h2>
-            <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+            <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
               {etapes.map((e, i) => (
                 <li key={e} className="flex gap-[var(--inline-lg)] border-b border-line-subtle px-[var(--inset-md)] py-[var(--inset-sm)] last:border-b-0">
                   <span className="kv-mono pt-0.5 !text-fg-brand">{String(i + 1).padStart(2, "0")}</span>

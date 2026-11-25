@@ -11,6 +11,7 @@ import { enteteJour } from "./entete";
 import { EnergieJour } from "./EnergieJour";
 import { HeroSeance, TicketRepos } from "./HeroSeance";
 import { Records } from "./Records";
+import { FaireAujourdhui, ReporterSeance, type Occupes } from "./Reporter";
 import { ToastUrl } from "./ToastUrl";
 import { decaler, jourDepuis, kcalPrevues, libelleFocus, seancesPourJour } from "./lib";
 
@@ -45,7 +46,7 @@ export default async function Page({ searchParams }: Props) {
   const ob = params.onboarding;
   if (!programme && !ob?.termine && !ob?.passe) redirect("/sport/bienvenue");
   // Une seule vague de requêtes en parallèle (poids, prochaine séance, rangs) au lieu de deux à la suite.
-  const [{ poids }, prochaine, numeros] = await Promise.all([
+  const [{ poids }, prochaine, numeros, { data: aVenir }] = await Promise.all([
     poidsActuel(supabase, user.id, params),
     seances.length === 0
       ? supabase
@@ -69,7 +70,10 @@ export default async function Page({ searchParams }: Props) {
           .order("jour")
           .then((r) => r.data ?? [])
       : [],
+    // Séances de salle prévues dans les huit jours : pour proposer un report sans empiler deux séances.
+    supabase.from("seances").select("jour, titre").gte("jour", auj).lte("jour", decaler(auj, 8)).eq("etat", "prevue").neq("type", "boxe"),
   ]);
+  const occupes: Occupes = Object.fromEntries((aVenir ?? []).map((x) => [x.jour, x.titre ?? "Séance"]));
   const numero = (id: string) => {
     const i = numeros.findIndex((x) => x.id === id);
     return i >= 0 ? { n: i + 1, total: numeros.length } : null;
@@ -100,7 +104,7 @@ export default async function Page({ searchParams }: Props) {
       barre={entete.barre}
       pied={
         sansProgrammePret ? (
-          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block shadow-raised">
+          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
             <Icon name="auto_awesome" size={20} /> <span className="kv-btn-label">Créer mon programme</span>
           </Link>
         ) : undefined
@@ -118,7 +122,7 @@ export default async function Page({ searchParams }: Props) {
             href="/sport/bienvenue?reprendre=1"
             data-module="sport"
             data-theme="dark"
-            className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised"
+            className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
           >
             <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
               <div className="flex items-baseline justify-between">
@@ -158,16 +162,26 @@ export default async function Page({ searchParams }: Props) {
             rang={seances.length > 1 ? `${i + 1}/${seances.length}` : null}
           />
         ))}
+        {/* Empêchement : une séance de salle pas encore commencée se reporte, le programme suit. */}
+        {seances
+          .filter((s) => s.etat === "prevue" && s.type !== "boxe" && s.jour >= auj)
+          .slice(0, 1)
+          .map((s) => (
+            <ReporterSeance key={s.id} seance={{ id: s.id, titre: s.titre, jour: s.jour }} aujourdhui={auj} occupes={occupes} />
+          ))}
 
         {seances.length === 0 && programme && (
           <TicketRepos prochaine={prochaine} semaine={{ faites: defi.faites, total: defi.total }} semaineNo={dansProgramme ? pos.semaine : null} />
+        )}
+        {seances.length === 0 && programme && prochaine && jour === auj && (
+          <FaireAujourdhui seance={{ id: prochaine.id, titre: prochaine.titre, jour: prochaine.jour }} aujourdhui={auj} />
         )}
 
         {defisDuJour.length > 0 && <DefisDuJour defis={defisDuJour} jour={jour} aujourdhui={auj} modifiable={jour <= auj} />}
 
         {/* Défi de la semaine : toutes les séances de salle de la semaine. */}
         {defi.total > 0 && (
-          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-accent p-[var(--inset-lg)] text-fg-primary shadow-card">
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-accent p-[var(--inset-lg)] text-fg-primary border border-line-subtle">
             <div className="flex items-start justify-between gap-[var(--inline-md)]">
               <div>
                 <p className="kv-overline">Défi de la semaine</p>

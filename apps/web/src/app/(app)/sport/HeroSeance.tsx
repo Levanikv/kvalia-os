@@ -65,7 +65,7 @@ export function HeroSeance({ seance: s, kcalPrevues, estAujourdhui, numero, sema
       href={`/sport/seance/${s.id}`}
       data-module="sport"
       data-theme="dark"
-      className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised active:opacity-95"
+      className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle active:opacity-95"
     >
       <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
         <div className="flex items-center gap-[var(--inline-sm)]">
@@ -145,7 +145,7 @@ export function TicketRepos({ prochaine, semaine, semaineNo }: ReposProps) {
       )}
     </div>
   );
-  const classes = "kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised";
+  const classes = "kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle";
   return prochaine ? (
     <Link href={`/sport/seance/${prochaine.id}`} data-module="sport" data-theme="dark" className={`${classes} active:opacity-95`}>
       {contenu}

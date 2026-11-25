@@ -259,7 +259,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   {modeles.length > 0 && r.jours.length > 0 && (
                     <div className="flex flex-col gap-[var(--stack-sm)]">
                       <h2 className="type-title-sm">Quelle séance chaque jour ?</h2>
-                      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+                      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
                         {JOURS.filter((j) => r.jours.includes(j.v)).map((j) => {
                           const choisi = (r.perso ?? []).find((x) => x.jour === j.v)?.modele_id ?? "";
                           return (
@@ -336,7 +336,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                     </div>
                   </div>
 
-                  <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+                  <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
                     <h2 className="kv-overline">Phases</h2>
                     <div className="flex gap-[3px]" aria-hidden>
                       {phases.map((p, i) => (
@@ -359,7 +359,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
 
                   <section className="flex flex-col gap-[var(--stack-sm)]">
                     <h2 className="type-title-lg">Semaine type</h2>
-                    <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+                    <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
                       {[1, 2, 3, 4, 5, 6, 0].map((j) => {
                         const ss = plan.jours[j];
                         return (
@@ -382,7 +382,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                     </ul>
                   </section>
 
-                  <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+                  <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
                     <div className="flex items-center justify-between gap-[var(--inline-md)]">
                       <span className="kv-overline">Méthode</span>
                       <span className="kv-tag kv-tag-brand">Sourcée</span>
@@ -408,7 +408,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   <section
                     data-theme="dark"
                     data-module="sport"
-                    className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] bg-surface-page p-[var(--inset-md)] text-fg-primary shadow-raised"
+                    className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] bg-surface-page p-[var(--inset-md)] text-fg-primary border border-line-subtle"
                   >
                     <p className="flex items-center gap-[var(--inline-sm)] kv-overline text-fg-highlight">
                       <Icon name="auto_awesome" size={16} /> Pourquoi ce programme
@@ -471,7 +471,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                 style={{ width: `${(gen / ETAPES_GENERATION.length) * 100}%` }}
               />
             </div>
-            <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+            <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
               {ETAPES_GENERATION.map((t, i) => (
                 <li
                   key={t}
@@ -506,7 +506,7 @@ export function Parcours({ mode, initiales, base, aujourdhui, lundiProchain, rem
                   href={`/sport/seance/${resultat.premiere.id}`}
                   data-module="sport"
                   data-theme="dark"
-                  className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary shadow-raised"
+                  className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
                 >
                   <div className="kv-ground-content flex flex-col gap-[var(--stack-sm)] p-[var(--inset-lg)]">
                     <div className="flex items-center justify-between">
@@ -601,7 +601,7 @@ function Option({
       role="radio"
       aria-checked={actif}
       onClick={onClick}
-      className={`flex w-full items-center gap-[var(--inline-lg)] rounded-[var(--radius-tile)] border bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-sm)] text-left ${actif ? "border-line-strong shadow-card ring-1 ring-fg-primary" : "border-line-subtle"}`}
+      className={`flex w-full items-center gap-[var(--inline-lg)] rounded-[var(--radius-tile)] border bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-sm)] text-left ${actif ? "border-line-strong ring-1 ring-fg-primary" : "border-line-subtle"}`}
     >
       {icone && (
         <span

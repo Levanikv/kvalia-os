@@ -37,6 +37,7 @@ Ce qui n'est pas vérifié par `pnpm check` (types, lint, tests, doc des outils)
 ## UI
 
 - **Mobile d'abord** : largeur max `max-w-lg`, cibles tactiles ≥ 44 px (`.tap`), pas de hover-only.
+- **Pas d'ombres portées** : un composant se détache par une bordure fine (`border border-line-subtle`) ou directement par sa couleur de fond (`bg-surface-container-*` sur `bg-surface-page`). Pas de classe `shadow-*` dans les écrans ; les élévations du design system sont neutralisées en un seul endroit (`apps/web/src/app/globals.css`). L'anneau de focus reste.
 - **Zones sûres iPhone (règle non négociable)** : l'app tourne en plein écran (`viewport-fit=cover`, barre d'état `black-translucent`), donc rien ne doit passer sous la barre d'état / l'encoche / la Dynamic Island en haut, ni sous l'indicateur d'accueil en bas.
   - **Haut** : tout en-tête collé en haut porte `pt-safe` (ou `pt-[calc(env(safe-area-inset-top)+…)]`) ; un écran plein écran sans `ModuleFrame` (séance, fin de séance, vidéo, onboarding) le fait lui-même ; une feuille ne monte jamais plus haut que `100dvh − env(safe-area-inset-top)`.
   - **Bas** : tout élément `fixed`/`sticky` en bas (barre d'action, barre d'app, « + », toast, bouton d'une vidéo plein écran) ajoute **`env(safe-area-inset-bottom)` entier** à sa marge (`pb-[calc(var(--stack-lg)+env(safe-area-inset-bottom))]`, `bottom: calc(… + env(safe-area-inset-bottom))`, ou `max(…, env(safe-area-inset-bottom) + …)`) — jamais une fraction, jamais une constante en dur (`--page-safe-bottom` = 34 px est une valeur de maquette, pas l'appareil).

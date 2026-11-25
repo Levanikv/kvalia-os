@@ -101,7 +101,7 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
       <div
         data-module="sport"
         data-theme="dark"
-        className="feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-sheet)] bg-surface-page text-fg-primary shadow-2xl"
+        className="feuille-panneau absolute inset-x-0 bottom-0 mx-auto flex max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-sheet)] bg-surface-page text-fg-primary"
         style={{
           maxHeight: "calc(100dvh - env(safe-area-inset-top) - var(--stack-sm))",
           transform: ferme ? "translateY(100%)" : `translateY(${dy}px)`,

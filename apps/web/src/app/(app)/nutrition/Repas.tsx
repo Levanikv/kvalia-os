@@ -10,10 +10,11 @@ import { useAjout } from "./Ajout";
 import { ajouterAuJournalAction, repeterRepasAction, supprimerDuJournalAction, suggererAction } from "./actions";
 
 /**
- * Les repas de la journée, un seul déplié à la fois. Replié : ce qui a été mangé en une ligne, ou les calories
- * conseillées tant que rien n'est noté. Déplié — par défaut le repas du moment — : les lignes, puis le chemin le
- * plus court pour noter : refaire le même repas que la dernière fois, le prendre en photo, scanner, chercher, ou une idée de recette
- * choisie selon le reste du jour et la séance (règles : `parcoursRepas`, `suggererRepas`, `repeterRepas` du noyau).
+ * Les repas de la journée, en une seule liste, un seul déplié à la fois. Replié : le nom, ce qui a été mangé en une
+ * ligne et le total. Déplié — par défaut le repas du moment — : les lignes, puis le chemin le plus court pour
+ * noter : refaire le même repas que la dernière fois, ou la meilleure idée de recette selon le reste du jour et la
+ * séance (règles : `parcoursRepas`, `suggererRepas`, `repeterRepas` du noyau). Scan et photo sont dans la barre
+ * d'action et dans la feuille d'ajout.
  */
 export type CarteRepas = {
   repas: Repas;
@@ -90,161 +91,129 @@ export function RepasDuJour({ jour, consomme, modifiable, repas, focus, ideesFoc
   return (
     <section className="flex flex-col gap-[var(--stack-sm)]" aria-label="Repas du jour">
       <h2 className="px-[var(--inline-xs)] type-title-lg">Repas</h2>
-      {repas.map((r) => {
-        const deplie = ouvert === r.repas;
-        const maintenant = r.etat === "maintenant";
-        const propositions = deplie && cle ? idees[cle] : undefined;
-        const resume = r.lignes.length
-          ? r.lignes.map((l) => l.libelle.split(" · ")[0]).join(", ")
-          : r.conseille_kcal >= 80
-            ? `Conseillé ≈ ${nf(r.conseille_kcal)} kcal`
-            : "Rien noté";
-        return (
-          <article
-            key={r.repas}
-            className={`overflow-hidden border bg-surface-container-default shadow-card ${deplie ? "rounded-[var(--radius-card-hero)] border-line-default" : "rounded-[var(--radius-card)] border-line-subtle"}`}
-          >
-            <button
-              type="button"
-              onClick={() => setOuvert(deplie ? null : r.repas)}
-              aria-expanded={deplie}
-              className="tap flex w-full items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)] text-left"
-            >
-              <span
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${maintenant ? "bg-action-primary text-icon-on-brand" : "bg-surface-container-brand-subtle text-fg-brand"}`}
+      <div className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
+        {repas.map((r) => {
+          const deplie = ouvert === r.repas;
+          const maintenant = r.etat === "maintenant";
+          const idee = deplie && cle ? idees[cle]?.suggestions[0] : undefined;
+          // Une seule ligne de contexte, et seulement quand elle apprend quelque chose.
+          const resume = r.lignes.length
+            ? r.lignes.map((l) => l.libelle.split(" · ")[0]).join(", ")
+            : maintenant && r.conseille_kcal >= 80
+              ? `Vise environ ${nf(r.conseille_kcal)} kcal`
+              : null;
+          return (
+            <article key={r.repas} className="border-b border-line-subtle last:border-b-0">
+              <button
+                type="button"
+                onClick={() => setOuvert(deplie ? null : r.repas)}
+                aria-expanded={deplie}
+                className="tap flex w-full items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)] text-left"
               >
-                <Icon name={ICONES_REPAS[r.repas]} size={22} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-[var(--inline-sm)]">
-                  <span className={deplie ? "type-title-md" : "type-title-sm"}>{r.libelle}</span>
-                  {maintenant && <span className="kv-tag kv-tag-brand">Maintenant</span>}
+                <Icon name={ICONES_REPAS[r.repas]} size={22} className={maintenant ? "text-fg-brand" : "text-icon-tertiary"} />
+                <span className="min-w-0 flex-1">
+                  <span className={`block ${maintenant ? "type-title-md" : "type-title-sm"}`}>{r.libelle}</span>
+                  {resume && <span className="block truncate type-body-sm text-fg-secondary">{resume}</span>}
                 </span>
-                <span className={`block truncate type-body-sm ${r.lignes.length ? "text-fg-secondary" : "text-fg-tertiary"}`}>{resume}</span>
-              </span>
-              {r.kcal > 0 && (
-                <span className="shrink-0 text-right">
-                  <span className="type-label-lg tabular-nums">{nf(r.kcal)}</span> <span className="kv-mono">kcal</span>
-                </span>
-              )}
-              <Icon name={deplie ? "expand_less" : "expand_more"} size={22} className="shrink-0 text-icon-tertiary" />
-            </button>
+                {r.kcal > 0 ? (
+                  <span className="shrink-0 text-right">
+                    <span className="type-label-lg tabular-nums">{nf(r.kcal)}</span> <span className="kv-mono">kcal</span>
+                  </span>
+                ) : (
+                  <Icon name={deplie ? "expand_less" : "add"} size={20} className="shrink-0 text-icon-tertiary" />
+                )}
+              </button>
 
-            {deplie && (
-              <div className="flex flex-col gap-[var(--stack-md)] px-[var(--inset-md)] pb-[var(--inset-md)]">
-                {r.lignes.length > 0 && (
-                  <ul className="overflow-hidden rounded-[var(--radius-tile)] bg-surface-container-sunken">
-                    {r.lignes.map((l) => (
-                      <li key={l.id} className="border-b border-line-subtle last:border-b-0">
-                        <button
-                          type="button"
-                          onClick={() => setLigne(l)}
-                          className="tap flex w-full items-center gap-[var(--inline-lg)] px-[var(--inset-sm)] py-[var(--inset-xs)] text-left"
-                        >
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate type-body-md">{l.libelle}</span>
-                            <span className="block truncate kv-mono">
-                              {[
-                                l.quantite_g
+              {deplie && (
+                <div className="flex flex-col gap-[var(--stack-sm)] px-[var(--inset-md)] pb-[var(--inset-md)]">
+                  {r.lignes.length > 0 && (
+                    <ul>
+                      {r.lignes.map((l) => (
+                        <li key={l.id} className="border-t border-line-subtle">
+                          <button
+                            type="button"
+                            onClick={() => setLigne(l)}
+                            className="tap flex w-full items-center gap-[var(--inline-lg)] py-[var(--inset-xs)] text-left"
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate type-body-md">{l.libelle}</span>
+                              <span className="block truncate kv-mono">
+                                {l.quantite_g
                                   ? `${nf(l.quantite_g)} g`
                                   : l.recette_id
                                     ? `${String(l.portions).replace(".", ",")} portion${l.portions > 1 ? "s" : ""}`
-                                    : null,
-                                `P ${nf(Math.round(l.prot))} · G ${nf(Math.round(l.gluc))} · L ${nf(Math.round(l.lip))}`,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
+                                    : `P ${nf(Math.round(l.prot))} g`}
+                              </span>
+                            </span>
+                            <span className="shrink-0 type-label-md tabular-nums">{nf(l.kcal)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {modifiable ? (
+                    <>
+                      {r.precedent && r.lignes.length === 0 && (
+                        <button
+                          type="button"
+                          disabled={occupe}
+                          onClick={() => refaire(r)}
+                          className="tap flex w-full items-center gap-[var(--inline-md)] rounded-[var(--radius-tile)] bg-surface-container-brand-subtle p-[var(--inset-sm)] text-left"
+                        >
+                          <Icon name="replay" size={22} className="shrink-0 text-fg-brand" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block type-title-sm">Comme {quand(r.precedent.jour, jour)}</span>
+                            <span className="block truncate type-body-sm text-fg-secondary">
+                              {r.precedent.libelles.map((l) => l.split(" · ")[0]).join(", ")}
                             </span>
                           </span>
-                          <span className="shrink-0 type-label-md tabular-nums">{nf(l.kcal)}</span>
+                          <span className="shrink-0 type-label-md tabular-nums">{nf(r.precedent.kcal)} kcal</span>
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {modifiable && (
-                  <>
-                    {r.precedent && r.lignes.length === 0 && (
-                      <button
-                        type="button"
-                        disabled={occupe}
-                        onClick={() => refaire(r)}
-                        className="tap flex w-full items-center gap-[var(--inline-md)] rounded-[var(--radius-tile)] bg-surface-container-brand-subtle p-[var(--inset-sm)] text-left"
-                      >
-                        <Icon name="replay" size={22} className="shrink-0 text-fg-brand" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block type-title-sm">Comme {quand(r.precedent.jour, jour)}</span>
-                          <span className="block truncate type-body-sm text-fg-secondary">{r.precedent.libelles.map((l) => l.split(" · ")[0]).join(", ")}</span>
-                        </span>
-                        <span className="shrink-0 type-label-md tabular-nums">{nf(r.precedent.kcal)} kcal</span>
-                      </button>
-                    )}
-                    {/* Le repas du moment se note depuis la barre d'action fixe : pas de doublon ici. */}
-                    {!maintenant && (
-                      <div className="grid grid-cols-3 gap-[var(--inline-sm)]">
-                        <button type="button" onClick={() => ouvrir(r.repas, "photo")} className="kv-btn kv-btn-secondary kv-btn-md px-0">
-                          <Icon name="photo_camera" size={18} />
-                          <span className="kv-btn-label">Photo</span>
-                        </button>
-                        <button type="button" onClick={() => ouvrir(r.repas, "scan")} className="kv-btn kv-btn-tertiary kv-btn-md px-0">
-                          <Icon name="barcode_scanner" size={18} />
-                          <span className="kv-btn-label">Scanner</span>
-                        </button>
-                        <button type="button" onClick={() => ouvrir(r.repas)} className="kv-btn kv-btn-tertiary kv-btn-md px-0">
-                          <Icon name="search" size={18} />
-                          <span className="kv-btn-label">Chercher</span>
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-[var(--stack-xs)]" aria-live="polite">
-                      <p className="flex items-center gap-[var(--inline-xs)] kv-overline text-fg-brand">
-                        <Icon name="auto_awesome" size={14} /> Idées pour ce repas
-                      </p>
-                      <p className="type-body-sm text-fg-secondary">{propositions ? propositions.message : "Je regarde ce qui convient…"}</p>
-                      {propositions && propositions.suggestions.length > 0 && (
-                        <ul className="flex flex-col">
-                          {propositions.suggestions.slice(0, 3).map((s) => (
-                            <li
-                              key={s.id}
-                              className="flex items-center gap-[var(--inline-md)] border-b border-line-subtle py-[var(--inset-xs)] last:border-b-0"
-                            >
-                              <Link href={`/nutrition/recettes/${s.id}?repas=${r.repas}&jour=${jour}`} className="min-w-0 flex-1">
-                                <span className="block truncate type-title-sm">{s.nom}</span>
-                                <span className="block truncate kv-mono">
-                                  {portionsTexte(s.portions)}
-                                  {nf(s.kcal)} kcal · P {s.prot} g · {majuscule(s.raison)}
-                                </span>
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={() => manger(r.repas, s)}
-                                disabled={occupe}
-                                aria-label={`Ajouter ${s.nom} au journal`}
-                                className="kv-iconbtn kv-iconbtn-primary shrink-0"
-                              >
-                                <Icon name="add" size={22} />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
                       )}
-                      <Link
-                        href={`/nutrition/recettes?repas=${r.repas}`}
-                        className="flex items-center gap-[var(--inline-xs)] pt-[var(--stack-xs)] type-label-md text-fg-link"
-                      >
-                        Toutes les recettes <Icon name="chevron_right" size={18} />
-                      </Link>
-                    </div>
-                  </>
-                )}
-                {!modifiable && r.lignes.length === 0 && <p className="type-body-sm text-fg-secondary">Ce jour n’est pas encore arrivé.</p>}
-              </div>
-            )}
-          </article>
-        );
-      })}
+                      {idee && (
+                        <div className="flex items-center gap-[var(--inline-md)] rounded-[var(--radius-tile)] border border-line-subtle p-[var(--inset-sm)]">
+                          <Icon name="auto_awesome" size={22} className="shrink-0 text-fg-brand" />
+                          <Link href={`/nutrition/recettes/${idee.id}?repas=${r.repas}&jour=${jour}`} className="min-w-0 flex-1">
+                            <span className="block truncate type-title-sm">{idee.nom}</span>
+                            <span className="block truncate type-body-sm text-fg-secondary">
+                              {portionsTexte(idee.portions)}
+                              {nf(idee.kcal)} kcal · {majuscule(idee.raison)}
+                            </span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => manger(r.repas, idee)}
+                            disabled={occupe}
+                            aria-label={`Ajouter ${idee.nom} au journal`}
+                            className="kv-iconbtn kv-iconbtn-primary shrink-0"
+                          >
+                            <Icon name="add" size={22} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-[var(--inline-md)]">
+                        <Link href={`/nutrition/recettes?repas=${r.repas}`} className="flex items-center gap-[var(--inline-xs)] type-label-md text-fg-link">
+                          Plus d’idées <Icon name="chevron_right" size={18} />
+                        </Link>
+                        {/* Le repas du moment se note depuis la barre d'action fixe : pas de doublon ici. */}
+                        {!maintenant && (
+                          <button type="button" onClick={() => ouvrir(r.repas)} className="kv-btn kv-btn-secondary kv-btn-md">
+                            <Icon name="add" size={18} />
+                            <span className="kv-btn-label">Ajouter</span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    r.lignes.length === 0 && <p className="type-body-sm text-fg-secondary">Ce jour n’est pas encore arrivé.</p>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
 
       <BottomSheet
         ouvert={!!ligne}

@@ -106,7 +106,7 @@ export default async function Page({ params }: Props) {
         </div>
 
         {defi.total > 0 && (
-          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
             <span className={`kv-tag self-start ${defi.releve ? "kv-tag-success" : "kv-tag-brand"}`}>
               {defi.releve ? "Défi de la semaine relevé" : "Défi de la semaine"}
             </span>
@@ -126,7 +126,7 @@ export default async function Page({ params }: Props) {
           return (
             <section
               key={e.id}
-              className="flex flex-col gap-[var(--stack-xs)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card"
+              className="flex flex-col gap-[var(--stack-xs)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]"
             >
               <span className="kv-tag kv-tag-warning self-start">Exercice raté</span>
               <p className="type-title-sm">{nomAffiche(e.exercices_ref)}</p>

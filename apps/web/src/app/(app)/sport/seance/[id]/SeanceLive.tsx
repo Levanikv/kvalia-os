@@ -273,7 +273,7 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
 
         {/* Calories et progression */}
         {!faite && (
-          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] shadow-card">
+          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
             <div className="flex items-end justify-between gap-[var(--inline-md)]">
               <p className="flex items-baseline gap-[var(--inline-sm)]">
                 <span className="type-display-lg">{kcal}</span>

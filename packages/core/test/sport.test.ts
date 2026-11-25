@@ -38,6 +38,7 @@ import {
   deconseille,
   masseMaigre,
   CLASSIQUES,
+  deplacerSeance,
   simplicite,
 } from "../src/sport";
 import { METHODES, choisirMethode } from "../src/methodes";
@@ -942,5 +943,98 @@ describe("simple et efficace : des classiques, pas de farfelus", () => {
     const eq = await equivalents(base(), curl.id, PARAMETRES_SPORT_DEFAUT.materiel);
     expect(simplicite(eq[0].nom)).toBe("classique");
     expect(eq.slice(0, 3).filter((e) => simplicite(e.nom) === "farfelu")).toEqual([]);
+  });
+});
+
+describe("déplacer une séance : empêchement ou jour en plus, le programme suit", () => {
+  // Lundi 9 nov. 2026, 10 h à Paris ; programme par défaut : salle lun. mar. jeu. ven., boxe mer.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-09T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const programme = async () => {
+    const db = base();
+    await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82 }, "2026-11-09");
+    return db;
+  };
+  const salle = (db: any) => db.tables.seances.filter((s: any) => s.type !== "boxe").sort((a: any, b: any) => a.jour.localeCompare(b.jour));
+  const le = (db: any, jour: string) => salle(db).filter((s: any) => s.jour === jour);
+  const sansDoublon = (db: any) => new Set(salle(db).map((s: any) => s.jour)).size === salle(db).length;
+
+  it("vers un jour libre : seule cette séance bouge, la boxe du jour reste", async () => {
+    const db = await programme();
+    const lundi = le(db, "2026-11-09")[0];
+    const r = await executer("deplacer_seance", { seance_id: lundi.id, jour: "2026-11-11" }, { db, userId: USER });
+    expect(r.deplacees).toEqual([{ id: lundi.id, titre: lundi.titre, de: "2026-11-09", vers: "2026-11-11" }]);
+    expect(le(db, "2026-11-09")).toEqual([]);
+    expect(
+      db.tables.seances
+        .filter((s: any) => s.jour === "2026-11-11")
+        .map((s: any) => s.type)
+        .sort(),
+    ).toEqual(["boxe", "upper"]);
+    expect(sansDoublon(db)).toBe(true);
+  });
+
+  it("vers un jour pris, « décaler » : tout glisse d'un créneau dans l'ordre, jamais deux séances le même jour, la fin suit", async () => {
+    const db = await programme();
+    const avant = salle(db).map((s: any) => ({ id: s.id, jour: s.jour }));
+    const finAvant = db.tables.programmes[0].fin;
+    const r = await deplacerSeance(db, USER, { seance_id: avant[0].id, jour: "2026-11-10" });
+    const apres = salle(db);
+    // Même ordre, chaque séance a pris le créneau de la suivante ; la dernière passe au jour de salle d'après.
+    expect(apres.map((s: any) => s.id)).toEqual(avant.map((s: any) => s.id));
+    expect(apres.slice(0, 4).map((s: any) => s.jour)).toEqual(["2026-11-10", "2026-11-12", "2026-11-13", "2026-11-16"]);
+    expect(sansDoublon(db)).toBe(true);
+    expect(r.deplacees).toHaveLength(avant.length);
+    expect(apres.at(-1).jour > avant.at(-1)!.jour).toBe(true);
+    expect(db.tables.programmes[0].fin >= apres.at(-1).jour).toBe(true);
+    expect(db.tables.programmes[0].fin >= finAvant).toBe(true);
+  });
+
+  it("vers un jour pris, « échanger » : les deux séances intervertissent leurs jours, rien d'autre ne bouge", async () => {
+    const db = await programme();
+    const [lundi, mardi, jeudi] = salle(db);
+    const r = await deplacerSeance(db, USER, { seance_id: lundi.id, jour: "2026-11-10", si_occupe: "echanger" });
+    expect(r.deplacees).toHaveLength(2);
+    expect(le(db, "2026-11-10")[0].id).toBe(lundi.id);
+    expect(le(db, "2026-11-09")[0].id).toBe(mardi.id);
+    expect(le(db, "2026-11-12")[0].id).toBe(jeudi.id);
+  });
+
+  it("décaler s'arrête au premier créneau libre : reporter mardi à jeudi alors que vendredi est libre", async () => {
+    const db = await programme();
+    const [, mardi, jeudi, vendredi, lundiSuivant] = salle(db);
+    // Vendredi libéré : sa séance part au samedi.
+    await deplacerSeance(db, USER, { seance_id: vendredi.id, jour: "2026-11-14" });
+    const r = await deplacerSeance(db, USER, { seance_id: mardi.id, jour: "2026-11-12" });
+    expect(r.deplacees.map((d) => [d.id, d.vers])).toEqual([
+      [mardi.id, "2026-11-12"],
+      [jeudi.id, "2026-11-13"],
+    ]);
+    expect(le(db, "2026-11-16")[0].id).toBe(lundiSuivant.id);
+    expect(sansDoublon(db)).toBe(true);
+  });
+
+  it("s'entraîner un jour sans séance : la prochaine séance vient à aujourd'hui et peut démarrer ; son jour devient repos", async () => {
+    vi.setSystemTime(new Date("2026-11-11T09:00:00Z"));
+    const db = await programme();
+    const jeudi = le(db, "2026-11-12")[0];
+    await deplacerSeance(db, USER, { seance_id: jeudi.id, jour: "2026-11-11" });
+    expect(le(db, "2026-11-12")).toEqual([]);
+    expect(peutDemarrer(le(db, "2026-11-11")[0])).toBe(true);
+    await expect(demarrerSeance(db, USER, jeudi.id)).resolves.toMatchObject({ etat: "en_cours" });
+  });
+
+  it("refus : séance déjà commencée, jour passé, même jour", async () => {
+    const db = await programme();
+    const [lundi, mardi] = salle(db);
+    await expect(deplacerSeance(db, USER, { seance_id: mardi.id, jour: "2026-11-08" })).rejects.toThrow("passé");
+    await expect(deplacerSeance(db, USER, { seance_id: mardi.id, jour: "2026-11-10" })).rejects.toThrow("déjà prévue");
+    await demarrerSeance(db, USER, lundi.id);
+    await expect(deplacerSeance(db, USER, { seance_id: lundi.id, jour: "2026-11-11" })).rejects.toThrow("pas encore commencée");
+    await expect(deplacerSeance(db, USER, { seance_id: mardi.id, jour: "2026-11-09", si_occupe: "echanger" })).rejects.toThrow("déjà une séance");
   });
 });

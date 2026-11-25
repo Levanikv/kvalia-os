@@ -41,7 +41,7 @@ export async function Records({ db, depuis, jusqua }: { db: Db; depuis: string; 
           {semaines} sem. · historique ›
         </Link>
       </div>
-      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
         {top.map((r) => {
           const min = Math.min(...r.pts.map((p) => p.kg));
           const etendue = Math.max(1, r.max - min);

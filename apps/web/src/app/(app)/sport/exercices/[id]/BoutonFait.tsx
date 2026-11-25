@@ -25,13 +25,13 @@ export function BoutonFait({ ligneId, fait, desactive, suivant }: Props) {
             router.push(suivant);
           })
         }
-        className={`kv-btn kv-btn-xl flex-1 shadow-raised ${local ? "kv-btn-secondary text-feedback-success-text" : "kv-btn-primary"}`}
+        className={`kv-btn kv-btn-xl flex-1 ${local ? "kv-btn-secondary text-feedback-success-text" : "kv-btn-primary"}`}
       >
         <Icon name={local ? "check_circle" : "check"} size={22} filled={local} />
         <span className="kv-btn-label">{local ? "Fait" : "Fait → suivant"}</span>
       </button>
       {local && (
-        <button type="button" onClick={() => router.push(suivant)} className="kv-btn kv-btn-primary kv-btn-xl shadow-raised">
+        <button type="button" onClick={() => router.push(suivant)} className="kv-btn kv-btn-primary kv-btn-xl">
           <span className="kv-btn-label">Suivant</span> <Icon name="chevron_right" size={22} />
         </button>
       )}

@@ -85,7 +85,7 @@ export function DefisDuJour({ defis, jour, aujourdhui, modifiable }: PropsJour) 
           Gérer
         </Link>
       </div>
-      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+      <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
         {defis.map((d) => {
           const v = valeurs.get(d.id) ?? 0;
           const atteint = v >= d.cible;
@@ -278,7 +278,7 @@ export function DefisProgramme({ defis, finProgramme }: PropsProgramme) {
           </span>
         </button>
       ) : (
-        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default shadow-card">
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
           {defis.map((d) => {
             const etat = !d.actif ? "En pause" : d.termine ? "Terminé" : d.a_venir ? `Dès le ${dateCourte(d.debut)}` : null;
             return (

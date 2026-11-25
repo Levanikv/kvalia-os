@@ -1,20 +1,14 @@
-import Link from "next/link";
-import { Icon } from "@/components/Icon";
-
 /**
  * Bilan du jour, posé à même le fond de la page (pas de carte) : le grand chiffre des calories restantes, l'anneau
- * de ce qui a été mangé — découpé par macro (protéines, glucides, lipides) —, trois tuiles « ce qu'il reste » par
- * macro, puis les séances du jour qui ajoutent des calories à la cible.
+ * de ce qui a été mangé — découpé par macro —, puis une ligne de trois jauges fines (protéines, glucides, lipides).
+ * Rien d'autre : le détail (base, sport, séances) vit dans Sport et dans Réglages › Nutrition.
  */
-type Seance = { id: string; type: string; titre: string | null; etat: string; kcal: number };
 type Props = {
   cible: number;
-  base: number;
   brule: number;
   consomme: number;
   reste: number;
   macros: Array<{ nom: string; valeur: number; cible: number; couleur: string; kcalParG: number }>;
-  seances: Seance[];
 };
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
@@ -22,7 +16,7 @@ const R = 52;
 const TOUR = 2 * Math.PI * R;
 const TRAIT = 11;
 
-export function Bilan({ cible, base, brule, consomme, reste, macros, seances }: Props) {
+export function Bilan({ cible, brule, consomme, reste, macros }: Props) {
   const depasse = reste < 0;
   const part = cible > 0 ? Math.min(1, Math.max(0, consomme / cible)) : 0;
   // Arcs : la part mangée de l'anneau, répartie selon les calories de chaque macro. Bouts ronds → on retire
@@ -45,13 +39,7 @@ export function Bilan({ cible, base, brule, consomme, reste, macros, seances }: 
             <span className="type-title-md text-fg-secondary">kcal</span>
           </p>
           <p className="type-body-sm text-fg-secondary">
-            sur {nf(cible)}
-            {brule > 0 ? (
-              <>
-                {" "}
-                · {nf(base)} <span className="text-feedback-success-text">+ {nf(brule)} de sport</span>
-              </>
-            ) : null}
+            sur {nf(cible)} kcal{brule > 0 ? ` · dont ${nf(brule)} de sport` : ""}
           </p>
         </div>
         <div className="kv-ring h-[7.75rem] w-[7.75rem]">
@@ -87,65 +75,24 @@ export function Bilan({ cible, base, brule, consomme, reste, macros, seances }: 
         </div>
       </div>
 
-      <dl className="grid grid-cols-3 gap-[var(--inline-md)]">
-        {macros.map((m) => {
-          const resteG = Math.round(m.cible - m.valeur);
-          const p = m.cible > 0 ? Math.min(1, Math.max(0, m.valeur / m.cible)) : 0;
-          const r = 26;
-          const tour = 2 * Math.PI * r;
-          return (
-            <div
-              key={m.nom}
-              className="flex flex-col items-center gap-[var(--stack-xs)] rounded-[var(--radius-tile)] border border-line-subtle bg-surface-container-default px-[var(--inset-xs)] py-[var(--inset-sm)] shadow-card"
-            >
-              <dt className="flex items-center gap-[var(--inline-xs)] type-label-md">
-                <span className="h-2 w-2 rounded-full" style={{ background: m.couleur }} aria-hidden />
-                {m.nom}
-              </dt>
-              <dd className="flex flex-col items-center gap-[var(--stack-2xs)]">
-                <span className="kv-ring h-[4.25rem] w-[4.25rem]">
-                  <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90" aria-hidden>
-                    <circle cx="32" cy="32" r={r} fill="none" strokeWidth="5" className="kv-ring-track" />
-                    {p > 0.02 && (
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r={r}
-                        fill="none"
-                        strokeWidth="5"
-                        strokeLinecap="round"
-                        className="kv-ring-fill"
-                        style={{ stroke: m.couleur }}
-                        strokeDasharray={`${(p * tour).toFixed(1)} ${tour.toFixed(1)}`}
-                      />
-                    )}
-                  </svg>
-                  <span className="kv-ring-center">
-                    <span className="type-title-sm tabular-nums">{nf(Math.abs(resteG))} g</span>
-                  </span>
-                </span>
-                <span className="kv-mono">{resteG >= 0 ? "restants" : "en trop"}</span>
-              </dd>
-            </div>
-          );
-        })}
+      <dl className="grid grid-cols-3 gap-[var(--inline-lg)] px-[var(--inline-xs)]">
+        {macros.map((m) => (
+          <div key={m.nom} className="flex min-w-0 flex-col gap-[var(--stack-xs)]">
+            <dt className="type-label-md">{m.nom}</dt>
+            <dd className="flex flex-col gap-[var(--stack-xs)]">
+              <span className="kv-progress-track" aria-hidden>
+                <span
+                  className="kv-progress-fill block"
+                  style={{ width: `${Math.min(100, (m.valeur / Math.max(1, m.cible)) * 100)}%`, background: m.couleur }}
+                />
+              </span>
+              <span className="kv-mono">
+                <span className="text-fg-primary">{nf(Math.round(m.valeur))}</span> / {nf(m.cible)} g
+              </span>
+            </dd>
+          </div>
+        ))}
       </dl>
-
-      {seances.length > 0 && (
-        <ul className="-mx-[var(--page-gutter)] flex gap-[var(--inline-sm)] overflow-x-auto px-[var(--page-gutter)]">
-          {seances.map((s) => (
-            <li key={s.id} className="shrink-0">
-              <Link href={`/sport/seance/${s.id}`} className="kv-chip flex items-center gap-[var(--inline-xs)]">
-                <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={16} />
-                <span className="max-w-[10rem] truncate">{s.titre ?? s.type}</span>
-                <span className="text-fg-secondary">
-                  · {s.kcal > 0 ? `+${nf(s.kcal)} kcal` : s.etat === "en_cours" ? "en cours" : s.etat === "faite" ? "terminée" : "prévue"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }
