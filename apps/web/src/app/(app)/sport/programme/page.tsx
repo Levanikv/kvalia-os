@@ -49,7 +49,7 @@ export default async function Page({ searchParams }: Props) {
   const auj = aujourdhui();
   const { data: prog } = await supabase.from("programmes").select("*").eq("actif", true).maybeSingle();
 
-  if (!prog) return sansProgramme(supabase, user.id, vue === "seances");
+  if (!prog) return sansProgramme(supabase, user.id, sp.vue);
 
   const [{ data: brutes }, modeles, reglages, defis] = await Promise.all([
     supabase
@@ -337,8 +337,11 @@ export default async function Page({ searchParams }: Props) {
 }
 
 /** Maquette 02 · Onglet Programmes vide : construire son programme, comment ça marche, ce que l'IA sait déjà. */
-async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) {
+async function sansProgramme(supabase: Db, userId: string, vueDemandee: string | undefined) {
   const [params, modeles] = await Promise.all([parametresSport(supabase, userId), chargerModeles(supabase, userId)]);
+  // Sans programme à suivre (à la carte, mes séances — ADR 0021), l'onglet s'ouvre sur ses séances ; le programme reste proposé.
+  const suitProgramme = params.mode === "programme";
+  const mesSeances = vueDemandee === "seances" || (!suitProgramme && vueDemandee !== "programme");
   const [{ poids, source }, nutrition] = await Promise.all([poidsActuel(supabase, userId, params), parametresNutrition(supabase, userId)]);
   const connu = [
     source !== "defaut" ? `${String(poids).replace(".", ",")} kg` : null,
@@ -347,15 +350,14 @@ async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) 
     params.profil?.lieu ? { salle: "Salle", maison: "Maison", les_deux: "Salle + maison" }[params.profil.lieu] : null,
     params.profil?.douleurs?.length ? `À ménager : ${params.profil.douleurs.join(", ")}` : null,
   ].filter(Boolean) as string[];
-  const vues = [
-    { cle: "programme", label: "Programme", href: "/sport/programme" },
-    { cle: "seances", label: "Mes séances", href: "/sport/programme?vue=seances" },
-  ] as const;
+  const vueProgramme = { cle: "programme", label: "Programme", href: "/sport/programme?vue=programme" } as const;
+  const vueSeances = { cle: "seances", label: "Mes séances", href: "/sport/programme?vue=seances" } as const;
+  const vues = suitProgramme ? [vueProgramme, vueSeances] : [vueSeances, vueProgramme];
   return (
     <ModuleFrame
       module="sport"
-      surTitre="Aucun programme actif"
-      titre="Programme"
+      surTitre={suitProgramme ? "Aucun programme actif" : params.mode === "a_la_carte" ? "À la carte" : "Mes séances"}
+      titre={suitProgramme ? "Programme" : "Séances"}
       pied={
         mesSeances ? (
           <BoutonCreerSeance />
@@ -389,7 +391,7 @@ async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) 
                 <div>
                   <h2 className="type-display-lg">Construis ton programme.</h2>
                   <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
-                    Tu réponds à l’essentiel, l’IA s’occupe du reste : séances, charges, progression et ajustements chaque semaine.
+                    Tu réponds à l’essentiel, l’app s’occupe du reste : séances, charges, progression et ajustements chaque semaine.
                   </p>
                 </div>
               </div>
@@ -401,7 +403,7 @@ async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) 
                 {[
                   ["3 questions", "Objectif, échéance, rythme. Ton profil est déjà connu."],
                   ["Proposition", "Phases, semaine type et durée : tu vois avant de valider."],
-                  ["Génération", "L’IA construit les séances, les exercices et les charges."],
+                  ["Génération", "L’app construit les séances, les exercices et les charges."],
                   ["C’est parti", "Les séances arrivent dans Sport, jour par jour."],
                 ].map(([t, d], i) => (
                   <li key={t} className="flex gap-[var(--inline-lg)] border-b border-line-subtle px-[var(--inset-md)] py-[var(--inset-sm)] last:border-b-0">
@@ -417,7 +419,7 @@ async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) 
 
             {connu.length > 0 && (
               <section className="flex flex-col gap-[var(--stack-sm)]">
-                <h2 className="px-[var(--inline-xs)] type-title-lg">Ce que l’IA sait déjà</h2>
+                <h2 className="px-[var(--inline-xs)] type-title-lg">Ce qui est déjà connu</h2>
                 <div className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
                   <p className="type-body-sm text-fg-secondary">Récupéré depuis ton profil et tes autres apps : pas besoin de le redemander.</p>
                   <div className="flex flex-wrap gap-[var(--inline-sm)]">

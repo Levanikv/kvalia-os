@@ -12,6 +12,8 @@ import {
   parametresDepuisReponses,
   parametresSport,
   ReponsesProgramme,
+  SeanceALaCarte,
+  type ModeSport,
 } from "@kvalia/core";
 import { session } from "@/lib/session";
 
@@ -152,22 +154,31 @@ export async function remplacerAction(exerciceSeanceId: string, nouvelExerciceId
 type Profil = NonNullable<ParametresSport["profil"]>;
 
 /** Enregistre les réponses données jusqu'ici et l'étape où reprendre (« Continuer »). */
-export async function sauverOnboarding(profil: Profil, etape: number) {
+export async function sauverOnboarding(profil: Profil, etape: number, mode: ModeSport) {
   const { supabase, user } = await session();
-  await executer("regler_sport", { profil, onboarding: { etape } }, { db: supabase, userId: user.id });
+  await executer("regler_sport", { profil, mode, onboarding: { etape } }, { db: supabase, userId: user.id });
 }
 
 /** « Plus tard » : on garde les réponses et l'étape, la Home Sport propose de reprendre. */
-export async function passerOnboarding(profil: Profil, etape: number) {
+export async function passerOnboarding(profil: Profil, etape: number, mode: ModeSport) {
   const { supabase, user } = await session();
-  await executer("regler_sport", { profil, onboarding: { etape, passe: true } }, { db: supabase, userId: user.id });
+  await executer("regler_sport", { profil, mode, onboarding: { etape, passe: true } }, { db: supabase, userId: user.id });
   revalidatePath("/sport");
 }
 
-/** Dernière réponse : on fige le profil, puis on génère le programme (même outil que l'agent). */
-export async function terminerOnboarding(profil: Profil, etape: number, debut?: string) {
+/**
+ * Dernière réponse : on fige le profil et la façon de s'entraîner. Un programme n'est généré que si on a choisi d'en
+ * suivre un (même outil que l'agent) ; à la carte ou avec ses propres séances, l'app est prête telle quelle.
+ */
+export async function terminerOnboarding(profil: Profil, etape: number, mode: ModeSport, debut?: string) {
   const { supabase, user } = await session();
-  const params = await executer("regler_sport", { profil, onboarding: { etape, termine: true, passe: false } }, { db: supabase, userId: user.id });
+  const params = await executer("regler_sport", { profil, mode, onboarding: { etape, termine: true, passe: false } }, { db: supabase, userId: user.id });
+  const cibles = ciblesDepuisProfil(params.profil);
+  revalidatePath("/sport");
+  revalidatePath("/sport/programme");
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+  if (mode !== "programme") return { mode, cibles, programme: null };
   // « Quand commencer ? » : le noyau cale la date sur un jour de séance (aujourd'hui si c'en est un).
   const r = await executer("generer_programme", debut ? { debut } : {}, { db: supabase, userId: user.id });
   const { data: premiere } = await supabase
@@ -178,11 +189,56 @@ export async function terminerOnboarding(profil: Profil, etape: number, debut?: 
     .order("jour")
     .limit(1)
     .maybeSingle();
-  revalidatePath("/sport");
-  revalidatePath("/sport/programme");
-  revalidatePath("/nutrition");
-  revalidatePath("/");
-  return { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, cibles: ciblesDepuisProfil(params.profil), premiere };
+  return { mode, cibles, programme: { debut: r.debut, fin: r.fin, nb_seances: r.nb_seances, semaines: params.semaines, premiere } };
+}
+
+// ---------- S'entraîner aujourd'hui (séance à la carte, favoris) ----------
+
+/** Compose la séance du jour (outil seance_a_la_carte). L'erreur revient en clair : Next masque les messages en production. */
+export async function composerSeanceAction(brut: unknown) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("seance_a_la_carte", SeanceALaCarte.parse(brut), { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
+}
+
+/** Lance aujourd'hui une de ses séances (outil planifier_seance_perso, une seule fois). */
+export async function lancerMaSeanceAction(modeleId: string, date: string) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("planifier_seance_perso", { modele_id: modeleId, date }, { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
+}
+
+export async function garderSeanceAction(seanceId: string, nom?: string) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("enregistrer_seance_favorite", { seance_id: seanceId, nom }, { db: supabase, userId: user.id });
+    revalidatePath("/sport/programme");
+    revalidatePath(`/sport/seance/${seanceId}`);
+    return r;
+  });
+}
+
+export async function annulerSeanceAction(seanceId: string) {
+  const { supabase, user } = await session();
+  return tenter(async () => {
+    const r = await executer("annuler_seance", { seance_id: seanceId }, { db: supabase, userId: user.id });
+    revaliderSport();
+    return r;
+  });
+}
+
+/** Change la façon de s'entraîner (outil regler_sport). */
+export async function changerModeAction(mode: ModeSport) {
+  const { supabase, user } = await session();
+  await executer("regler_sport", { mode }, { db: supabase, userId: user.id });
+  revaliderSport();
+  revalidatePath("/reglages/sport");
 }
 
 // ---------- Modifier le programme / Mes séances (outils du noyau, comme l'agent) ----------

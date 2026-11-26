@@ -169,6 +169,7 @@ export const ECRANS_PLEIN_ECRAN: readonly string[] = [
   "/sport/ma-seance",
   "/sport/bienvenue",
   "/sport/seance",
+  "/sport/aujourdhui",
   "/nutrition/ajouter",
 ];
 export function estPleinEcran(chemin: string): boolean {

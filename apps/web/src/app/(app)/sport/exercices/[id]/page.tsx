@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { historiqueCharge, peutDemarrer } from "@kvalia/core";
+import { historiqueCharge, illustrationPour, peutDemarrer } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { aujourdhui, session } from "@/lib/session";
@@ -70,7 +70,14 @@ export default async function Page({ params, searchParams }: Props) {
         ) : undefined
       }
     >
-      <Video src={e.video_url ?? e.gif_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
+      <Video
+        src={e.video_url ?? e.gif_url}
+        srcF={e.video_url_f}
+        poster={e.image_url}
+        posterF={e.image_url_f}
+        illustration={illustrationPour(e.nom)}
+        nom={nomAffiche(e)}
+      />
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
         {e.partie_corps && <span className="rounded-full bg-action-primary/20 px-2.5 py-1 font-medium text-fg-brand">{libellePartie(e.partie_corps)}</span>}

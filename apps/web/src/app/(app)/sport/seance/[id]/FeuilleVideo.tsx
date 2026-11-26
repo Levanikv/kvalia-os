@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { BasculeDemo, DemoDessin, DESSIN_DABORD } from "@/components/DemoDessin";
 import { Icon } from "@/components/Icon";
 import { CREDIT_MEDIA, estAnimation } from "../../lib";
 
@@ -8,6 +9,8 @@ export type Video = {
   nom: string;
   video: string | null;
   image: string | null;
+  /** Dessin au trait animé, montré d'abord quand il existe (la démonstration filmée reste à un tap). */
+  illustration?: string | null;
   /** Surtitre (« 3 × 8 · Triceps »). */
   detail: string;
   /** Repère en haut (« Exercice 3 / 5 »). */
@@ -48,6 +51,7 @@ export function FeuilleVideo({ video, onFermer, action }: Props) {
 function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [lecture, setLecture] = useState(true);
+  const [dessin, setDessin] = useState(DESSIN_DABORD);
   const [temps, setTemps] = useState({ t: 0, d: 0 });
   const [dy, setDy] = useState(0);
   const depart = useRef<number | null>(null);
@@ -128,7 +132,9 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
 
         {/* Vidéo au format d'origine (16:9), entière : plus de recadrage en hauteur. */}
         <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-surface-container-inverse">
-          {estAnimation(v.video) ? (
+          {v.illustration && dessin ? (
+            <DemoDessin slug={v.illustration} nom={v.nom} />
+          ) : estAnimation(v.video) ? (
             <>
               <img src={v.video ?? ""} alt="" className="h-full w-full bg-white object-contain" />
               <span className="absolute bottom-1 right-2 kv-mono text-black/60">{CREDIT_MEDIA}</span>
@@ -153,7 +159,8 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
               <Icon name="videocam_off" size={40} />
             </div>
           )}
-          {v.video && !estAnimation(v.video) && (
+          {v.illustration && v.video && <BasculeDemo dessin={dessin} onChoisir={setDessin} />}
+          {v.video && !estAnimation(v.video) && !(v.illustration && dessin) && (
             <button type="button" onClick={basculer} aria-label={lecture ? "Pause" : "Lecture"} className="absolute inset-0 flex items-center justify-center">
               <span
                 className={`flex h-14 w-14 items-center justify-center rounded-full bg-action-glass backdrop-blur transition-opacity ${lecture ? "opacity-0" : "opacity-100"}`}

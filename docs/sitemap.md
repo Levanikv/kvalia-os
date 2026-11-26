@@ -12,11 +12,16 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   ├── /quotidien/taches             Tâches (dues, à venir, faites)
 │   └── /quotidien/habitudes          Habitudes du jour + séries
 ├── /sport                Mini-app Sport (sombre)
-│   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → 13–15 questions
+│   ├── /sport/bienvenue              Onboarding muscu (première ouverture de Sport, plein écran sombre) : accueil → d'abord la façon
+│   │                                 de s'entraîner (programme · à la carte · mes séances, ADR 0021), puis 10–16 questions selon ce choix
 │   │                                 (roues : âge, taille, poids, poids cible, séances, échéance ; tuiles : morphologie, objectifs,
 │   │                                 lieu, matériel, matériel préféré…)
 │   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
 │   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
+│   │                                 Hors programme : pas de génération — « M'entraîner maintenant » ou « Créer ma première séance »
+│   ├── /sport/aujourdhui             S'entraîner aujourd'hui (plein écran) : Composer (type Full Body · Upper · Lower · Push · Pull ·
+│   │                                 Legs + durée → l'app compose la séance) ou Mes séances (en lancer une) → la séance.
+│   │                                 Une séance du programme prévue aujourd'hui est rappelée, pas remplacée
 │   ├── /sport                        Accueil du jour (onglet Accueil) : en-tête partagé (sélecteur Sport / Nutrition, date,
 │   │                                 bande de jours), ticket séance (À faire · En cours · Terminée · Prévue · Repos)
 │   │                                 + « Pas dispo ? Reporter » (feuille : 7 jours, libre ou pris ; jour pris → décaler la suite
@@ -24,17 +29,23 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 aujourd'hui, les suivantes remontent d'un créneau) ; les séances manquées sont recalées à
 │   │                                 l'ouverture ; puis deux tuiles de chiffres (la semaine, l'énergie du jour → Nutrition),
 │   │                                 les défis du jour (« + 1 000 pas », cocher, feuille de saisie) et les records.
+│   │                                 Sans programme à suivre (à la carte, mes séances) : ticket « On s'entraîne ? » → /sport/aujourdhui ;
+│   │                                 jour de repos d'un programme : lien « Ou composer une autre séance »
 │   │                                 Plusieurs séances par jour possibles (muscu + boxe) · ?jour=YYYY-MM-DD pour un autre jour
 │   ├── /sport/seance/[id]            Séance (plein écran, « Home workflow ») : avant départ (chrono 0:00, Démarrer),
 │   │                                 en cours (chrono, pause au tap, exercice en cours, fiche : séries Faite/En cours/
 │   │                                 À faire, minuteur de repos, charge du jour, historique, remplacer), vidéo en feuille (16:9, hauteur du contenu),
 │   │                                 quitter (le chrono continue), Terminer → exercices ratés → ressenti ; lecture seule
-│   │                                 un autre jour ; résumé quand elle est faite
+│   │                                 un autre jour ; résumé quand elle est faite. Séance hors programme pas encore commencée :
+│   │                                 « Une autre » (nouvelle proposition, ?v=), « Garder » (→ Mes séances), « Annuler » ;
+│   │                                 séance faite : « Garder dans mes séances »
 │   ├── /sport/seance/[id]/fin        Fin de séance : kcal, volume, séries, exercices, défi de la semaine, ratés reprogrammés
 │   │                                 → « Retour à l'accueil » (/sport?enregistree=1 : toast « Séance enregistrée »)
 │   ├── /sport/exercices              Onglet Exos — bibliothèque (1 324 exercices animés, © Gym visual) : recherche, une rangée de
 │   │                                 puces (partie du corps), feuille « Filtres » (matériel, polyarticulaires), 40 par page
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
+│   │                                 ; bascule Dessin / Vidéo quand un dessin au trait animé existe (443 exercices, CC BY-SA —
+│   │                                 docs/credits-illustrations.md)
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
 │   ├── /sport/programme              Onglet Programme, trois vues en segmented control (?vue=) :
 │   │                                 · Semaine (défaut) — carte du programme (objectif, rythme, semaine n / N, fin), semaine jour
@@ -115,7 +126,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 - **Une vue à la fois** : quand un écran porte plusieurs choses, un **segmented control** (`Segments`) les sépare — Programme : Semaine · Plan · Mes séances (`?vue=`) ; Recettes : Toutes · Mes recettes ; Ajouter à un repas : Pour toi · Recettes · Aliments.
 - **Filtres** (même grammaire partout — exercices, recettes) : la recherche (`ChampRecherche`), **une seule** rangée de puces pour le filtre principal (`Puces`), et le reste dans la feuille « Filtres » (`BoutonFiltres` : pastille = nombre d'actifs ; chaque filtre actif se retire d'un tap sous la rangée).
 - **Plusieurs séances par jour** : un jour peut porter muscu + boxe (cocher le même jour dans les deux). Ordre d'affichage : salle puis boxe.
-- **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche. Onboarding Sport : `/sport` redirige vers `/sport/bienvenue` tant qu'il n'y a ni programme ni onboarding terminé ou passé.
+- **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche. Onboarding Sport : `/sport` redirige vers `/sport/bienvenue` tant qu'il n'y a ni programme ni onboarding terminé ou passé. **Façon de s'entraîner** (`mode` des réglages Sport, ADR 0021) : `programme` (semaines planifiées), `a_la_carte` (séance composée le jour même) ou `mes_seances` — l'accueil, l'onglet Programme (qui s'ouvre alors sur Mes séances) et l'onboarding s'y adaptent ; changeable dans Réglages › Sport.
 - **Barre inférieure** (v3) : « Tab bar skeleton » du design system — pilule flottante (onglets du module) + le « + » à côté quand il a un rôle.
 - **Feuilles modales** (`BottomSheet`, façon iOS : voile, poignée, zone sûre, Échap) pour tout ce qui est contextuel : menu apps, Terminer la séance (ressenti), détail d'un exercice (charge, reps, remplacer), équivalents. Pas de modale centrée.
 - **Header de mini-app** : burger (ou flèche retour sur un écran de détail), titre + sous-titre (date, semaine), avatar à droite → Réglages, ou une action contextuelle.

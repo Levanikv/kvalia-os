@@ -1,24 +1,36 @@
 "use client";
 import { useState } from "react";
+import { BasculeDemo, DemoDessin, DESSIN_DABORD } from "@/components/DemoDessin";
 import { Icon } from "@/components/Icon";
 import { CREDIT_MEDIA, estAnimation } from "../../lib";
 
-type Props = { src: string | null; srcF: string | null; poster: string | null; posterF: string | null };
+type Props = { src: string | null; srcF: string | null; poster: string | null; posterF: string | null; illustration?: string | null; nom?: string };
 
 /**
  * Démonstration d'un exercice : animation GIF (bibliothèque actuelle, fond blanc, mention du détenteur des droits) ou
  * vidéo en boucle, muette, inline (ancienne bibliothèque) ; bascule démonstrateur H/F si les deux vidéos existent.
  */
-export function Video({ src, srcF, poster, posterF }: Props) {
+export function Video({ src, srcF, poster, posterF, illustration, nom }: Props) {
   const [femme, setFemme] = useState(false);
+  const [dessin, setDessin] = useState(DESSIN_DABORD);
   const [erreur, setErreur] = useState(false);
   const url = femme && srcF ? srcF : src;
   const affiche = femme && posterF ? posterF : poster;
 
+  // Le dessin au trait animé d'abord (il suit le thème) ; la démonstration filmée reste à un tap.
+  if (illustration && dessin)
+    return (
+      <div className="relative -mx-4 aspect-video overflow-hidden sm:mx-0 sm:rounded-lg">
+        <DemoDessin slug={illustration} nom={nom ?? ""} />
+        {url && <BasculeDemo dessin onChoisir={setDessin} />}
+      </div>
+    );
+
   if (estAnimation(url) && !erreur)
     return (
       <figure className="-mx-4 sm:mx-0">
-        <div className="flex aspect-video items-center justify-center overflow-hidden bg-white sm:rounded-lg">
+        <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-white sm:rounded-lg">
+          {illustration && <BasculeDemo dessin={false} onChoisir={setDessin} />}
           {/* eslint-disable-next-line @next/next/no-img-element -- animation GIF servie par un CDN, 180 × 180 */}
           <img src={url ?? ""} alt="" onError={() => setErreur(true)} className="h-full object-contain" />
         </div>

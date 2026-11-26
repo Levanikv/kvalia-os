@@ -67,7 +67,22 @@ export type ProfilSport = z.infer<typeof ProfilSport>;
 /** Avancement de l'onboarding : l'étape où reprendre, et s'il est terminé ou passé (« Plus tard »). */
 export const OnboardingSport = z.object({ etape: z.number().int().min(0).max(20), termine: z.boolean(), passe: z.boolean() }).partial();
 
+/**
+ * Façon de s'entraîner, demandée à l'onboarding (ADR 0021) : l'app s'adapte au lieu d'imposer un programme.
+ * - `programme` : un programme généré sur plusieurs semaines, à suivre ;
+ * - `a_la_carte` : pas de programme — on s'entraîne quand on peut, la séance du jour est composée à la demande ;
+ * - `mes_seances` : on a déjà ses séances, on les lance et on suit sa progression.
+ */
+export const ModeSport = z.enum(["programme", "a_la_carte", "mes_seances"]);
+export type ModeSport = z.infer<typeof ModeSport>;
+export const CHOIX_MODE: Array<{ id: ModeSport; titre: string; aide: string }> = [
+  { id: "programme", titre: "Suivre un programme", aide: "Des semaines planifiées qui progressent, je n’ai qu’à suivre" },
+  { id: "a_la_carte", titre: "Quand je peux, à la carte", aide: "Je choisis le type de séance le jour même, l’app la compose" },
+  { id: "mes_seances", titre: "J’ai déjà mes séances", aide: "Je garde mes habitudes et je suis ma progression" },
+];
+
 export const ParametresSport = z.object({
+  mode: ModeSport.default("programme"),
   rythme: z
     .object({
       salle: z.number().int().min(0).max(6).default(4),
@@ -1118,6 +1133,44 @@ export async function genererProgramme(db: KvaliaClient, userId: string, params:
 }
 
 /**
+ * Compose une séance de salle à partir d'un modèle (liste de créneaux) : un exercice par créneau, sa prescription,
+ * puis on coupe les isolations de la fin si la durée dépasse la cible (+10 %). Sert au programme et à la séance à la carte.
+ */
+function composerSeance(
+  refs: Ref[],
+  modele: Modele,
+  params: ParametresSport,
+  o: { bloc: number; semaineDansBloc: number; graine: (ordre: number) => number },
+): { exos: Array<Record<string, unknown>>; duree_min: number } {
+  const pris = new Set<string>();
+  const exos: Array<Record<string, unknown>> = [];
+  let dureeTotale = 0;
+  const slots = [...modele.slots];
+  if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
+  slots.forEach((slot, ordre) => {
+    const ref = choisir(refs, slot, params, pris, o.graine(ordre));
+    if (!ref) return;
+    pris.add(ref.id);
+    const p = prescription(params, o.bloc, o.semaineDansBloc, slot, ordre === 0);
+    const reps = slot === S.cardioFin ? "8 min" : p.reps;
+    const series = slot === S.cardioFin ? 1 : p.series;
+    const repos = slot === S.cardioFin ? 0 : p.repos_s;
+    const dureeS = slot === S.cardioFin ? 480 : series * (params.effort_s_par_serie + repos);
+    dureeTotale += dureeS;
+    exos.push({ exercice_id: ref.id, ordre, series, reps, repos_s: repos, duree_s: dureeS, _met: Number(ref.met ?? 5), _iso: slot.isolation === true });
+  });
+  // Durée affichée = échauffement + exercices + transitions ; on coupe les isolations de la fin si on dépasse la cible (+10 %)
+  const dureeSeance = () => ECHAUFFEMENT_S + dureeTotale + exos.length * TRANSITION_S;
+  while (dureeSeance() > params.duree_min * 60 * 1.1 && exos.length > 4) {
+    const idx = [...exos].reverse().findIndex((e) => e._iso);
+    if (idx < 0) break;
+    const retire = exos.splice(exos.length - 1 - idx, 1)[0];
+    dureeTotale -= Number(retire.duree_s);
+  }
+  return { exos, duree_min: Math.round(dureeSeance() / 60) };
+}
+
+/**
  * Pose les séances d'un programme à partir de `depuis` (inclus) jusqu'à la fin : séances générées, séances perso
  * (modèles) et boxe, semaine par semaine depuis le début du programme (blocs, décharges). Les créneaux déjà
  * occupés (`dejaFait` : « jour|salle » ou « jour|boxe ») ne sont pas doublés.
@@ -1179,32 +1232,8 @@ async function planifierSeances(
         } else if (prevue.genre === "salle") {
           const idxSalle = prevue.index;
           const modele = MODELES[prevue.modele];
-          const pris = new Set<string>();
-          const exos: Array<Record<string, unknown>> = [];
-          let dureeTotale = 0;
-          const slots = [...modele.slots];
-          if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
-          slots.forEach((slot, ordre) => {
-            // Les séances A prennent le premier classique, les B le second ; l'ordre s'inverse au bloc suivant.
-            const ref = choisir(refs, slot, params, pris, bloc - 1 + Math.floor(idxSalle / 2));
-            if (!ref) return;
-            pris.add(ref.id);
-            const p = prescription(params, bloc, semaineDansBloc, slot, ordre === 0);
-            const reps = slot === S.cardioFin ? "8 min" : p.reps;
-            const series = slot === S.cardioFin ? 1 : p.series;
-            const repos = slot === S.cardioFin ? 0 : p.repos_s;
-            const dureeS = slot === S.cardioFin ? 480 : series * (params.effort_s_par_serie + repos);
-            dureeTotale += dureeS;
-            exos.push({ exercice_id: ref.id, ordre, series, reps, repos_s: repos, duree_s: dureeS, _met: Number(ref.met ?? 5), _iso: slot.isolation === true });
-          });
-          // Durée affichée = échauffement + exercices + transitions ; on coupe les isolations de la fin si on dépasse la cible (+10 %)
-          const dureeSeance = () => ECHAUFFEMENT_S + dureeTotale + exos.length * TRANSITION_S;
-          while (dureeSeance() > params.duree_min * 60 * 1.1 && exos.length > 4) {
-            const idx = [...exos].reverse().findIndex((e) => e._iso);
-            if (idx < 0) break;
-            const retire = exos.splice(exos.length - 1 - idx, 1)[0];
-            dureeTotale -= Number(retire.duree_s);
-          }
+          // Les séances A prennent le premier classique, les B le second ; l'ordre s'inverse au bloc suivant.
+          const { exos, duree_min } = composerSeance(refs, modele, params, { bloc, semaineDansBloc, graine: () => bloc - 1 + Math.floor(idxSalle / 2) });
           const p0 = prescription(params, bloc, semaineDansBloc, S.pecsCompose);
           seancesAInserer.push({
             user_id: userId,
@@ -1212,7 +1241,7 @@ async function planifierSeances(
             jour: iso(jourDate),
             type: modele.type,
             titre: modele.titre,
-            duree_min: Math.round(dureeSeance() / 60),
+            duree_min,
             etat: "prevue",
             bloc,
             semaine: s + 1,
@@ -1521,6 +1550,163 @@ export async function planifierModeleSeance(
   if (error) throw error;
   await remplacerExercicesSeance(db, userId, se.id, inst.exos, poids);
   return { mode: "une_fois" as const, seance_id: se.id, jour: e.date, remplace: aRemplacer.length };
+}
+
+// ---------- Séance à la carte (sans programme) ----------
+
+/** Types de séance proposés à la carte : ceux qu'on demande en salle. */
+export const TypeSeanceLibre = z.enum(["full", "upper", "lower", "push", "pull", "legs"]);
+export type TypeSeanceLibre = z.infer<typeof TypeSeanceLibre>;
+/** Titre, ce que la séance travaille (à afficher au moment du choix), et les modèles qui alternent d'une proposition à l'autre. */
+export const SEANCES_LIBRES: Record<TypeSeanceLibre, { titre: string; aide: string; modeles: string[] }> = {
+  full: { titre: "Full Body", aide: "Tout le corps en une séance", modeles: ["fullA", "fullB"] },
+  upper: { titre: "Upper", aide: "Pecs, dos, épaules, bras", modeles: ["upperA", "upperB"] },
+  lower: { titre: "Lower", aide: "Cuisses, fessiers, mollets", modeles: ["lowerA", "lowerB"] },
+  push: { titre: "Push", aide: "Pecs, épaules, triceps", modeles: ["push"] },
+  pull: { titre: "Pull", aide: "Dos, biceps", modeles: ["pull"] },
+  legs: { titre: "Legs", aide: "Jambes complètes", modeles: ["legs"] },
+};
+export const SeanceALaCarte = z.object({
+  type: TypeSeanceLibre,
+  duree_min: z.number().int().min(20).max(150).optional().describe("Durée visée, échauffement compris ; sinon celle des réglages."),
+  jour: z.string().date().optional().describe("Aujourd'hui par défaut ; jamais un jour passé."),
+  variante: z
+    .number()
+    .int()
+    .min(0)
+    .max(99)
+    .default(0)
+    .describe("0 = la proposition recommandée ; +1 à chaque « propose-m'en une autre » (autres exercices, mêmes muscles)."),
+});
+export type SeanceALaCarte = z.input<typeof SeanceALaCarte>;
+
+/**
+ * Compose une séance pour un jour, hors programme (« je m'entraîne aujourd'hui, un full body ») : mêmes règles que
+ * le générateur (classiques d'abord, matériel, niveau, douleurs, prescription selon l'objectif), sans rien planifier
+ * d'autre. Une proposition pas encore commencée ce jour-là est remplacée ; une séance du programme ne l'est jamais.
+ */
+export async function genererSeanceALaCarte(db: KvaliaClient, userId: string, brut: SeanceALaCarte) {
+  const e = SeanceALaCarte.parse(brut);
+  const auj = aujourdhuiIso();
+  const jour = e.jour ?? auj;
+  if (jour < auj) throw new Error("On ne prépare pas une séance dans le passé.");
+  const base = await parametresSport(db, userId);
+  const params = e.duree_min ? { ...base, duree_min: e.duree_min } : base;
+  const { data: refsData, error: errRefs } = await db.from("exercices_ref").select("*").eq("source", SOURCE_EXERCICES).limit(3000);
+  if (errRefs) throw errRefs;
+  const refs = (refsData ?? []) as Ref[];
+  if (refs.length === 0) throw new Error("Bibliothèque d'exercices vide : lance le seed (pnpm --filter @kvalia/agent seed:exercices).");
+
+  const { data: duJour, error: errJour } = await db.from("seances").select("id, type, etat, titre, programme_id").eq("user_id", userId).eq("jour", jour);
+  if (errJour) throw errJour;
+  const salle = (duJour ?? []).filter((x) => x.type !== "boxe");
+  if (salle.some((x) => x.etat === "en_cours")) throw new Error("Une séance est déjà en cours ce jour-là : termine-la d'abord.");
+  const prevueProgramme = salle.find((x) => x.etat === "prevue" && x.programme_id);
+  if (prevueProgramme)
+    throw new Error(`${prevueProgramme.titre ?? "Une séance"} est déjà au programme ce jour-là : fais-la ou reporte-la avant d'en préparer une autre.`);
+  const aRemplacer = salle.filter((x) => x.etat === "prevue").map((x) => x.id);
+  for (const id of aRemplacer) await supprimerSeance(db, userId, id);
+
+  const choix = SEANCES_LIBRES[e.type];
+  const modele = MODELES[choix.modeles[e.variante % choix.modeles.length]];
+  // Un tour = toutes les versions du type vues une fois ; aux tours suivants, on alterne les classiques d'un créneau sur deux.
+  const tour = Math.floor(e.variante / choix.modeles.length);
+  const { exos, duree_min } = composerSeance(refs, modele, params, {
+    bloc: 1,
+    semaineDansBloc: 1,
+    graine: (ordre) => tour + (tour > 0 && ordre % 2 === 1 ? 1 : 0),
+  });
+  if (exos.length === 0) throw new Error("Aucun exercice possible avec ce matériel : complète-le dans les réglages Sport.");
+  const { poids } = await poidsActuel(db, userId, params);
+  const { data: se, error } = await db
+    .from("seances")
+    .insert({
+      user_id: userId,
+      programme_id: null,
+      jour,
+      type: modele.type as Tables<"seances">["type"],
+      titre: choix.titre,
+      duree_min,
+      etat: "prevue",
+      focus: focusBloc(params.objectif, 1),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  await remplacerExercicesSeance(db, userId, se.id, exos, poids);
+  const parId = new Map(refs.map((r) => [r.id, r]));
+  return {
+    seance_id: se.id,
+    jour,
+    type: modele.type,
+    titre: choix.titre,
+    duree_min,
+    variante: e.variante,
+    remplace: aRemplacer.length > 0,
+    exercices: exos.map((x) => ({
+      exercice_id: String(x.exercice_id),
+      nom: nomUsuel(parId.get(String(x.exercice_id))?.nom ?? ""),
+      series: Number(x.series),
+      reps: String(x.reps),
+      repos_s: Number(x.repos_s),
+    })),
+  };
+}
+
+async function supprimerSeance(db: KvaliaClient, userId: string, seanceId: string) {
+  const { error: errExos } = await db.from("exercices_seance").delete().eq("seance_id", seanceId).eq("user_id", userId);
+  if (errExos) throw errExos;
+  const { error } = await db.from("seances").delete().eq("id", seanceId).eq("user_id", userId);
+  if (error) throw error;
+}
+
+/** Annule une séance hors programme pas encore commencée (proposition à la carte, séance perso posée une fois). */
+export async function annulerSeanceLibre(db: KvaliaClient, userId: string, seanceId: string) {
+  const { data: se, error } = await db.from("seances").select("id, etat, programme_id").eq("id", seanceId).eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  if (!se) throw new Error("Séance introuvable.");
+  if (se.programme_id) throw new Error("Cette séance fait partie du programme : reporte-la plutôt (deplacer_seance).");
+  if (se.etat !== "prevue") throw new Error("Cette séance est déjà commencée ou faite : elle reste dans l'historique.");
+  await supprimerSeance(db, userId, seanceId);
+  return { seance_id: seanceId, supprime: true };
+}
+
+/**
+ * Garde une séance dans « Mes séances » (favori) : ses exercices, séries, reps, repos et charges deviennent une
+ * séance perso réutilisable, et la séance y est rattachée. Déjà rattachée → on rend la séance perso existante.
+ */
+export async function enregistrerSeanceFavorite(db: KvaliaClient, userId: string, seanceId: string, nom?: string) {
+  const { data: se, error } = await db.from("seances").select("id, titre, type, modele_id").eq("id", seanceId).eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  if (!se) throw new Error("Séance introuvable.");
+  if (se.modele_id) {
+    const existant = (await chargerModeles(db, userId, [se.modele_id]))[se.modele_id];
+    if (existant) return { modele_id: existant.id, nom: existant.nom, nb_exercices: existant.exercices.length, deja: true };
+  }
+  const { data: exos, error: errExos } = await db
+    .from("exercices_seance")
+    .select("exercice_id, ordre, series, reps, repos_s, charge_kg")
+    .eq("seance_id", seanceId)
+    .eq("user_id", userId);
+  if (errExos) throw errExos;
+  if (!exos?.length) throw new Error("Cette séance n'a pas d'exercices à garder.");
+  const type = ModeleSeanceEntree.shape.type.safeParse(se.type);
+  const r = await creerModeleSeance(db, userId, {
+    nom: (nom ?? se.titre ?? "Ma séance").trim().slice(0, 60) || "Ma séance",
+    type: type.success ? type.data : "full",
+    exercices: [...exos]
+      .sort((a, b) => a.ordre - b.ordre)
+      .map((x) => ({
+        exercice_id: x.exercice_id,
+        series: Math.min(10, Math.max(1, x.series)),
+        reps: x.reps.slice(0, 12),
+        repos_s: x.repos_s,
+        charge_kg: x.charge_kg === null ? null : Number(x.charge_kg),
+      })),
+  });
+  const { error: errMaj } = await db.from("seances").update({ modele_id: r.id }).eq("id", seanceId).eq("user_id", userId);
+  if (errMaj) throw errMaj;
+  return { modele_id: r.id, nom: r.nom, nb_exercices: r.nb_exercices, deja: false };
 }
 
 export const ModificationProgramme = z.object({
@@ -2227,15 +2413,20 @@ export async function recalerSeancesManquees(db: KvaliaClient, userId: string) {
     .order("jour")
     .limit(600);
   if (error) throw error;
-  const toutes = data ?? [];
-  const file = toutes.filter((x) => x.etat === "prevue");
+  const lues = data ?? [];
+  // Hors programme (séance à la carte, séance perso posée une fois) : une proposition pas faite un jour passé
+  // disparaît, elle n'entre pas dans la file — on en recomposera une quand on voudra.
+  const perimees = lues.filter((x) => x.etat === "prevue" && !x.programme_id && x.jour < auj);
+  for (const x of perimees) await supprimerSeance(db, userId, x.id);
+  const toutes = lues.filter((x) => !perimees.includes(x));
+  const file = toutes.filter((x) => x.etat === "prevue" && x.programme_id);
   const manquees = file.filter((x) => x.jour < auj);
   if (!manquees.length)
     return { recalees: 0, deplacees: [] as Array<{ id: string; titre: string | null; de: string; vers: string }>, fin: null as string | null };
 
   const params = await parametresSport(db, userId);
   const habituels = [...new Set([...params.jours_salle, ...params.seances_perso.map((x) => x.jour)])];
-  const pris = new Set(toutes.filter((x) => x.etat !== "prevue" && x.jour >= auj).map((x) => x.jour));
+  const pris = new Set(toutes.filter((x) => (x.etat !== "prevue" || !x.programme_id) && x.jour >= auj).map((x) => x.jour));
   const creneaux = file.filter((x) => x.jour >= auj).map((x) => x.jour);
   // Autant de créneaux en plus que de séances manquées, après le dernier (ou à partir d'aujourd'hui s'il n'y en a plus).
   let curseur = creneaux.at(-1) ?? decalerJour(auj, -1);

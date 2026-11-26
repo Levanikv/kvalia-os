@@ -59,7 +59,7 @@ docs/           sitemap, architecture, conventions, runbook, glossaire, décisio
 
 ## Contexte produit (résumé)
 
-Modules : Home (vue Jour) · Quotidien (courses, tâches, habitudes) · Sport & Nutrition (programme généré, séances à cocher, kcal → cible du jour) · Finances (perso) · Entreprise (SASU) · Documents · Objectifs · Réglages · Capture (parler à l'agent).
+Modules : Home (vue Jour) · Quotidien (courses, tâches, habitudes) · Sport & Nutrition (programme généré, séance à la carte ou ses propres séances selon la façon de s'entraîner — ADR 0021 ; séances à cocher, kcal → cible du jour) · Finances (perso) · Entreprise (SASU) · Documents · Objectifs · Réglages · Capture (parler à l'agent).
 Pilotage : hub Notion « KVALIA OS — Projet » (roadmap, tâches Build, pages UX par module). FigJam : flux UX. Infra : Supabase `gspidvxtnmtgifnlgcsu` (eu-west-3), Railway projet `kvalia-os` (services `web`, `agent`, région EU), repo `Levanikv/kvalia-os`.
 
 Détails : `docs/architecture.md` · `docs/conventions.md` · `docs/runbook.md` · `docs/glossaire.md` · `docs/decisions/` · `docs/recettes/` · `docs/outils-agent.md`.

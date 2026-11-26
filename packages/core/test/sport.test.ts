@@ -1110,3 +1110,121 @@ describe("déplacer une séance : empêchement ou jour en plus, le programme sui
     await expect(deplacerSeance(db, USER, { seance_id: mardi.id, jour: "2026-11-09", si_occupe: "echanger" })).rejects.toThrow("déjà une séance");
   });
 });
+
+describe("séance à la carte : s'entraîner quand on peut, sans programme (ADR 0021)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-10T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+  const ctx = (db: any) => ({ db, userId: USER });
+  const exosDe = (db: any, id: string) =>
+    db.tables.exercices_seance
+      .filter((e: any) => e.seance_id === id)
+      .sort((a: any, b: any) => a.ordre - b.ordre)
+      .map((e: any) => e.exercice_id);
+
+  it("le mode par défaut est « programme » ; regler_sport le change sans toucher au reste", async () => {
+    const db = base();
+    expect(PARAMETRES_SPORT_DEFAUT.mode).toBe("programme");
+    const p = await executer("regler_sport", { mode: "a_la_carte" }, ctx(db));
+    expect(p.mode).toBe("a_la_carte");
+    expect(p.duree_min).toBe(PARAMETRES_SPORT_DEFAUT.duree_min);
+  });
+
+  it("compose une séance du jour hors programme : des classiques, prête à démarrer", async () => {
+    const db = base();
+    const r = await executer("seance_a_la_carte", { type: "full" }, ctx(db));
+    expect(r).toMatchObject({ jour: "2026-11-10", titre: "Full Body", type: "full", variante: 0, remplace: false });
+    expect(r.exercices.length).toBeGreaterThanOrEqual(5);
+    const se = db.tables.seances.find((s: any) => s.id === r.seance_id);
+    expect(se).toMatchObject({ programme_id: null, etat: "prevue", jour: "2026-11-10" });
+    const noms = exosDe(db, r.seance_id).map((id: string) => refs.find((x: any) => x.id === id)!.nom);
+    expect(noms.every((n: string) => simplicite(n) === "classique")).toBe(true);
+    expect(db.tables.programmes).toHaveLength(0);
+    expect((await executer("demarrer_seance", { seance_id: r.seance_id }, ctx(db))).etat).toBe("en_cours");
+  });
+
+  it("« une autre » : la variante suivante remplace la proposition, avec d'autres exercices", async () => {
+    const db = base();
+    const a = await executer("seance_a_la_carte", { type: "push" }, ctx(db));
+    const exosA = exosDe(db, a.seance_id);
+    const b = await executer("seance_a_la_carte", { type: "push", variante: 1 }, ctx(db));
+    expect(b.remplace).toBe(true);
+    expect(db.tables.seances.filter((s: any) => s.jour === "2026-11-10")).toHaveLength(1);
+    expect(db.tables.exercices_seance.some((e: any) => e.seance_id === a.seance_id)).toBe(false);
+    expect(exosDe(db, b.seance_id)).not.toEqual(exosA);
+    // Un type à deux versions alterne A puis B.
+    const u0 = await executer("seance_a_la_carte", { type: "upper", variante: 0 }, ctx(db));
+    const exosU0 = exosDe(db, u0.seance_id);
+    const u1 = await executer("seance_a_la_carte", { type: "upper", variante: 1 }, ctx(db));
+    expect(exosDe(db, u1.seance_id)).not.toEqual(exosU0);
+  });
+
+  it("la durée demandée raccourcit la séance", async () => {
+    const db = base();
+    const longue = await executer("seance_a_la_carte", { type: "legs", duree_min: 90 }, ctx(db));
+    const courte = await executer("seance_a_la_carte", { type: "legs", duree_min: 30 }, ctx(db));
+    expect(courte.exercices.length).toBeLessThan(longue.exercices.length);
+    expect(courte.duree_min).toBeLessThan(longue.duree_min);
+  });
+
+  it("refuse le passé, une séance du programme déjà prévue ce jour-là, une séance en cours", async () => {
+    const db = base();
+    await expect(executer("seance_a_la_carte", { type: "full", jour: "2026-11-09" }, ctx(db))).rejects.toThrow(/passé/);
+    await genererProgramme(db, USER, ParametresSport.parse({}), "2026-11-10");
+    await expect(executer("seance_a_la_carte", { type: "full" }, ctx(db))).rejects.toThrow(/programme/);
+    const libre = base();
+    const r = await executer("seance_a_la_carte", { type: "full" }, ctx(libre));
+    await executer("demarrer_seance", { seance_id: r.seance_id }, ctx(libre));
+    await expect(executer("seance_a_la_carte", { type: "pull" }, ctx(libre))).rejects.toThrow(/en cours/);
+  });
+
+  it("favori : la séance devient une séance perso, une seule fois", async () => {
+    const db = fausseDb({
+      exercices_ref: refs,
+      programmes: [],
+      seances: [],
+      exercices_seance: [],
+      pesees: [],
+      modeles_seance: [],
+      modeles_seance_exercices: [],
+      profils: [{ id: USER, reglages: {} }],
+    });
+    const r = await executer("seance_a_la_carte", { type: "pull" }, ctx(db));
+    const f = await executer("enregistrer_seance_favorite", { seance_id: r.seance_id, nom: "Mon Pull" }, ctx(db));
+    expect(f).toMatchObject({ nom: "Mon Pull", nb_exercices: r.exercices.length, deja: false });
+    const modeles = await chargerModeles(db, USER);
+    expect(modeles[f.modele_id].exercices.map((e) => e.exercice_id)).toEqual(exosDe(db, r.seance_id));
+    expect(db.tables.seances.find((s: any) => s.id === r.seance_id).modele_id).toBe(f.modele_id);
+    const encore = await executer("enregistrer_seance_favorite", { seance_id: r.seance_id }, ctx(db));
+    expect(encore).toMatchObject({ modele_id: f.modele_id, deja: true });
+    expect(Object.keys(await chargerModeles(db, USER))).toHaveLength(1);
+  });
+
+  it("annuler : seulement hors programme et pas commencée", async () => {
+    const db = base();
+    const r = await executer("seance_a_la_carte", { type: "full" }, ctx(db));
+    expect(await executer("annuler_seance", { seance_id: r.seance_id }, ctx(db))).toEqual({ seance_id: r.seance_id, supprime: true });
+    expect(db.tables.seances).toHaveLength(0);
+    expect(db.tables.exercices_seance).toHaveLength(0);
+    await genererProgramme(db, USER, ParametresSport.parse({}), "2026-11-10");
+    const duProgramme = db.tables.seances.find((s: any) => s.jour === "2026-11-10");
+    await expect(executer("annuler_seance", { seance_id: duProgramme.id }, ctx(db))).rejects.toThrow(/programme/);
+  });
+
+  it("une proposition jamais commencée disparaît le lendemain, sans entrer dans la file du programme", async () => {
+    const db = base();
+    await executer("seance_a_la_carte", { type: "full" }, ctx(db));
+    vi.setSystemTime(new Date("2026-11-11T09:00:00Z"));
+    expect(await recalerSeancesManquees(db, USER)).toMatchObject({ recalees: 0 });
+    expect(db.tables.seances).toHaveLength(0);
+  });
+
+  it("générer un programme repasse en mode « programme »", async () => {
+    const db = base();
+    await executer("regler_sport", { mode: "a_la_carte" }, ctx(db));
+    await executer("generer_programme", { debut: "2026-11-10" }, ctx(db));
+    expect((await executer("parametres_sport", {}, ctx(db))).mode).toBe("programme");
+  });
+});

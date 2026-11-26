@@ -1,4 +1,6 @@
 "use client";
+import { DESSIN_EN_VIGNETTE } from "@/components/DemoDessin";
+import { IllustrationExercice } from "@/components/IllustrationExercice";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LIBELLES } from "@kvalia/core";
@@ -16,6 +18,8 @@ type E = {
   equipement: string | null;
   difficulte: string | null;
   image_url: string | null;
+  /** Dessin au trait (teinté par le thème) quand il existe ; sinon la vignette de la bibliothèque. */
+  illustration: string | null;
   muscles: string[];
   compose: boolean;
 };
@@ -91,12 +95,18 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
                 href={`/sport/exercices/${e.id}`}
                 className="tap flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default"
               >
-                {/* Fond blanc : les animations de la bibliothèque sont dessinées sur blanc. */}
-                <div className="aspect-square bg-white p-[var(--inset-xs)]">
-                  {e.image_url && (
-                    <img src={e.image_url} alt="" loading="lazy" decoding="async" width={180} height={180} className="h-full w-full object-contain" />
-                  )}
-                </div>
+                {DESSIN_EN_VIGNETTE && e.illustration ? (
+                  <div className="aspect-square bg-surface-container-sunken p-[var(--inset-sm)] text-fg-primary">
+                    <IllustrationExercice slug={e.illustration} className="h-full w-full" />
+                  </div>
+                ) : (
+                  // Fond blanc : les vignettes de la bibliothèque sont dessinées sur blanc.
+                  <div className="aspect-square bg-white p-[var(--inset-xs)]">
+                    {e.image_url && (
+                      <img src={e.image_url} alt="" loading="lazy" decoding="async" width={180} height={180} className="h-full w-full object-contain" />
+                    )}
+                  </div>
+                )}
                 <div className="flex flex-1 flex-col gap-[var(--stack-2xs)] p-[var(--inset-sm)]">
                   <p className="line-clamp-2 type-title-sm">{e.affiche}</p>
                   <p className="mt-auto truncate type-body-sm text-fg-secondary">

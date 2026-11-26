@@ -1,19 +1,19 @@
 import { notFound } from "next/navigation";
-import { dernieresCharges, parametresSport, poidsActuel, type Realise } from "@kvalia/core";
+import { dernieresCharges, illustrationPour, parametresSport, poidsActuel, type Realise } from "@kvalia/core";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
 import { demo, chargerSeance, kcalPrevues, libelleFocus, libellePartie, libelleType, nomAffiche, positionProgramme } from "../../lib";
 import { SeanceLive, type ExoVue, type SeanceVue } from "./SeanceLive";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ v?: string; d?: string }> };
 
 /**
  * Séance (workflow « Home workflow » du Figma) : avant départ (chrono 0:00, « Démarrer »), en cours (chrono, exercice
  * en cours, séries et repos dans la fiche, pause), terminer (exercices ratés → ressenti → fin de séance), résumé
  * quand elle est faite, aperçu en lecture seule pour un autre jour.
  */
-export default async function Page({ params }: Props) {
-  const { id } = await params;
+export default async function Page({ params, searchParams }: Props) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   const { supabase, user } = await session();
   const [seance, p] = await Promise.all([chargerSeance(supabase, id), parametresSport(supabase, user.id)]);
   if (!seance) notFound();
@@ -47,6 +47,7 @@ export default async function Page({ params }: Props) {
       nom: nomAffiche(e.exercices_ref),
       partie: libellePartie(e.exercices_ref.partie_corps),
       image: e.exercices_ref.image_url,
+      illustration: illustrationPour(e.exercices_ref.nom),
       video: demo(e.exercices_ref),
       series: e.series,
       reps: e.reps,
@@ -91,6 +92,12 @@ export default async function Page({ params }: Props) {
     faite_le: seance.faite_le,
     estAujourdhui: seance.jour === aujourdhui(),
     estPassee: seance.jour < aujourdhui(),
+    type: seance.type,
+    // Hors programme : séance à la carte ou séance perso lancée une fois (ADR 0021).
+    libre: !seance.programme_id,
+    modeleId: seance.modele_id,
+    variante: Math.max(0, Math.min(98, Number.parseInt(sp.v ?? "0", 10) || 0)),
+    dureeVisee: Number.parseInt(sp.d ?? "", 10) || null,
   };
 
   return (

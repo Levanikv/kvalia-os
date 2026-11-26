@@ -156,3 +156,44 @@ export function TicketRepos({ prochaine, semaine, semaineNo }: ReposProps) {
     </section>
   );
 }
+
+/**
+ * Pas de séance posée aujourd'hui et pas de programme à suivre (à la carte, mes séances — ADR 0021) : une seule
+ * chose à faire, en grand — choisir sa séance du jour. `faites` = séances faites cette semaine.
+ */
+export function TicketLibre({ mode, faites, nbSeances }: { mode: "a_la_carte" | "mes_seances" | "programme"; faites: number; nbSeances: number }) {
+  const mesSeances = mode === "mes_seances";
+  return (
+    <Link
+      href={mesSeances && nbSeances === 0 ? "/sport/ma-seance/nouvelle" : "/sport/aujourdhui"}
+      data-module="sport"
+      data-theme="dark"
+      className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-page text-fg-primary active:opacity-95"
+    >
+      <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
+        <div className="flex items-center gap-[var(--inline-sm)]">
+          <span className="kv-tag kv-tag-neutral">{mesSeances ? "Mes séances" : "À la carte"}</span>
+          <span className="kv-mono ml-auto">
+            {faites} séance{faites > 1 ? "s" : ""} cette semaine
+          </span>
+        </div>
+        <div>
+          <h2 className="type-display-xl">On s’entraîne ?</h2>
+          <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
+            {mesSeances
+              ? nbSeances > 0
+                ? "Lance une de tes séances, ou laisse l’app en composer une."
+                : "Crée ta première séance : tes charges et tes records se noteront tout seuls."
+              : "Choisis un type de séance : l’app la compose, tu ajustes, tu démarres."}
+          </p>
+        </div>
+        <span className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+          <span className="kv-btn-label">{mesSeances && nbSeances === 0 ? "Créer une séance" : "S’entraîner aujourd’hui"}</span>
+          <span className="kv-btn-end">
+            <Icon name="arrow_forward" size={22} />
+          </span>
+        </span>
+      </div>
+    </Link>
+  );
+}

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { CHOIX_PREFERENCE_MATERIEL, type ParametresSport } from "@kvalia/core";
+import { CHOIX_MODE, CHOIX_PREFERENCE_MATERIEL, type ModeSport, type ParametresSport } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { LigneChoix, TuileChoix } from "@/components/kv/Choix";
 import { Ground } from "@/components/kv/Ground";
@@ -57,8 +57,8 @@ const DUREES: Array<[number, string]> = [
   [90, "Long"],
 ];
 const NUTRITION = [
-  { id: "ia", t: "L’IA me propose mes repas", d: "Recettes calées sur tes séances" },
-  { id: "saisie", t: "Je saisis ce que je mange", d: "L’IA fait les comptes" },
+  { id: "ia", t: "L’app me propose mes repas", d: "Recettes calées sur tes séances" },
+  { id: "saisie", t: "Je saisis ce que je mange", d: "L’app fait les comptes" },
   { id: "plus_tard", t: "Plus tard", d: "Les cibles restent actives" },
 ] as const;
 /** Lundi d'abord à l'écran ; stockage en 0 = dimanche (comme le générateur). */
@@ -67,16 +67,17 @@ const NOMS_JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi",
 const versJs = (i: number) => (i + 1) % 7;
 
 const Q: Record<number, { sur: string; titre: string; sous: string }> = {
+  17: { sur: "Ta façon de faire", titre: "Tu t’entraînes comment ?", sous: "L’app s’adapte à toi. Tu pourras changer d’avis à tout moment." },
   1: { sur: "Toi", titre: "Commençons par toi.", sous: "Pour calibrer les charges, les calories et la récupération." },
   2: { sur: "Mensurations", titre: "Ta taille, ton poids.", sous: "Fais tourner les roues. Tu pourras les ajuster à chaque pesée." },
   3: { sur: "Quotidien", titre: "Hors salle, tu bouges comment ?", sous: "Ta dépense de tous les jours, en dehors des séances." },
-  4: { sur: "Objectifs", titre: "En salle, tu cherches quoi ?", sous: "Plusieurs choix possibles. L’IA hiérarchise." },
+  4: { sur: "Objectifs", titre: "En salle, tu cherches quoi ?", sous: "Plusieurs choix possibles, le premier compte le plus." },
   5: { sur: "Poids cible", titre: "Tu vises quel poids ?", sous: "Un rythme tenable, sans sacrifier la force." },
   6: { sur: "Disponibilités", titre: "Combien de séances par semaine ?", sous: "Le nombre, puis les jours qui t’arrangent." },
   7: { sur: "Durée", titre: "Combien de temps par séance ?", sous: "Échauffement compris." },
-  8: { sur: "Lieu", titre: "Tu t’entraînes où ?", sous: "L’IA choisit les exercices selon l’endroit." },
+  8: { sur: "Lieu", titre: "Tu t’entraînes où ?", sous: "Les exercices proposés suivent l’endroit." },
   9: { sur: "Matériel", titre: "Ton matériel à la maison.", sous: "Tout ce que tu as sous la main." },
-  10: { sur: "Échéance", titre: "Un rendez-vous à préparer ?", sous: "L’IA découpe le plan en phases jusqu’à la date." },
+  10: { sur: "Échéance", titre: "Un rendez-vous à préparer ?", sous: "Le plan est découpé en phases jusqu’à la date." },
   11: { sur: "Niveau", titre: "Ton niveau en salle ?", sous: "Pour le choix des exercices et les charges de départ." },
   12: { sur: "Limites", titre: "Des douleurs ou blessures ?", sous: "Plusieurs choix possibles." },
   13: { sur: "Nutrition · optionnel", titre: "Et côté assiette ?", sous: "Tes calories suivent déjà tes séances." },
@@ -97,6 +98,7 @@ const ETAPES_GENERATION = [
 ];
 
 type Etat = {
+  mode: ModeSport;
   sexe: "homme" | "femme";
   age: number;
   taille: number;
@@ -119,10 +121,11 @@ type Etat = {
   preference: NonNullable<Profil["preference_materiel"]>;
 };
 
-function depuisProfil(p: Profil): Etat {
+function depuisProfil(p: Profil, mode: ModeSport): Etat {
   const jours = [false, false, false, false, false, false, false];
   for (const j of p.jours ?? [1, 3, 5, 6]) jours[(j + 6) % 7] = true;
   return {
+    mode,
     sexe: p.sexe ?? "homme",
     age: p.age ?? 30,
     taille: p.taille_cm ?? 175,
@@ -177,11 +180,11 @@ const toggle = <T,>(liste: T[], x: T) => (liste.includes(x) ? liste.filter((y) =
 
 type Resultat = Awaited<ReturnType<typeof terminerOnboarding>>;
 
-export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profil: Profil; etape: number; aujourdhui: string }) {
+export function Onboarding({ profil, mode, etape: etapeInitiale, aujourdhui }: { profil: Profil; mode: ModeSport; etape: number; aujourdhui: string }) {
   const router = useRouter();
-  const [a, setA] = useState<Etat>(() => depuisProfil(profil));
+  const [a, setA] = useState<Etat>(() => depuisProfil(profil, mode));
   const [ecran, setEcran] = useState<"accueil" | "question" | "generation" | "pret">(etapeInitiale > 0 ? "question" : "accueil");
-  const [etape, setEtape] = useState(Math.max(1, etapeInitiale));
+  const [etape, setEtape] = useState(etapeInitiale > 0 ? etapeInitiale : 17);
   const [gen, setGen] = useState(0);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -202,16 +205,23 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
     debutVoulu && joursSeance.includes(new Date(debutVoulu + "T12:00:00Z").getUTCDay()) && debutVoulu >= aujourdhui ? debutVoulu : premierJour;
 
   // Étapes conditionnelles : poids cible si sèche / prise de muscle (ou aucun choix), matériel si la maison est concernée.
+  // La façon de s'entraîner d'abord : seul un programme a besoin des jours, de l'échéance et d'une date de départ ;
+  // avec ses propres séances, ni durée ni matériel préféré à demander.
   const etapes = useMemo(() => {
-    const l = [1, 2, 15, 3, 4];
+    const programme = a.mode === "programme";
+    const l = [17, 1, 2, 15, 3, 4];
     if (!a.objectifs.length || a.objectifs.includes("seche") || a.objectifs.includes("masse")) l.push(5);
-    l.push(6, 7, 8);
+    if (programme) l.push(6);
+    if (a.mode !== "mes_seances") l.push(7);
+    l.push(8);
     if (a.lieu !== "salle") l.push(9);
-    // Matériel préféré : seulement s'il y a le choix (une salle).
-    if (a.lieu !== "maison") l.push(16);
-    l.push(10, 11, 12, 13, 14);
+    // Matériel préféré : seulement s'il y a le choix (une salle) et que l'app compose des séances.
+    if (a.lieu !== "maison" && a.mode !== "mes_seances") l.push(16);
+    if (programme) l.push(10);
+    l.push(11, 12, 13);
+    if (programme) l.push(14);
     return l;
-  }, [a.objectifs, a.lieu]);
+  }, [a.mode, a.objectifs, a.lieu]);
   const idx = Math.max(0, etapes.indexOf(etape));
   const derniere = idx === etapes.length - 1;
 
@@ -241,7 +251,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
       setEcran("generation");
       setGen(0);
       setErreur(null);
-      terminerOnboarding(profilCourant(), etape, debutValide)
+      terminerOnboarding(profilCourant(), etape, a.mode, a.mode === "programme" ? debutValide : undefined)
         .then(setResultat)
         .catch(() => {
           setErreur("La génération n’a pas abouti. Réessaie, tes réponses sont gardées.");
@@ -254,7 +264,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
     // Sauvegarde en arrière-plan : une erreur réseau ne bloque pas le parcours (les réponses partent à l'étape suivante).
     demarrer(async () => {
       try {
-        await sauverOnboarding(profilCourant(), prochaine);
+        await sauverOnboarding(profilCourant(), prochaine, a.mode);
       } catch {
         /* hors ligne : la prochaine sauvegarde rattrapera */
       }
@@ -266,13 +276,14 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
   }
   function plusTard() {
     demarrer(async () => {
-      await passerOnboarding(profilCourant(), ecran === "question" ? etape : 1);
+      await passerOnboarding(profilCourant(), ecran === "question" ? etape : 17, a.mode);
       router.push("/sport");
     });
   }
 
   // Le plan s'affiche quand le serveur a répondu ET que l'animation est allée au bout.
-  const vue = ecran === "generation" && resultat && gen >= ETAPES_GENERATION.length ? "pret" : ecran;
+  const vue = ecran === "generation" && resultat && (!resultat.programme || gen >= ETAPES_GENERATION.length) ? "pret" : ecran;
+  const plan = resultat?.programme ?? null;
   const pct = Math.round(((idx + 1) / etapes.length) * 100);
   const q = Q[etape];
 
@@ -302,10 +313,10 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                   <br />
                   Volume<span className="text-fg-action">.</span>
                   <br />
-                  <span className="text-fg-secondary">Un plan.</span>
+                  <span className="text-fg-secondary">À ta façon.</span>
                 </h1>
                 <p className="mt-[var(--stack-lg)] type-body-lg text-fg-secondary">
-                  L’IA construit ta semaine de muscu : les bonnes charges, le bon volume, au bon moment.
+                  Un programme à suivre, une séance composée le jour même, ou tes propres séances : tu choisis, l’app suit.
                 </p>
                 <div className="mt-[var(--stack-xl)] flex justify-between border-t border-line-default pt-[var(--stack-md)] kv-mono">
                   <span>{etapes.length} questions</span>
@@ -349,6 +360,14 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                 </div>
                 {erreur && (
                   <p className="rounded-[var(--radius-input)] bg-feedback-danger-subtle p-[var(--inset-sm)] type-body-sm text-feedback-danger-text">{erreur}</p>
+                )}
+
+                {etape === 17 && (
+                  <div role="radiogroup" aria-label="Façon de s’entraîner">
+                    {CHOIX_MODE.map((o) => (
+                      <LigneChoix key={o.id} titre={o.titre} description={o.aide} actif={a.mode === o.id} onClick={() => maj("mode", o.id)} />
+                    ))}
+                  </div>
                 )}
 
                 {etape === 1 && (
@@ -404,9 +423,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                       ))}
                     </div>
                     <p className="kv-mono">
-                      {a.objectifs.length
-                        ? `${pad(a.objectifs.length)} sélectionné${a.objectifs.length > 1 ? "s" : ""} · l’IA hiérarchise`
-                        : "Au moins un choix"}
+                      {a.objectifs.length ? `${pad(a.objectifs.length)} sélectionné${a.objectifs.length > 1 ? "s" : ""}` : "Au moins un choix"}
                     </p>
                   </>
                 )}
@@ -554,7 +571,7 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
                     <WheelPicker label="Dans" unite="sem." valeur={a.semaines} onChange={(v) => maj("semaines", v)} min={4} max={40} petit />
                     <p className="kv-mono">
                       {a.semaines > 24
-                        ? "Le programme couvre 24 semaines, l’agent prolonge ensuite."
+                        ? "Le programme couvre 24 semaines, tu le prolongeras ensuite."
                         : `${a.semaines} semaines · ${Math.ceil(a.semaines / 4)} blocs de 4`}
                     </p>
                   </>
@@ -617,17 +634,24 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
 
               <div className="sticky bottom-0 pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))] pt-[var(--stack-lg)]">
                 <button type="button" onClick={suivant} disabled={bloque} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
-                  <span className="kv-btn-label">{derniere ? "Générer mon plan" : "Continuer"}</span>
+                  <span className="kv-btn-label">{!derniere ? "Continuer" : a.mode === "programme" ? "Générer mon plan" : "Terminer"}</span>
                 </button>
               </div>
             </>
           )}
 
-          {vue === "generation" && (
+          {vue === "generation" && a.mode !== "programme" && (
+            <div className="flex flex-1 flex-col justify-center gap-[var(--stack-md)]" aria-live="polite">
+              <span className="kv-overline">Un instant</span>
+              <h1 className="type-display-lg">On prépare ton espace.</h1>
+            </div>
+          )}
+
+          {vue === "generation" && a.mode === "programme" && (
             <div className="flex flex-1 flex-col justify-center gap-[var(--stack-xl)] py-[var(--stack-2xl)]" aria-live="polite">
               <span className="kv-overline">Génération</span>
               <h1 className="type-display-lg">
-                L’IA construit
+                On construit
                 <br />
                 ton plan.
               </h1>
@@ -654,83 +678,132 @@ export function Onboarding({ profil, etape: etapeInitiale, aujourdhui }: { profi
 
           {vue === "pret" && resultat && (
             <div className="flex flex-1 flex-col gap-[var(--stack-xl)] pt-[var(--page-content-top-xs)]">
-              <span className="kv-overline">Ton plan est prêt</span>
+              <span className="kv-overline">{plan ? "Ton plan est prêt" : "C’est prêt"}</span>
               <h1 className="text-[56px] font-black leading-[0.9] tracking-[-0.065em]">
-                {a.seances} séance{a.seances > 1 ? "s" : ""}
-                <br />
-                <span className="text-fg-action">par sem.</span>
+                {plan ? (
+                  <>
+                    {a.seances} séance{a.seances > 1 ? "s" : ""}
+                    <br />
+                    <span className="text-fg-action">par sem.</span>
+                  </>
+                ) : a.mode === "a_la_carte" ? (
+                  <>
+                    Quand
+                    <br />
+                    <span className="text-fg-action">tu veux.</span>
+                  </>
+                ) : (
+                  <>
+                    Tes séances,
+                    <br />
+                    <span className="text-fg-action">ton suivi.</span>
+                  </>
+                )}
               </h1>
               <p className="type-body-md text-fg-secondary">
-                {a.taille} cm · {virgule(a.poids)} → {virgule(cible)} kg · {a.duree} min par séance
+                {plan
+                  ? `${a.taille} cm · ${virgule(a.poids)} → ${virgule(cible)} kg · ${a.duree} min par séance`
+                  : a.mode === "a_la_carte"
+                    ? "Le jour où tu t’entraînes, choisis un type de séance : l’app la compose, tu ajustes, tu démarres. Celles qui te plaisent se gardent."
+                    : "Crée tes séances une fois, lance-les quand tu veux : charges, records et progression se notent tout seuls."}
               </p>
-              <div className="grid grid-cols-7 gap-[var(--inline-xs)]" aria-label="Semaine type">
-                {LETTRES.map((l, i) => (
-                  <div key={NOMS_JOURS[i]} className="flex flex-col items-center gap-[var(--stack-xs)]">
-                    <span
-                      className={`block h-10 w-full rounded-[var(--radius-md)] ${a.jours[i] ? "bg-action-primary" : "border border-dashed border-line-strong"}`}
-                    />
-                    <span className="kv-mono">{l}</span>
-                  </div>
-                ))}
-              </div>
+              {plan && (
+                <div className="grid grid-cols-7 gap-[var(--inline-xs)]" aria-label="Semaine type">
+                  {LETTRES.map((l, i) => (
+                    <div key={NOMS_JOURS[i]} className="flex flex-col items-center gap-[var(--stack-xs)]">
+                      <span
+                        className={`block h-10 w-full rounded-[var(--radius-md)] ${a.jours[i] ? "bg-action-primary" : "border border-dashed border-line-strong"}`}
+                      />
+                      <span className="kv-mono">{l}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <dl className="flex flex-col">
-                {[
+                {(
                   [
-                    "Objectifs",
-                    OBJECTIFS.filter((o) => a.objectifs.includes(o.id))
-                      .map((o) => o.t)
-                      .join(" · ") || "—",
-                  ],
-                  [
-                    "Calories",
-                    resultat.cibles
-                      ? `${resultat.cibles.kcal_seance.toLocaleString("fr-FR")} séance · ${resultat.cibles.kcal_repos.toLocaleString("fr-FR")} repos · ${resultat.cibles.proteines_g} g prot.`
-                      : "—",
-                  ],
-                  ["Nutrition", NUTRITION.find((n) => n.id === a.nutrition)?.t ?? "Plus tard"],
-                  [
-                    "Lieux",
                     [
-                      a.lieu !== "maison" ? (a.salle === "complete" ? "Salle complète" : "Salle basique") : null,
-                      a.lieu !== "salle" ? `maison (${a.materiel.length})` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" + "),
-                  ],
-                  [
-                    "Programme",
-                    `${resultat.semaines} semaines · dès le ${new Date(resultat.debut + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}`,
-                  ],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex items-baseline justify-between gap-[var(--inline-lg)] border-b border-line-default py-[var(--control-inset-md)]">
-                    <dt className="kv-overline">{k}</dt>
-                    <dd className="text-right type-label-md">{v}</dd>
-                  </div>
-                ))}
+                      "Objectifs",
+                      OBJECTIFS.filter((o) => a.objectifs.includes(o.id))
+                        .map((o) => o.t)
+                        .join(" · ") || "—",
+                    ],
+                    [
+                      "Calories",
+                      resultat.cibles
+                        ? `${resultat.cibles.kcal_seance.toLocaleString("fr-FR")} séance · ${resultat.cibles.kcal_repos.toLocaleString("fr-FR")} repos · ${resultat.cibles.proteines_g} g prot.`
+                        : "—",
+                    ],
+                    ["Nutrition", NUTRITION.find((n) => n.id === a.nutrition)?.t ?? "Plus tard"],
+                    [
+                      "Lieux",
+                      [
+                        a.lieu !== "maison" ? (a.salle === "complete" ? "Salle complète" : "Salle basique") : null,
+                        a.lieu !== "salle" ? `maison (${a.materiel.length})` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" + "),
+                    ],
+                    plan
+                      ? [
+                          "Programme",
+                          `${plan.semaines} semaines · dès le ${new Date(plan.debut + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}`,
+                        ]
+                      : null,
+                  ] as Array<[string, string] | null>
+                )
+                  .filter((x): x is [string, string] => x !== null)
+                  .map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex items-baseline justify-between gap-[var(--inline-lg)] border-b border-line-default py-[var(--control-inset-md)]"
+                    >
+                      <dt className="kv-overline">{k}</dt>
+                      <dd className="text-right type-label-md">{v}</dd>
+                    </div>
+                  ))}
               </dl>
               {/* CTA collés en bas : visibles même quand le récapitulatif dépasse l'écran (petits iPhone). */}
               <div className="sticky bottom-0 mt-auto flex flex-col items-center gap-[var(--stack-md)] bg-surface-page/85 pb-[calc(max(env(safe-area-inset-bottom),var(--stack-md))+var(--stack-sm))] pt-[var(--stack-md)] backdrop-blur-md">
-                {resultat.premiere && resultat.premiere.jour === aujourdhui && (
-                  <Link href={`/sport/seance/${resultat.premiere.id}`} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+                {plan?.premiere && plan.premiere.jour === aujourdhui && (
+                  <Link href={`/sport/seance/${plan.premiere.id}`} className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
                     <span className="kv-btn-label">Démarrer ma séance du jour</span>
                     <span className="kv-btn-end">
                       <Icon name="play_arrow" size={22} filled />
                     </span>
                   </Link>
                 )}
-                <Link
-                  href="/sport/programme"
-                  className={`kv-btn kv-btn-xl kv-btn-block kv-btn-has-end ${resultat.premiere && resultat.premiere.jour === aujourdhui ? "kv-btn-tertiary" : "kv-btn-primary"}`}
-                >
-                  <span className="kv-btn-label">Voir mon programme</span>
-                  <span className="kv-btn-end">
-                    <Icon name="arrow_forward" size={22} />
-                  </span>
-                </Link>
+                {plan ? (
+                  <Link
+                    href="/sport/programme"
+                    className={`kv-btn kv-btn-xl kv-btn-block kv-btn-has-end ${plan.premiere && plan.premiere.jour === aujourdhui ? "kv-btn-tertiary" : "kv-btn-primary"}`}
+                  >
+                    <span className="kv-btn-label">Voir mon programme</span>
+                    <span className="kv-btn-end">
+                      <Icon name="arrow_forward" size={22} />
+                    </span>
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href={a.mode === "a_la_carte" ? "/sport/aujourdhui" : "/sport/ma-seance/nouvelle"}
+                      className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end"
+                    >
+                      <span className="kv-btn-label">{a.mode === "a_la_carte" ? "M’entraîner maintenant" : "Créer ma première séance"}</span>
+                      <span className="kv-btn-end">
+                        <Icon name="arrow_forward" size={22} />
+                      </span>
+                    </Link>
+                    <Link href="/sport" className="kv-btn kv-btn-tertiary kv-btn-xl kv-btn-block">
+                      <span className="kv-btn-label">Aller à l’accueil</span>
+                    </Link>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => {
-                    setEtape(1);
+                    setResultat(null);
+                    setEtape(17);
                     setEcran("question");
                   }}
                   className="tap type-label-md text-fg-secondary"

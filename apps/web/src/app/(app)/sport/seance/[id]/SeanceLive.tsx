@@ -5,8 +5,11 @@ import { useCallback, useState, useTransition } from "react";
 import { chronoSecondes } from "@kvalia/core";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
+import { DESSIN_EN_VIGNETTE } from "@/components/DemoDessin";
+import { IllustrationExercice } from "@/components/IllustrationExercice";
 import { Toast } from "@/components/Toast";
-import { chrono, cocher, demarrer, terminer } from "../../actions";
+import { TypeSeanceLibre } from "@kvalia/core";
+import { annulerSeanceAction, chrono, cocher, composerSeanceAction, demarrer, garderSeanceAction, terminer } from "../../actions";
 import { type Apercu, FicheExercice, type Repos } from "./FicheExercice";
 import { FeuilleVideo, type Video } from "./FeuilleVideo";
 import { formatChrono, useMaintenant } from "./temps";
@@ -18,6 +21,8 @@ export type ExoVue = {
   nom: string;
   partie: string;
   image: string | null;
+  /** Dessin au trait animé (CC BY-SA) quand il existe pour cet exercice. */
+  illustration: string | null;
   video: string | null;
   series: number;
   reps: string;
@@ -49,6 +54,14 @@ export type SeanceVue = {
   estAujourdhui: boolean;
   /** Jour passé : une séance non démarrée ne peut plus l'être (règle du jour J). */
   estPassee: boolean;
+  type: string;
+  /** Hors programme (à la carte, séance perso lancée une fois) : on peut en demander une autre, la garder, l'annuler. */
+  libre: boolean;
+  /** Séance perso (« Mes séances ») dont elle vient, ou qu'elle est devenue une fois gardée. */
+  modeleId: string | null;
+  /** Numéro de la proposition à la carte (0 = la première). */
+  variante: number;
+  dureeVisee: number | null;
 };
 type Props = { seance: SeanceVue; exercices: ExoVue[] };
 
@@ -87,7 +100,10 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
   const [apercu, setApercu] = useState<Apercu | null>(null);
-  const [feuille, setFeuille] = useState<null | "rates" | "ressenti" | "quitter">(null);
+  const [feuille, setFeuille] = useState<null | "rates" | "ressenti" | "quitter" | "garder">(null);
+  const [nomFavori, setNomFavori] = useState(initiale.titre);
+  const [gardee, setGardee] = useState(!!initiale.modeleId);
+  const [occupe, setOccupe] = useState(false);
   const [rates, setRates] = useState<string[]>([]);
   const [ressenti, setRessenti] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
@@ -173,6 +189,45 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
     start(async () => {
       await terminer(seance.id, ressenti ?? undefined, notes.trim() || undefined, rates);
       router.push(`/sport/seance/${seance.id}/fin`);
+    });
+  }
+
+  // Séance à la carte pas encore commencée : autre proposition, favori, annulation (outils du noyau).
+  const proposition = seance.libre && seance.etat === "prevue" && !seance.estPassee;
+  const typeLibre = TypeSeanceLibre.safeParse(seance.type);
+  const peutProposer = proposition && !initiale.modeleId && typeLibre.success;
+
+  function autreProposition() {
+    if (!typeLibre.success || occupe) return;
+    setOccupe(true);
+    start(async () => {
+      const v = seance.variante + 1;
+      const r = await composerSeanceAction({ type: typeLibre.data, duree_min: seance.dureeVisee ?? undefined, jour: seance.jour, variante: v });
+      setOccupe(false);
+      if (!r.ok) return setToast({ message: r.erreur });
+      router.replace(`/sport/seance/${r.valeur.seance_id}?v=${v}${seance.dureeVisee ? `&d=${seance.dureeVisee}` : ""}`);
+    });
+  }
+  function garder() {
+    setOccupe(true);
+    start(async () => {
+      const r = await garderSeanceAction(seance.id, nomFavori.trim() || undefined);
+      setOccupe(false);
+      setFeuille(null);
+      if (!r.ok) return setToast({ message: r.erreur });
+      setGardee(true);
+      setToast({ message: r.valeur.deja ? "Déjà dans Mes séances" : `« ${r.valeur.nom} » gardée dans Mes séances` });
+    });
+  }
+  function annuler() {
+    setOccupe(true);
+    start(async () => {
+      const r = await annulerSeanceAction(seance.id);
+      if (!r.ok) {
+        setOccupe(false);
+        return setToast({ message: r.erreur });
+      }
+      router.push("/sport");
     });
   }
 
@@ -270,6 +325,46 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
         style={{ paddingBottom: `calc(${BAS_CTA} + var(--stack-xl) + env(safe-area-inset-bottom))` }}
       >
         {faite && <Resume seance={seance} seriesTotal={seriesTotal} />}
+        {/* Une séance qu'on veut refaire : elle devient une de ses séances. */}
+        {faite && !gardee && seance.type !== "boxe" && exos.length > 0 && (
+          <button type="button" onClick={() => setFeuille("garder")} className="kv-btn kv-btn-secondary kv-btn-lg kv-btn-block">
+            <Icon name="bookmark" size={20} />
+            <span className="kv-btn-label">Garder dans mes séances</span>
+          </button>
+        )}
+
+        {/* Proposition à la carte : ça plaît → démarrer ; sinon une autre, ou un exercice à changer en le touchant. */}
+        {proposition && (
+          <section className="flex flex-col gap-[var(--stack-sm)]" aria-label="Ajuster la proposition">
+            {peutProposer && (
+              <p className="px-[var(--inline-xs)] type-body-sm text-fg-secondary">
+                Ça te plaît ? Démarre. Sinon, touche un exercice pour le remplacer, ou demande une autre proposition.
+              </p>
+            )}
+            <div className="flex gap-[var(--inline-sm)]">
+              {peutProposer && (
+                <button type="button" onClick={autreProposition} disabled={occupe} className="kv-btn kv-btn-secondary kv-btn-md flex-1">
+                  <Icon name="refresh" size={18} />
+                  <span className="kv-btn-label">{occupe ? "…" : "Une autre"}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFeuille("garder")}
+                disabled={gardee || occupe}
+                aria-pressed={gardee}
+                className="kv-btn kv-btn-secondary kv-btn-md flex-1"
+              >
+                <Icon name="bookmark" size={18} filled={gardee} />
+                <span className="kv-btn-label">{gardee ? "Gardée" : "Garder"}</span>
+              </button>
+              <button type="button" onClick={annuler} disabled={occupe} className="kv-btn kv-btn-tertiary kv-btn-md flex-1">
+                <Icon name="close" size={18} />
+                <span className="kv-btn-label">Annuler</span>
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Calories et progression */}
         {!faite && (
@@ -311,9 +406,10 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
                     type="button"
                     onClick={() => setVideo(e.id)}
                     aria-label={`Vidéo : ${e.nom}`}
-                    className="kv-exo-thumb overflow-hidden"
-                    style={e.image ? { backgroundImage: `url(${e.image})` } : undefined}
+                    className="kv-exo-thumb overflow-hidden text-fg-primary"
+                    style={!(DESSIN_EN_VIGNETTE && e.illustration) && e.image ? { backgroundImage: `url(${e.image})` } : undefined}
                   >
+                    {DESSIN_EN_VIGNETTE && e.illustration && <IllustrationExercice slug={e.illustration} className="h-full w-full p-1" />}
                     <span className="kv-exo-play" aria-hidden>
                       <Icon name="play_arrow" size={16} filled />
                     </span>
@@ -390,6 +486,7 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
                 nom: exoVideo.nom,
                 video: exoVideo.video,
                 image: exoVideo.image,
+                illustration: exoVideo.illustration,
                 detail: `${exoVideo.series} × ${exoVideo.reps}${exoVideo.partie ? ` · ${exoVideo.partie}` : ""}`,
                 repere: `Exercice ${exos.findIndex((e) => e.id === video) + 1} / ${exos.length}`,
                 stats: [
@@ -513,6 +610,35 @@ export function SeanceLive({ seance: initiale, exercices }: Props) {
           seront ajoutées à ta cible nutrition du jour.
           {rates.length > 0 && ` ${rates.length} exercice${rates.length > 1 ? "s" : ""} reprogrammé${rates.length > 1 ? "s" : ""} par l’agent.`}
         </p>
+      </BottomSheet>
+
+      {/* Garder la séance dans « Mes séances » */}
+      <BottomSheet
+        ouvert={feuille === "garder"}
+        onFermer={() => setFeuille(null)}
+        titre="Garder cette séance"
+        module="sport"
+        pied={
+          <div className="flex gap-[var(--inline-md)]">
+            <button type="button" onClick={() => setFeuille(null)} className="kv-btn kv-btn-outline kv-btn-lg flex-1">
+              Annuler
+            </button>
+            <button type="button" onClick={garder} disabled={occupe || !nomFavori.trim()} className="kv-btn kv-btn-primary kv-btn-lg flex-[2]">
+              {occupe ? "Enregistrement…" : "Garder"}
+            </button>
+          </div>
+        }
+      >
+        <p className="type-body-md text-fg-secondary">Tu la retrouveras dans Programme › Mes séances, prête à relancer un autre jour.</p>
+        <label className="mt-[var(--stack-md)] block">
+          <span className="type-label-md">Son nom</span>
+          <input
+            value={nomFavori}
+            onChange={(e) => setNomFavori(e.target.value)}
+            maxLength={60}
+            className="mt-[var(--stack-xs)] h-[var(--control-lg)] w-full rounded-[var(--radius-input)] border border-line-default bg-surface-container-default px-[var(--inset-md)] type-body-md outline-none focus:border-focus-ring"
+          />
+        </label>
       </BottomSheet>
 
       {/* C03 · Quitter la séance */}

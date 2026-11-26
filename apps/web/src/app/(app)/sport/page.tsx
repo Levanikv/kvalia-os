@@ -9,7 +9,7 @@ import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
 import { DefisDuJour } from "./Defis";
 import { enteteJour } from "./entete";
-import { HeroSeance, TicketRepos } from "./HeroSeance";
+import { HeroSeance, TicketLibre, TicketRepos } from "./HeroSeance";
 import { Records } from "./Records";
 import { FaireAujourdhui, ReporterSeance, type Occupes } from "./Reporter";
 import { ToastUrl } from "./ToastUrl";
@@ -49,7 +49,7 @@ export default async function Page({ searchParams }: Props) {
   const ob = params.onboarding;
   if (!programme && !ob?.termine && !ob?.passe) redirect("/sport/bienvenue");
   // Une seule vague de requêtes en parallèle (poids, prochaine séance, rangs) au lieu de deux à la suite.
-  const [{ poids }, prochaine, numeros, { data: aVenir }] = await Promise.all([
+  const [{ poids }, prochaine, numeros, { data: aVenir }, { count: nbMesSeances }] = await Promise.all([
     poidsActuel(supabase, user.id, params),
     seances.length === 0
       ? supabase
@@ -75,6 +75,7 @@ export default async function Page({ searchParams }: Props) {
       : [],
     // Séances de salle prévues dans les huit jours : pour proposer un report sans empiler deux séances.
     supabase.from("seances").select("jour, titre").gte("jour", auj).lte("jour", decaler(auj, 8)).eq("etat", "prevue").neq("type", "boxe"),
+    supabase.from("modeles_seance").select("id", { count: "exact", head: true }),
   ]);
   const occupes: Occupes = Object.fromEntries((aVenir ?? []).map((x) => [x.jour, x.titre ?? "Séance"]));
   const numero = (id: string) => {
@@ -90,7 +91,10 @@ export default async function Page({ searchParams }: Props) {
   const reste = bilan.cible - bilan.consomme;
   const etapesOnboarding = 15;
   const defisDuJour = defis.filter((d) => d.du_jour);
-  const sansProgrammePret = !programme && !!ob?.termine;
+  // Façon de s'entraîner (ADR 0021) : sans programme à suivre, l'accueil propose de choisir sa séance du jour.
+  const suitProgramme = params.mode === "programme";
+  const sansProgrammePret = !programme && !!ob?.termine && suitProgramme;
+  const choisirSeance = seances.length === 0 && jour === auj && !suitProgramme && (!!ob?.termine || !!programme);
 
   return (
     <ModuleFrame
@@ -162,22 +166,40 @@ export default async function Page({ searchParams }: Props) {
         ))}
         {/* Empêchement : une séance de salle pas encore commencée se reporte, le programme suit. */}
         {seances
-          .filter((s) => s.etat === "prevue" && s.type !== "boxe" && s.jour >= auj)
+          .filter((s) => s.etat === "prevue" && s.type !== "boxe" && s.jour >= auj && s.programme_id)
           .slice(0, 1)
           .map((s) => (
             <ReporterSeance key={s.id} seance={{ id: s.id, titre: s.titre, jour: s.jour }} aujourdhui={auj} occupes={occupes} />
           ))}
 
-        {seances.length === 0 && programme && (
+        {choisirSeance && <TicketLibre mode={params.mode} faites={defi.faites} nbSeances={nbMesSeances ?? 0} />}
+
+        {seances.length === 0 && programme && !choisirSeance && (
           <TicketRepos prochaine={prochaine} semaine={{ faites: defi.faites, total: defi.total }} semaineNo={dansProgramme ? pos.semaine : null} />
         )}
         {seances.length === 0 && programme && prochaine && jour === auj && (
           <FaireAujourdhui seance={{ id: prochaine.id, titre: prochaine.titre, jour: prochaine.jour }} aujourdhui={auj} />
         )}
+        {/* Jour de repos du programme, mais envie de bouger : une séance à la carte, sans toucher au programme. */}
+        {seances.length === 0 && programme && suitProgramme && jour === auj && (
+          <Link href="/sport/aujourdhui" className="tap flex items-center justify-center gap-[var(--inline-sm)] type-label-md text-fg-secondary">
+            <Icon name="tune" size={18} />
+            Ou composer une autre séance
+          </Link>
+        )}
 
         {/* Deux chiffres, pas plus : où en est la semaine, ce qu'il reste à manger aujourd'hui. */}
         <section className="grid grid-cols-2 gap-[var(--inline-md)]" aria-label="En un coup d’œil">
-          {defi.total > 0 ? (
+          {!suitProgramme ? (
+            <Tuile
+              titre="Semaine"
+              icone="local_fire_department"
+              valeur={defi.faites}
+              unite={`séance${defi.faites > 1 ? "s" : ""}`}
+              detail={defi.faites > 0 ? "Faites cette semaine" : "Rien encore cette semaine"}
+              href="/sport/programme"
+            />
+          ) : defi.total > 0 ? (
             <Tuile
               titre="Semaine"
               icone="local_fire_department"
@@ -215,7 +237,10 @@ export default async function Page({ searchParams }: Props) {
         {sansProgrammePret && (
           <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)]">
             <p className="type-title-lg">Pas de programme actif</p>
-            <p className="type-body-sm text-fg-secondary">Ton profil est prêt : l’agent recrée tes semaines en blocs de 4.</p>
+            <p className="type-body-sm text-fg-secondary">Ton profil est prêt : crée un programme, ou entraîne-toi à la carte dès aujourd’hui.</p>
+            <Link href="/sport/aujourdhui" className="kv-btn kv-btn-secondary kv-btn-lg self-start">
+              <span className="kv-btn-label">S’entraîner aujourd’hui</span>
+            </Link>
           </section>
         )}
 

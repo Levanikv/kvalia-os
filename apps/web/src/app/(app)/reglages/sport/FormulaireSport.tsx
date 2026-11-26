@@ -1,7 +1,16 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CHOIX_MORPHO, CHOIX_PREFERENCE_MATERIEL, LIBELLES, type Morpho, type ParametresSport, type PreferenceMateriel } from "@kvalia/core";
+import {
+  CHOIX_MODE,
+  CHOIX_MORPHO,
+  CHOIX_PREFERENCE_MATERIEL,
+  LIBELLES,
+  type ModeSport,
+  type Morpho,
+  type ParametresSport,
+  type PreferenceMateriel,
+} from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { enregistrerParametres, genererProgramme } from "../../sport/actions";
 
@@ -82,6 +91,15 @@ export function FormulaireSport({ initial, poids, programme, materiels }: Props)
           </p>
         </div>
       )}
+
+      <Section titre="Façon de s’entraîner" note={CHOIX_MODE.find((m) => m.id === p.mode)?.aide}>
+        <Choix
+          label="L’app s’adapte : accueil, onglet Programme, propositions."
+          options={CHOIX_MODE.map((m) => [m.id, m.titre])}
+          valeur={p.mode}
+          onChange={(v) => maj("mode", v as ModeSport)}
+        />
+      </Section>
 
       <Section titre="Rythme hebdo" note="Combien de séances, et quels jours.">
         <Compteur label="Salle" valeur={p.rythme.salle} min={0} max={6} onChange={(v) => maj("rythme", { ...p.rythme, salle: v })} />

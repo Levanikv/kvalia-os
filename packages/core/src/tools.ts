@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { Ligne, Priorite, Tache, VueJour } from "./schemas";
-import { DeplacementSeance, ModeleSeanceEntree, ModificationProgramme, ParametresSport } from "./sport";
+import { DeplacementSeance, ModeleSeanceEntree, ModificationProgramme, ParametresSport, SeanceALaCarte } from "./sport";
 import { DefiEntree, MesureDefi, ModificationDefi, NotationDefi } from "./defis";
 import { MethodeId } from "./methodes";
 import { AlimentSortie } from "./aliments";
@@ -135,21 +135,21 @@ export const tools = {
   // ---------- Sport ----------
   parametres_sport: {
     description:
-      "Lit les paramètres du programme sportif (rythme salle/boxe, jours, durée, matériel, objectif, niveau, poids de secours). Ce sont les réglages de l'admin.",
+      "Lit les paramètres du programme sportif (façon de s'entraîner `mode` : programme / a_la_carte / mes_seances, rythme salle/boxe, jours, durée, matériel, objectif, niveau, poids de secours). Ce sont les réglages de l'admin. À lire avant de proposer quoi que ce soit : en mode a_la_carte ou mes_seances, ne pas pousser un programme.",
     input: z.object({}),
     output: ParametresSport,
   },
 
   regler_sport: {
     description:
-      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition, `preference_materiel` : mix / poids_libres / machines / poulies, `morpho` : mince / athletique / costaud / rond) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.",
+      "Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séances de salle, changer l'objectif). `mode` change la façon de s'entraîner : « programme » (semaines planifiées), « a_la_carte » (séance composée le jour même, voir seance_a_la_carte) ou « mes_seances » (ses propres séances, suivi de la progression) — le programme en cours n'est pas supprimé. Accepte aussi `profil` (réponses de l'onboarding : sexe, âge, taille, poids, objectifs, jours, durée, lieu, matériel, échéance, niveau, douleurs, choix nutrition, `preference_materiel` : mix / poids_libres / machines / poulies, `morpho` : mince / athletique / costaud / rond) — il est fusionné au profil existant et recalcule rythme, jours, durée, objectif, niveau, semaines et matériel ; si le choix nutrition est « ia » ou « saisie », la cible kcal et les protéines suivent. `onboarding` mémorise l'étape où reprendre. Ne régénère pas le programme : appeler generer_programme ensuite.",
     input: ParametresSport.partial(),
     output: ParametresSport,
   },
 
   generer_programme: {
     description:
-      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices, en suivant une méthode de référence choisie selon l'objectif et le niveau (voir lister_methodes ; `parametres.methode` en impose une). Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Action lourde → confirmer avec l'utilisateur avant.",
+      "Génère un programme complet (N semaines, blocs de 4 : progression puis décharge) à partir des paramètres et de la bibliothèque d'exercices, en suivant une méthode de référence choisie selon l'objectif et le niveau (voir lister_methodes ; `parametres.methode` en impose une). Les règles suivent les recommandations actuelles (une dizaine de séries par muscle et par semaine, charges progressives ; poids libres et machines se valent, donc le matériel préféré du profil oriente le choix ; la morphologie et les douleurs écartent les exercices mal adaptés) — avant de générer pour quelqu'un dont on ne connaît ni le matériel préféré ni la morphologie, les demander et les enregistrer avec regler_sport (profil). Remplace le programme actif à partir du premier jour (`debut`) : l'ancien s'arrête la veille, ses séances non faites (prévues, sautées, en cours) à partir de cette date sont remplacées — y compris celle du jour si debut = aujourd'hui ; avant cette date il continue ; les séances faites restent et ne sont pas doublées. Repasse la façon de s'entraîner en mode « programme ». Action lourde → confirmer avec l'utilisateur avant.",
     input: z.object({
       debut: z
         .string()
@@ -344,6 +344,37 @@ export const tools = {
       "Remplace un exercice d'une séance par un autre (id du référentiel, voir equivalents_exercice). portee = « seance » (cette séance seulement) ou « programme » (toutes les séances à venir du programme qui contiennent cet exercice). Demander la portée à l'utilisateur si elle n'est pas dite.",
     input: z.object({ exercice_seance_id: z.string().uuid(), nouvel_exercice_id: z.string(), portee: z.enum(["seance", "programme"]).default("seance") }),
     output: z.object({ remplaces: z.number(), ancien: z.string(), nouveau: z.string(), nom: z.string(), portee: z.enum(["seance", "programme"]) }),
+  },
+
+  // ---------- Séance à la carte (sans programme) ----------
+  seance_a_la_carte: {
+    description:
+      "Compose une séance pour aujourd'hui (ou `jour`), hors programme : « je veux m'entraîner aujourd'hui » → demander le type (full, upper, lower, push, pull, legs) et, si besoin, la durée, puis appeler. Mêmes règles que le programme (classiques d'abord, matériel, niveau, douleurs, séries et reps selon l'objectif). La séance est posée ce jour-là, prête à démarrer (demarrer_seance). Elle ne plaît pas → rappeler avec `variante` + 1 (autre proposition, elle remplace la précédente) ou changer un exercice (equivalents_exercice puis remplacer_exercice, portée « seance »). Elle plaît → proposer de la garder avec enregistrer_seance_favorite. Refuse si une séance du programme est déjà prévue ce jour-là (la faire ou la reporter) ou si une séance est en cours. Une proposition jamais commencée disparaît le lendemain.",
+    input: SeanceALaCarte,
+    output: z.object({
+      seance_id: z.string().uuid(),
+      jour: z.string(),
+      type: z.string(),
+      titre: z.string(),
+      duree_min: z.number(),
+      variante: z.number(),
+      remplace: z.boolean().describe("Vrai si une proposition non commencée de ce jour a été remplacée"),
+      exercices: z.array(z.object({ exercice_id: z.string(), nom: z.string(), series: z.number(), reps: z.string(), repos_s: z.number() })),
+    }),
+  },
+
+  enregistrer_seance_favorite: {
+    description:
+      "Garde une séance dans « Mes séances » (favori) : ses exercices, séries, reps, repos et charges deviennent une séance perso réutilisable (à relancer avec planifier_seance_perso à une date). Pour une séance à la carte qui a plu, ou n'importe quelle séance qu'on veut refaire. `nom` facultatif (sinon le titre de la séance). Si elle vient déjà d'une séance perso, rend celle-ci (`deja`).",
+    input: z.object({ seance_id: z.string().uuid(), nom: z.string().trim().min(1).max(60).optional() }),
+    output: z.object({ modele_id: z.string().uuid(), nom: z.string(), nb_exercices: z.number(), deja: z.boolean() }),
+  },
+
+  annuler_seance: {
+    description:
+      "Annule une séance hors programme pas encore commencée (proposition à la carte, séance perso posée une seule fois) : elle disparaît du jour. Une séance du programme ne s'annule pas, elle se reporte (deplacer_seance) ; une séance commencée ou faite reste dans l'historique.",
+    input: z.object({ seance_id: z.string().uuid() }),
+    output: z.object({ seance_id: z.string().uuid(), supprime: z.boolean() }),
   },
 
   // ---------- Mes séances (séances perso) et modifier le programme ----------

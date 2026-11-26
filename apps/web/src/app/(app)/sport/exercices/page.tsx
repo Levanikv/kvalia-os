@@ -1,4 +1,4 @@
-import { SOURCE_EXERCICES } from "@kvalia/core";
+import { SOURCE_EXERCICES, illustrationPour } from "@kvalia/core";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { session } from "@/lib/session";
 import { nomAffiche } from "../lib";
@@ -18,7 +18,7 @@ export default async function Page() {
       .range(debut, debut + 999);
   const [a, b] = await Promise.all([page(0), page(1000)]);
   const data = [...(a.data ?? []), ...(b.data ?? [])];
-  const exercices = data.map((e) => ({ ...e, affiche: nomAffiche(e) }));
+  const exercices = data.map((e) => ({ ...e, affiche: nomAffiche(e), illustration: illustrationPour(e.nom) }));
   return (
     <ModuleFrame module="sport" surTitre={`${exercices.length.toLocaleString("fr-FR")} mouvements animés`} titre="Exercices">
       <Bibliotheque exercices={exercices} />

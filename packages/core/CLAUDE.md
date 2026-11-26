@@ -6,7 +6,7 @@ Tout ce qui est une **règle** vit ici. L'app (`apps/web`) et l'agent (`apps/age
 
 - `src/tools.ts` — **contrat** : `tools = { nom: { description, input: zod, output: zod } }` + `toolsAvecConfirmation`. Noms en français, `snake_case`, verbe à l'infinitif ou nom (`ajouter_produit`, `seance_du_jour`). Descriptions écrites pour un LLM : quand l'utiliser, ce que ça fait, ce qu'il faut demander avant.
 - `src/actions.ts` — `executer(nom, entree, ctx)` : un `case` par outil, qui appelle une fonction de règle. `resoudreDate()`, `aujourdhuiIso()`, `FUSEAU`.
-- `src/sport.ts` — paramètres (`ParametresSport`), générateur (`genererProgramme`), suivi (`cocherExercice`, `terminerSeance`), charges (`noterCharge`, `historiqueCharge`, `dernieresCharges`), remplacement (`equivalents`, `remplacerExercice`), kcal (`kcalPour`, `poidsActuel`), libellés FR (`LIBELLES`).
+- `src/sport.ts` — paramètres (`ParametresSport`), générateur (`genererProgramme`), séance à la carte et favoris (`genererSeanceALaCarte`, `enregistrerSeanceFavorite`, `annulerSeanceLibre` — même `composerSeance` que le programme), suivi (`cocherExercice`, `terminerSeance`), charges (`noterCharge`, `historiqueCharge`, `dernieresCharges`), remplacement (`equivalents`, `remplacerExercice`), kcal (`kcalPour`, `poidsActuel`), libellés FR (`LIBELLES`).
 - `src/nutrition.ts` — `ParametresNutrition`, `bilanJour` (base + kcal sport → cible).
 - `src/schemas.ts` — schémas partagés (VueJour, Ligne, Tache…).
 - `src/supabase.ts` — `KvaliaClient`, `createServiceClient`.

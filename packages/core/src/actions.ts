@@ -27,6 +27,9 @@ import {
   chronoSeance,
   validerSerie,
   chargerModeles,
+  genererSeanceALaCarte,
+  enregistrerSeanceFavorite,
+  annulerSeanceLibre,
   creerModeleSeance,
   modifierModeleSeance,
   modifierProgramme,
@@ -275,8 +278,10 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
       const e = entree as ToolInput<"generer_programme">;
       const base = await parametresSport(ctx.db, ctx.userId);
       const params = e.parametres ? ParametresSport.parse({ ...base, ...e.parametres, rythme: { ...base.rythme, ...(e.parametres.rythme ?? {}) } }) : base;
-      if (e.parametres) await enregistrerParametresSport(ctx.db, ctx.userId, params);
-      return (await genererProgramme(ctx.db, ctx.userId, params, e.debut)) as ToolOutput<T>;
+      const r = await genererProgramme(ctx.db, ctx.userId, params, e.debut);
+      // Générer un programme, c'est choisir de le suivre : la façon de s'entraîner repasse en « programme ».
+      if (e.parametres || params.mode !== "programme") await enregistrerParametresSport(ctx.db, ctx.userId, { ...params, mode: "programme" });
+      return r as ToolOutput<T>;
     }
 
     case "lister_methodes": {
@@ -430,6 +435,20 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
 
     case "supprimer_seance_perso": {
       return (await supprimerModeleSeance(ctx.db, ctx.userId, (entree as ToolInput<"supprimer_seance_perso">).id)) as ToolOutput<T>;
+    }
+
+    case "seance_a_la_carte": {
+      return (await genererSeanceALaCarte(ctx.db, ctx.userId, entree as ToolInput<"seance_a_la_carte">)) as ToolOutput<T>;
+    }
+
+    case "enregistrer_seance_favorite": {
+      const e = entree as ToolInput<"enregistrer_seance_favorite">;
+      return (await enregistrerSeanceFavorite(ctx.db, ctx.userId, e.seance_id, e.nom)) as ToolOutput<T>;
+    }
+
+    case "annuler_seance": {
+      const e = entree as ToolInput<"annuler_seance">;
+      return (await annulerSeanceLibre(ctx.db, ctx.userId, e.seance_id)) as ToolOutput<T>;
     }
 
     case "planifier_seance_perso": {
