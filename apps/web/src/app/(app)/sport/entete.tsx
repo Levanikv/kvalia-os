@@ -16,9 +16,9 @@ function semaineIso(jour: string): number {
 }
 
 /**
- * En-tête partagé de l'application Sport & Nutrition : le même sur `/sport` et `/nutrition`.
- * Pastille du jour (Aujourd'hui / Demain / Il y a n jours), date, semaine du programme, bouton « Aujourd'hui »
- * quand on s'est déplacé, et la bande de jours (un point par séance).
+ * En-tête partagé des deux accueils (`/sport` et `/nutrition`) : le même, pour que passer de l'un à l'autre ne
+ * déplace rien. Surtitre = où on en est (Aujourd'hui / Demain / Il y a n jours · semaine du programme), titre = la
+ * date en grand, bouton « Aujourd'hui » quand on s'est déplacé, et la bande de jours (un point par séance).
  */
 export async function enteteJour(db: Db, jour: string, auj: string, base: "/sport" | "/nutrition") {
   const [marques, { data: programme }] = await Promise.all([
@@ -27,29 +27,18 @@ export async function enteteJour(db: Db, jour: string, auj: string, base: "/spor
   ]);
   const pos = positionProgramme(programme, jour);
   const dansProgramme = pos && !pos.avant && !pos.apres;
-  const semaine = dansProgramme ? `Semaine ${pos.semaine}${pos.total ? ` / ${pos.total}` : ""}` : `Sem. ${semaineIso(jour)}`;
-  const date = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  const semaine = dansProgramme ? `Semaine ${pos.semaine}${pos.total ? ` / ${pos.total}` : ""}` : `Semaine ${semaineIso(jour)}`;
+  const date = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
   const estAuj = jour === auj;
-  const nb = marques[jour]?.length ?? 0;
 
-  const sousTitre = (
-    <span className="flex items-center gap-1.5">
-      <span
-        className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${estAuj ? "bg-action-primary text-fg-on-brand" : "bg-surface-sunken text-fg-secondary"}`}
-      >
-        {jourRelatif(jour, auj)}
-      </span>
-      <span className="truncate">
-        {date} · {semaine}
-        {nb > 1 ? ` · ${nb} séances` : ""}
-      </span>
-    </span>
-  );
+  const surTitre = `${jourRelatif(jour, auj)} · ${semaine}`;
+  const titre = date.charAt(0).toUpperCase() + date.slice(1);
   const action = !estAuj ? (
-    <Link href={base} className="tap flex items-center gap-1 rounded-full bg-surface-default px-3 text-sm font-medium" aria-label="Revenir à aujourd’hui">
-      <Icon name="today" size={18} /> Auj.
+    <Link href={base} className="kv-btn kv-btn-secondary kv-btn-md shrink-0" aria-label="Revenir à aujourd’hui">
+      <Icon name="today" size={18} />
+      <span className="kv-btn-label">Auj.</span>
     </Link>
   ) : undefined;
   const barre = <BandeJours jour={jour} auj={auj} base={base} marques={marques} />;
-  return { sousTitre, action, barre, programme, pos };
+  return { surTitre, titre, action, barre, programme, pos };
 }

@@ -71,6 +71,8 @@ const RecetteSortie = z.object({
   gluc: z.number(),
   lip: z.number(),
   fibres: z.number().nullable(),
+  perso: z.boolean().describe("créée par l'utilisateur ou l'agent (pas une recette de départ)"),
+  utilisations: z.number().describe("nombre de fois où elle a été notée au journal"),
 });
 
 export const tools = {
@@ -551,7 +553,7 @@ export const tools = {
 
   lister_recettes: {
     description:
-      "Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). Filtrable par repas.",
+      "Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). `perso` et `utilisations` disent lesquelles sont « ses » recettes (créées par lui, ou déjà notées au journal). Filtrable par repas.",
     input: z.object({ repas: Repas.optional() }),
     output: z.array(RecetteSortie),
   },

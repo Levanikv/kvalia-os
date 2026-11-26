@@ -154,14 +154,14 @@ export function EditeurSeance({ refs, dates, programmeActif, modele, joursPlanif
     setOccupe(true);
     start(async () => {
       await supprimerSeancePersoAction(modele.id);
-      router.push("/sport/programme");
+      router.push("/sport/programme?vue=seances");
       router.refresh();
     });
   }
 
   return (
     <EcranPlein
-      retour="/sport/programme"
+      retour="/sport/programme?vue=seances"
       ferme={!modele}
       surTitre={modele ? "Ma séance" : "Nouvelle séance"}
       titre={nom.trim() || (modele ? modele.nom : "Ma séance")}

@@ -6,7 +6,7 @@ import { libelleType } from "../lib";
 
 const RESSENTI = ["", "😮‍💨", "😓", "🙂", "💪", "🔥"];
 
-/** Historique : séances faites, groupées par mois, avec totaux (séances, kcal, minutes). */
+/** Historique : séances faites, groupées par mois, avec totaux (séances, kcal, heures). Ouvert depuis Programme › Plan et les records. */
 export default async function Page() {
   const { supabase } = await session();
   const { data } = await supabase
@@ -28,45 +28,49 @@ export default async function Page() {
       titre="Historique"
       sousTitre={`${seances.length} séance${seances.length > 1 ? "s" : ""} terminée${seances.length > 1 ? "s" : ""}`}
       gauche={
-        <Link href="/sport" className="tap flex w-10 items-center justify-center rounded-full" aria-label="Retour">
-          <Icon name="arrow_back" size={24} />
+        <Link href="/sport/programme?vue=plan" className="kv-iconbtn" aria-label="Retour au programme">
+          <Icon name="chevron_left" size={24} />
         </Link>
       }
     >
       {seances.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-fg-tertiary">Rien pour l’instant. Ta première séance terminée apparaîtra ici.</p>
+        <p className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)] text-center type-body-sm text-fg-secondary">
+          Rien pour l’instant. Ta première séance terminée apparaîtra ici.
+        </p>
       ) : (
-        <div className="mt-2 space-y-5">
+        <div className="flex flex-col gap-[var(--stack-xl)]">
           {[...parMois.entries()].map(([mois, ss]) => {
             const kcal = ss.reduce((a, s) => a + Number(s.kcal ?? 0), 0);
             const minutes = ss.reduce((a, s) => a + Number(s.duree_min ?? 0), 0);
             const titre = new Date(mois + "-15T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
             return (
-              <section key={mois}>
-                <div className="flex items-baseline justify-between px-1">
-                  <h2 className="text-sm font-semibold capitalize">{titre}</h2>
-                  <p className="text-xs text-fg-secondary">
-                    {ss.length} séances · {kcal.toLocaleString("fr-FR")} kcal · {Math.round((minutes / 60) * 10) / 10} h
+              <section key={mois} className="flex flex-col gap-[var(--stack-sm)]">
+                <div className="flex items-baseline justify-between gap-[var(--inline-md)] px-[var(--inline-xs)]">
+                  <h2 className="type-title-lg capitalize">{titre}</h2>
+                  <p className="kv-mono">
+                    {ss.length} séance{ss.length > 1 ? "s" : ""} · {kcal.toLocaleString("fr-FR")} kcal ·{" "}
+                    {String(Math.round((minutes / 60) * 10) / 10).replace(".", ",")} h
                   </p>
                 </div>
-                <ul className="mt-2 overflow-hidden rounded-lg border border-line-default bg-surface-default">
+                <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
                   {ss.map((s) => (
-                    <li key={s.id} className="border-b border-line-default last:border-b-0">
-                      <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-3 px-4 active:opacity-80">
-                        <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={20} className="text-fg-brand" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{s.titre ?? libelleType(s.type)}</p>
-                          <p className="text-xs text-fg-tertiary">
+                    <li key={s.id} className="border-b border-line-subtle last:border-b-0">
+                      <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
+                          <Icon name={s.type === "boxe" ? "sports_mma" : "fitness_center"} size={20} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate type-title-sm">{s.titre ?? libelleType(s.type)}</span>
+                          <span className="block kv-mono">
                             {new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · {s.duree_min}{" "}
                             min
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">
-                            {s.kcal} <span className="text-xs font-normal text-fg-secondary">kcal</span>
-                          </p>
-                          {s.ressenti ? <p className="text-sm">{RESSENTI[s.ressenti]}</p> : null}
-                        </div>
+                            {s.ressenti ? ` · ${RESSENTI[s.ressenti]}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="type-label-lg tabular-nums">{Number(s.kcal ?? 0).toLocaleString("fr-FR")}</span>{" "}
+                          <span className="kv-mono">kcal</span>
+                        </span>
                       </Link>
                     </li>
                   ))}

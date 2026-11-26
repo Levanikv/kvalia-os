@@ -17,16 +17,14 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 lieu, matériel, matériel préféré…)
 │   │                                 → « Quand commencer ? » (jours de séance seulement, aujourd'hui possible) → génération → plan prêt (« Démarrer ma
 │   │                                 séance du jour » si elle est aujourd'hui). « Plus tard » → reprise depuis la Home (?reprendre=1)
-│   ├── /sport                        Vue Jour (défaut) : en-tête partagé (pastille du jour, semaine), ticket séance
+│   ├── /sport                        Accueil du jour (onglet Accueil) : en-tête partagé (sélecteur Sport / Nutrition, date,
+│   │                                 bande de jours), ticket séance (À faire · En cours · Terminée · Prévue · Repos)
 │   │                                 + « Pas dispo ? Reporter » (feuille : 7 jours, libre ou pris ; jour pris → décaler la suite
 │   │                                 d'un créneau ou échanger) et, un jour sans séance, « Faire <séance> » (la prochaine vient à
 │   │                                 aujourd'hui, les suivantes remontent d'un créneau) ; les séances manquées sont recalées à
-│   │                                 l'ouverture ;
-│   │                                 (À faire · En cours · Terminée · Prévue · Repos), défis du jour (« + 1 000 pas »,
-│   │                                 cocher, feuille de saisie), défi de la semaine, énergie, records ;
-│   │                                 programme suivi,
-│   │                                 séance(s) du jour (muscu + boxe possibles), semaine en cours, historique · énergie
-│   │                                 (?jour=YYYY-MM-DD pour un autre jour)
+│   │                                 l'ouverture ; puis deux tuiles de chiffres (la semaine, l'énergie du jour → Nutrition),
+│   │                                 les défis du jour (« + 1 000 pas », cocher, feuille de saisie) et les records.
+│   │                                 Plusieurs séances par jour possibles (muscu + boxe) · ?jour=YYYY-MM-DD pour un autre jour
 │   ├── /sport/seance/[id]            Séance (plein écran, « Home workflow ») : avant départ (chrono 0:00, Démarrer),
 │   │                                 en cours (chrono, pause au tap, exercice en cours, fiche : séries Faite/En cours/
 │   │                                 À faire, minuteur de repos, charge du jour, historique, remplacer), vidéo en feuille (16:9, hauteur du contenu),
@@ -34,14 +32,18 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 un autre jour ; résumé quand elle est faite
 │   ├── /sport/seance/[id]/fin        Fin de séance : kcal, volume, séries, exercices, défi de la semaine, ratés reprogrammés
 │   │                                 → « Retour à l'accueil » (/sport?enregistree=1 : toast « Séance enregistrée »)
-│   ├── /sport/exercices              Bibliothèque (1 324 exercices animés, © Gym visual) : recherche, partie du corps, matériel, 40 par page
+│   ├── /sport/exercices              Onglet Exos — bibliothèque (1 324 exercices animés, © Gym visual) : recherche, une rangée de
+│   │                                 puces (partie du corps), feuille « Filtres » (matériel, polyarticulaires), 40 par page
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
-│   ├── /sport/programme              Programme actif (maquette 14) : carte du programme (objectif, rythme, semaine n / N,
-│   │                                 fin), phases, semaine type, défis (#defis : pas, minutes, répétitions ou case ; ajout
-│   │                                 et modification en feuille), avancement, toutes les semaines, « Mes séances » ;
-│   │                                 « Modifier » et « Nouveau programme » en barre d'action fixe. Sans programme :
-│   │                                 « Construis ton programme » (maquette 02)
+│   ├── /sport/programme              Onglet Programme, trois vues en segmented control (?vue=) :
+│   │                                 · Semaine (défaut) — carte du programme (objectif, rythme, semaine n / N, fin), semaine jour
+│   │                                   par jour, défis (#defis : pas, minutes, répétitions ou case ; ajout et modification en feuille)
+│   │                                 · ?vue=plan — chiffres (séances, kcal, régularité), phases, toutes les semaines, méthode,
+│   │                                   lien Historique, « Nouveau programme »
+│   │                                 · ?vue=seances — Mes séances (séances perso) ; « Créer une séance » en barre d'action fixe
+│   │                                 « Modifier le programme » = bouton de l'en-tête. Sans programme : « Construis ton
+│   │                                 programme » (maquette 02) et Mes séances
 │   ├── /sport/programme/modifier     Modifier le programme actif (plein écran) : semaine type jour par jour (repos, séance
 │   │                                 générée, une de mes séances), durée, nombre de semaines, à partir de quand
 │   ├── /sport/ma-seance/nouvelle     Créer une séance perso (plein écran) : nom, type, exercices (bibliothèque), séries,
@@ -51,19 +53,24 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 libres, machines, poulies) → morphologie (silhouette + curseur) → échéance → rythme (jours,
 │   │                                 séance générée ou une de mes séances par jour, durée) + premier jour → proposition (phases, semaine type) → génération → « C'est parti ». Sans
 │   │                                 questions de profil (niveau, lieu, douleurs, repères : onboarding / Réglages › Sport)
-│   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti)
+│   └── /sport/historique             Séances faites par mois (kcal, durée, ressenti) — ouvert depuis Programme › Plan et les records
 ├── /nutrition            Mini-app Nutrition
-│   ├── /nutrition                    Accueil du jour · ?jour=YYYY-MM-DD, épuré : bilan à même le fond (calories restantes en grand,
-│   │                                 anneau du mangé découpé par macro, trois jauges fines), puis les repas en une seule liste, un
-│   │                                 seul déplié — celui du moment : « Comme hier » (refaire le repas d'un geste) et la meilleure
-│   │                                 idée de recette ; replié : le nom, ce qui est noté, le total. Lien « Recettes ». Barre fixe
-│   │                                 « Ajouter » + scan + photo →
-│   │                                 feuille : recherche (CIQUAL + Open Food Facts), caméra (code-barres, QR code GS1), photo du
-│   │                                 repas (estimation par IA : aliments, grammes, calories — ajustables avant l'ajout), récents,
-│   │                                 saisie rapide, quantité
+│   ├── /nutrition                    Accueil du jour (onglet Accueil) · ?jour=YYYY-MM-DD : même en-tête que Sport, puis le bilan
+│   │                                 en une carte (anneau : calories restantes, mangé découpé par macro ; mangées, brûlées ;
+│   │                                 trois jauges) et les repas en tuiles — celui du moment en tête, en grand (ce qu'il vise,
+│   │                                 l'idée de recette ajoutée d'un geste, « Comme hier » en petit), les autres sur deux colonnes
+│   │                                 (illustration, calories, « + » → /nutrition/ajouter). Toucher un repas noté : ses lignes en
+│   │                                 feuille (retirer, compléter). Le « + » de la barre se déploie : Photo du repas · Scanner un
+│   │                                 produit · Ajouter à un repas
+│   ├── /nutrition/ajouter            Ajouter à un repas (plein écran) · ?repas=&jour= : choix du repas, « Comme la dernière fois »,
+│   │                                 puis trois sources en segmented control — Pour toi (recettes proposées selon les calories
+│   │                                 et les protéines qu'il reste, ajout direct), Recettes (celles du repas, les siennes
+│   │                                 d'abord), Aliments (recherche CIQUAL + Open Food Facts, scan du code-barres ou QR code GS1,
+│   │                                 photo du repas estimée par IA, saisie rapide, récents → feuille d'ajout, quantité)
 │   ├── /nutrition/plan               Plan de la semaine (7 × 3) · ?semaine=YYYY-MM-DD — à venir
-│   ├── /nutrition/recettes           Recettes avec macros · ?repas= : filtres par repas et par usage (avant / après la séance,
-│   │                                 riche en protéines…), mises en avant selon l'objectif du programme sportif
+│   ├── /nutrition/recettes           Onglet Recettes · ?repas= : « Toutes / Mes recettes » (créées, ou déjà notées au journal),
+│   │                                 recherche, une rangée de puces (repas), feuille « Filtres » (avant / après la séance, riche
+│   │                                 en protéines…) ; triées selon l'objectif du programme sportif
 │   └── /nutrition/recettes/[id]      Fiche recette (macros par portion, ingrédients en grammes, étapes) ; « Ajouter au journal »
 │                                     en barre fixe (repas, portions) · ?repas=&jour=
 ├── /finances             Mini-app Finances — perso (BoursoBank)
@@ -100,17 +107,20 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 ## Navigation
 
 > v1.1 (8 nov.) — la tab bar globale est remplacée par un **menu « Applications »** et une **barre inférieure par application**.
+> v1.2 (26 nov., ADR 0020) — Sport & Nutrition : sélecteur dans l'en-tête, une barre par espace, « + » seulement là où il sert.
 
 - **Menu « Applications »** (icône burger en haut à gauche, sur tous les écrans) : feuille qui monte du bas et liste les apps — Home · Quotidien · Sport & Nutrition · Finances · Entreprise · Documents · Objectifs · Réglages — avec une ligne de description chacune, l'app courante surlignée, et le bouton Capture en bas. Registre : `packages/ui/src/index.ts` (`menuApps`).
-- **Barre inférieure par application** (`onglets` dans le registre, composant `ModuleBar`) : les entrées principales de l'app courante, à un tap. Sport & Nutrition : **Jour · Programme · Exercices · Nutrition**. Quotidien : Courses · Tâches · Habitudes. Finances : Vue · Transactions · Budgets · Comptes. Entreprise : Pilotage · Factures · Charges · Échéances · Simuler. Home : Aujourd'hui · Objectifs · Documents. Réglages : Réglages · Sport · Nutrition · Journal. L'onglet actif = le préfixe d'URL le plus long qui correspond (`/sport/seance/x` → Jour).
-- **Sport & Nutrition** : une seule application, deux modules (préfixes `/sport` et `/nutrition`), chacun avec son accent et son identité (Sport sombre, Nutrition clair). **L'en-tête est le même** sur les deux (`sport/entete.tsx`) : pastille du jour (Aujourd'hui / Demain / Il y a n jours), date courte, « Semaine n / N » du programme (sinon semaine ISO), bouton « Auj. » quand on s'est déplacé. La **bande de jours** est partagée : scrollable, le jour sélectionné centré, un point par séance (deux = double séance), `?jour=YYYY-MM-DD` conservé en passant de l'un à l'autre.
+- **Barre inférieure par application** (`onglets` dans le registre, composant `ModuleBar`) : les entrées principales de l'app courante, à un tap. Sport : **Accueil · Programme · Exos** ; Nutrition : **Accueil · Recettes**. Quotidien : Courses · Tâches · Habitudes. Finances : Vue · Transactions · Budgets · Comptes. Entreprise : Pilotage · Factures · Charges · Échéances · Simuler. Home : Aujourd'hui · Objectifs · Documents. Réglages : Réglages · Sport · Nutrition · Journal. L'onglet actif — qui s'ouvre et affiche son nom, les autres restent des icônes — = le préfixe d'URL le plus long qui correspond ; un onglet peut ranger d'autres préfixes (`aussi` : `/sport/historique` → Programme).
+- **Sport & Nutrition** : une seule application, deux espaces (préfixes `/sport` et `/nutrition`), chacun avec son accent, son identité et **sa barre**. On passe de l'un à l'autre par le **sélecteur de l'en-tête** (`BasculeEspace`, entre le menu et l'avatar, sur les écrans principaux) ; `?jour=YYYY-MM-DD` est conservé. Sous l'en-tête, les deux accueils ont **le même titre** (`sport/entete.tsx`) : surtitre « Aujourd'hui · Semaine n / N », la date en grand, bouton « Auj. » quand on s'est déplacé, et la **bande de jours** partagée (scrollable, le jour sélectionné centré, un point par séance).
+- **Une vue à la fois** : quand un écran porte plusieurs choses, un **segmented control** (`Segments`) les sépare — Programme : Semaine · Plan · Mes séances (`?vue=`) ; Recettes : Toutes · Mes recettes ; Ajouter à un repas : Pour toi · Recettes · Aliments.
+- **Filtres** (même grammaire partout — exercices, recettes) : la recherche (`ChampRecherche`), **une seule** rangée de puces pour le filtre principal (`Puces`), et le reste dans la feuille « Filtres » (`BoutonFiltres` : pastille = nombre d'actifs ; chaque filtre actif se retire d'un tap sous la rangée).
 - **Plusieurs séances par jour** : un jour peut porter muscu + boxe (cocher le même jour dans les deux). Ordre d'affichage : salle puis boxe.
 - **Parcours plein écran** (`ECRANS_PLEIN_ECRAN` dans `packages/ui`) : pas de barre inférieure ni de « + » ; fermer = croix en haut à gauche. Onboarding Sport : `/sport` redirige vers `/sport/bienvenue` tant qu'il n'y a ni programme ni onboarding terminé ou passé.
-- **Barre inférieure** (v3) : « Tab bar skeleton » du design system — pilule flottante d'icônes (onglets de l'app) + bouton « + » à côté.
+- **Barre inférieure** (v3) : « Tab bar skeleton » du design system — pilule flottante (onglets du module) + le « + » à côté quand il a un rôle.
 - **Feuilles modales** (`BottomSheet`, façon iOS : voile, poignée, zone sûre, Échap) pour tout ce qui est contextuel : menu apps, Terminer la séance (ressenti), détail d'un exercice (charge, reps, remplacer), équivalents. Pas de modale centrée.
 - **Header de mini-app** : burger (ou flèche retour sur un écran de détail), titre + sous-titre (date, semaine), avatar à droite → Réglages, ou une action contextuelle.
 - **Finances vs Entreprise** : Finances = comptes perso ; Entreprise = tout ce qui touche la SASU (comptes pro, factures, charges, échéances, simulateur, conseils). Une transaction appartient à l'un ou à l'autre (`perimetre`), jamais aux deux.
-- **Bouton « + » flottant** sur tous les écrans → `/capture` (texte ou micro navigateur). Le texte part à l'agent, la réponse s'affiche.
+- **Bouton « + »** (`actionPour` dans le registre) : il n'est là que s'il sert. **Nutrition** : ajout rapide — il se déploie (voile, actions en cascade, le « + » tourne en croix) en Photo du repas · Scanner un produit · Ajouter à un repas (`AjoutRapide`). **Sport** : pas de « + » (les actions sont dans les écrans ; Capture reste dans le menu Applications). **Ailleurs** : → `/capture` (texte ou micro navigateur) ; le texte part à l'agent, la réponse s'affiche.
 - **Desktop** : même shell, centré (max 32 rem) ; pas de sidebar pour l'instant.
 
 ## Conventions
@@ -128,8 +138,8 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 | --- | --- | --- |
 | Home | Jour · réordonnancement des widgets | Semaine, mode focus |
 | Quotidien | Courses (+ mode magasin) · Produits & stock · Tâches · Habitudes | Agenda complet |
-| Sport | Programme · Séance plein écran · Fiche exercice · Historique | Charge / récupération |
-| Nutrition | Journal (suggestions, ajout d’aliment, scan du code-barres, photo du repas) · Recettes · Fiche recette — Plan semaine et pesée à venir | Photo affinée par la base d’aliments |
+| Sport | Accueil · Programme (Semaine, Plan, Mes séances) · Exos · Séance plein écran · Fiche exercice · Historique | Charge / récupération |
+| Nutrition | Accueil (bilan, repas en tuiles) · Ajouter à un repas (idées, recettes, aliments, scan, photo) · Recettes · Fiche recette — Plan semaine et pesée à venir | Photo affinée par la base d’aliments |
 | Finances | À catégoriser · Transactions · Budgets · Comptes | Abonnements oubliés, épargne |
 | Entreprise | Pilotage · Factures · Charges · Échéances (+ simulateur en feuille) | Conseils de l'agent (juridique, investissement), devis, relances auto |
 | Documents | Coffre · Aperçu · Ajout | Mode voyage |

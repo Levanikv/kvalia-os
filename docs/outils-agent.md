@@ -621,13 +621,13 @@ Refait un repas à l'identique : recopie dans le journal du jour (aujourd'hui pa
 
 ## `lister_recettes`
 
-Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). Filtrable par repas.
+Les recettes avec leurs macros par portion, les repas où elles ont leur place et leurs étiquettes (riche_proteines, avant_seance, apres_seance, seche, masse, leger, rapide, vegetarien, batch). `perso` et `utilisations` disent lesquelles sont « ses » recettes (créées par lui, ou déjà notées au journal). Filtrable par repas.
 
 **Entrée**
 - `repas` : `petit_dej` · `collation` · `dejeuner` · `encas` · `diner` (optionnel)
 
 **Sortie**
-- liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres }
+- liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres, perso, utilisations }
 
 ## `suggerer_repas`
 
@@ -647,7 +647,7 @@ Les recettes avec leurs macros par portion, les repas où elles ont leur place e
 - `budget_kcal` : nombre
 - `sport` : objet { objectif, seance_a_venir, seance_faite }
 - `message` : string
-- `suggestions` : liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres, portions, raison }
+- `suggestions` : liste de objet { id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres, perso, utilisations, portions, raison }
 
 ## `connecter_tiime`
 

@@ -338,6 +338,10 @@ export type RecetteSortie = {
   gluc: number;
   lip: number;
   fibres: number | null;
+  /** Recette créée par l'utilisateur ou l'agent (pas une recette de départ). */
+  perso: boolean;
+  /** Nombre de fois où elle a été notée au journal : une recette déjà mangée fait partie de « Mes recettes ». */
+  utilisations: number;
 };
 const COLONNES_RECETTE = "id, nom, repas, tags, temps_min, kcal, prot, gluc, lip, fibres, ref";
 
@@ -376,8 +380,14 @@ export async function importerRecettesDeBase(db: KvaliaClient, userId: string): 
 /** Les recettes de l'utilisateur qui ont des macros (les recettes de départ sont importées au premier appel). */
 export async function listerRecettes(db: KvaliaClient, userId: string, filtre: { repas?: Repas } = {}): Promise<RecetteSortie[]> {
   await importerRecettesDeBase(db, userId);
-  const { data, error } = await db.from("recettes").select(COLONNES_RECETTE).eq("user_id", userId).eq("actif", true).not("kcal", "is", null).order("nom");
+  const [{ data, error }, { data: notees, error: errNotees }] = await Promise.all([
+    db.from("recettes").select(COLONNES_RECETTE).eq("user_id", userId).eq("actif", true).not("kcal", "is", null).order("nom"),
+    db.from("journal_repas").select("recette_id").eq("user_id", userId).not("recette_id", "is", null).limit(2000),
+  ]);
   if (error) throw error;
+  if (errNotees) throw errNotees;
+  const utilisations = new Map<string, number>();
+  for (const l of notees ?? []) if (l.recette_id) utilisations.set(l.recette_id, (utilisations.get(l.recette_id) ?? 0) + 1);
   return (data ?? [])
     .filter((r) => !filtre.repas || (r.repas ?? []).includes(filtre.repas))
     .map((r) => ({
@@ -391,6 +401,8 @@ export async function listerRecettes(db: KvaliaClient, userId: string, filtre: {
       gluc: Math.round(Number(r.gluc ?? 0)),
       lip: Math.round(Number(r.lip ?? 0)),
       fibres: r.fibres == null ? null : Math.round(Number(r.fibres)),
+      perso: r.ref == null,
+      utilisations: utilisations.get(r.id) ?? 0,
     }));
 }
 

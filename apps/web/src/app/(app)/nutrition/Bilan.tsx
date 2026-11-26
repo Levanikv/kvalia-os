@@ -1,7 +1,7 @@
 /**
- * Bilan du jour, posé à même le fond de la page (pas de carte) : le grand chiffre des calories restantes, l'anneau
- * de ce qui a été mangé — découpé par macro —, puis une ligne de trois jauges fines (protéines, glucides, lipides).
- * Rien d'autre : le détail (base, sport, séances) vit dans Sport et dans Réglages › Nutrition.
+ * Bilan du jour — une seule carte claire, lue en une seconde : l'anneau au centre (ce qu'il reste, en grand ;
+ * l'arc = ce qui a été mangé, découpé par macro), mangées à gauche, brûlées à droite, puis trois jauges fines
+ * (protéines, glucides, lipides). Le détail (base, sport, séances) vit dans Sport et dans Réglages › Nutrition.
  */
 type Props = {
   cible: number;
@@ -14,7 +14,7 @@ type Props = {
 const nf = (n: number) => n.toLocaleString("fr-FR");
 const R = 52;
 const TOUR = 2 * Math.PI * R;
-const TRAIT = 11;
+const TRAIT = 9;
 
 export function Bilan({ cible, brule, consomme, reste, macros }: Props) {
   const depasse = reste < 0;
@@ -30,19 +30,13 @@ export function Bilan({ cible, brule, consomme, reste, macros }: Props) {
   }, []);
 
   return (
-    <section className="flex flex-col gap-[var(--stack-lg)] pt-[var(--stack-xs)]" aria-label="Bilan du jour">
-      <div className="flex items-center justify-between gap-[var(--inline-lg)] px-[var(--inline-xs)]">
-        <div className="min-w-0">
-          <p className="kv-overline text-fg-brand">{depasse ? "Tu as dépassé de" : "Il te reste"}</p>
-          <p className="flex items-baseline gap-[var(--inline-sm)]">
-            <span className={`type-display-xl ${depasse ? "text-feedback-danger-text" : ""}`}>{nf(Math.abs(reste))}</span>
-            <span className="type-title-md text-fg-secondary">kcal</span>
-          </p>
-          <p className="type-body-sm text-fg-secondary">
-            sur {nf(cible)} kcal{brule > 0 ? ` · dont ${nf(brule)} de sport` : ""}
-          </p>
-        </div>
-        <div className="kv-ring h-[7.75rem] w-[7.75rem]">
+    <section
+      className="flex flex-col gap-[var(--stack-lg)] rounded-[var(--radius-card-hero)] border border-line-subtle bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-lg)]"
+      aria-label="Bilan du jour"
+    >
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[var(--inline-sm)]">
+        <Chiffre valeur={nf(consomme)} label="Mangées" />
+        <div className="kv-ring h-[10.5rem] w-[10.5rem]">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" role="img" aria-label={`${nf(consomme)} kcal mangées sur ${nf(cible)}`}>
             <circle cx="60" cy="60" r={R} fill="none" strokeWidth={TRAIT} className="kv-ring-track" />
             {depasse ? (
@@ -69,16 +63,17 @@ export function Bilan({ cible, brule, consomme, reste, macros }: Props) {
             )}
           </svg>
           <div className="kv-ring-center">
-            <span className="type-title-lg tabular-nums">{nf(consomme)}</span>
-            <span className="kv-mono">mangées</span>
+            <span className={`type-display-lg tabular-nums ${depasse ? "text-feedback-danger-text" : ""}`}>{nf(Math.abs(reste))}</span>
+            <span className="type-label-md text-fg-secondary">{depasse ? "kcal en trop" : "kcal restantes"}</span>
           </div>
         </div>
+        <Chiffre valeur={nf(brule)} label="Brûlées" />
       </div>
 
-      <dl className="grid grid-cols-3 gap-[var(--inline-lg)] px-[var(--inline-xs)]">
+      <dl className="grid grid-cols-3 gap-[var(--inline-lg)] border-t border-line-subtle px-[var(--inline-xs)] pt-[var(--stack-md)]">
         {macros.map((m) => (
           <div key={m.nom} className="flex min-w-0 flex-col gap-[var(--stack-xs)]">
-            <dt className="type-label-md">{m.nom}</dt>
+            <dt className="type-label-md text-fg-secondary">{m.nom}</dt>
             <dd className="flex flex-col gap-[var(--stack-xs)]">
               <span className="kv-progress-track" aria-hidden>
                 <span
@@ -86,13 +81,22 @@ export function Bilan({ cible, brule, consomme, reste, macros }: Props) {
                   style={{ width: `${Math.min(100, (m.valeur / Math.max(1, m.cible)) * 100)}%`, background: m.couleur }}
                 />
               </span>
-              <span className="kv-mono">
-                <span className="text-fg-primary">{nf(Math.round(m.valeur))}</span> / {nf(m.cible)} g
+              <span className="type-label-md tabular-nums">
+                {nf(Math.round(m.valeur))} <span className="font-normal text-fg-tertiary">/ {nf(m.cible)} g</span>
               </span>
             </dd>
           </div>
         ))}
       </dl>
     </section>
+  );
+}
+
+function Chiffre({ valeur, label }: { valeur: string; label: string }) {
+  return (
+    <p className="flex min-w-0 flex-col items-center text-center">
+      <span className="type-title-lg tabular-nums">{valeur}</span>
+      <span className="type-label-md text-fg-secondary">{label}</span>
+    </p>
   );
 }

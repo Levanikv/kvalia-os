@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { barrePour, module, type ModuleKey } from "@kvalia/ui";
+import { BasculeEspace } from "./BasculeEspace";
 import { MenuApps } from "./MenuApps";
 import { initialeUtilisateur } from "@/lib/session";
 
@@ -22,6 +23,8 @@ type Props = {
    * et de l'indicateur d'accueil iPhone ; le contenu qui défile lui laisse la place.
    */
   pied?: ReactNode;
+  /** Jour affiché (`?jour=`) : le sélecteur Sport / Nutrition le conserve en changeant d'espace. */
+  jour?: string;
   children: ReactNode;
 };
 
@@ -31,34 +34,64 @@ const BAS_BARRE_APP = "max(var(--page-tabbar-offset), calc(env(safe-area-inset-b
 /**
  * Cadre d'une mini-app : pose `data-module` (accent, thème), header avec menu apps + titre + avatar, contenu.
  * La barre inférieure de l'application et le bouton « + » vivent dans le layout (app), en dehors du cadre.
+ *
+ * Sport et Nutrition (écrans principaux, sans flèche retour) : la ligne collée en haut ne porte que le menu, le
+ * sélecteur Sport / Nutrition et l'avatar ; le titre — en grand — et la barre (bande de jours) défilent avec la page.
  */
-export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, surTitre, pied, children }: Props) {
+export async function ModuleFrame({ module: key, titre, sousTitre, action, gauche, barre, surTitre, pied, jour, children }: Props) {
   const m = module(key);
   const aBarreApp = barrePour(key).length > 0;
   const basPied = aBarreApp ? `calc(${BAS_BARRE_APP} + var(--tabbar-h) + var(--stack-sm))` : "calc(env(safe-area-inset-bottom) + var(--stack-lg))";
   const initiale = await initialeUtilisateur();
+  const espace = !gauche && (key === "sport" || key === "nutrition") ? key : null;
+  const avatar = (
+    <Link
+      href="/reglages"
+      aria-label="Réglages et compte"
+      className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle type-label-md text-fg-brand"
+    >
+      {initiale}
+    </Link>
+  );
   return (
     <div data-module={key} className="kv-ground relative min-h-dvh overflow-clip bg-surface-page text-fg-primary">
-      <header className="sticky top-0 z-30 bg-surface-page/85 pt-safe backdrop-blur-md">
-        <div className={`mx-auto flex max-w-lg gap-2 px-3 ${surTitre ? "items-end py-[var(--stack-sm)]" : "h-[var(--header-h)] items-center"}`}>
-          {gauche ?? <MenuApps />}
-          <div className="min-w-0 flex-1">
-            {surTitre && <div className="kv-overline truncate text-fg-brand">{surTitre}</div>}
-            <h1 className={`truncate ${surTitre ? "type-display-md" : "type-title-md"}`}>{titre ?? m.titre}</h1>
-            {sousTitre && <div className="truncate type-body-sm text-fg-secondary">{sousTitre}</div>}
+      {espace ? (
+        <>
+          <header className="sticky top-0 z-30 bg-surface-page/85 pt-safe backdrop-blur-md">
+            <div className="mx-auto flex h-[var(--header-h)] max-w-lg items-center gap-2 px-3">
+              <MenuApps />
+              <div className="min-w-0 flex-1">
+                <BasculeEspace actif={espace} jour={jour} />
+              </div>
+              {avatar}
+            </div>
+          </header>
+          <div className="kv-ground-content mx-auto max-w-lg pt-[var(--stack-sm)]">
+            <div className="flex items-end gap-[var(--inline-md)] px-[var(--page-gutter-wide)] pb-[var(--stack-sm)]">
+              <div className="min-w-0 flex-1">
+                {surTitre && <div className="kv-overline truncate text-fg-brand">{surTitre}</div>}
+                <h1 className="truncate type-display-md">{titre ?? m.titre}</h1>
+                {sousTitre && <div className="truncate type-body-sm text-fg-secondary">{sousTitre}</div>}
+              </div>
+              {action}
+            </div>
+            {barre && <div className="pb-[var(--stack-xs)]">{barre}</div>}
           </div>
-          {action ?? (
-            <Link
-              href="/reglages"
-              aria-label="Réglages et compte"
-              className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle type-label-md text-fg-brand"
-            >
-              {initiale}
-            </Link>
-          )}
-        </div>
-        {barre && <div className="mx-auto max-w-lg pb-2">{barre}</div>}
-      </header>
+        </>
+      ) : (
+        <header className="sticky top-0 z-30 bg-surface-page/85 pt-safe backdrop-blur-md">
+          <div className={`mx-auto flex max-w-lg gap-2 px-3 ${surTitre ? "items-end py-[var(--stack-sm)]" : "h-[var(--header-h)] items-center"}`}>
+            {gauche ?? <MenuApps />}
+            <div className="min-w-0 flex-1">
+              {surTitre && <div className="kv-overline truncate text-fg-brand">{surTitre}</div>}
+              <h1 className={`truncate ${surTitre ? "type-display-md" : "type-title-md"}`}>{titre ?? m.titre}</h1>
+              {sousTitre && <div className="truncate type-body-sm text-fg-secondary">{sousTitre}</div>}
+            </div>
+            {action ?? avatar}
+          </div>
+          {barre && <div className="mx-auto max-w-lg pb-2">{barre}</div>}
+        </header>
+      )}
       <main
         className="kv-ground-content contenu mx-auto max-w-lg px-[var(--page-gutter)] pt-[var(--stack-sm)]"
         style={pied ? { paddingBottom: `calc(${basPied} + var(--control-xl) + var(--stack-xl))` } : undefined}

@@ -169,6 +169,13 @@ describe("recettes de départ", () => {
     expect(await importerRecettesDeBase(db, USER)).toBe(0);
     const liste = await listerRecettes(db, USER, { repas: "petit_dej" });
     expect(liste.length).toBeGreaterThan(4);
+    // « Mes recettes » : une recette de départ n'est pas perso, et compte ses passages au journal.
+    expect(liste.every((r) => !r.perso && r.utilisations === 0)).toBe(true);
+    await ajouterAuJournal(db, USER, { jour: "2026-11-18", repas: "petit_dej", recette_id: liste[0].id });
+    await ajouterAuJournal(db, USER, { jour: "2026-11-19", repas: "petit_dej", recette_id: liste[0].id, portions: 2 });
+    const apres = await listerRecettes(db, USER, { repas: "petit_dej" });
+    expect(apres.find((r) => r.id === liste[0].id)?.utilisations).toBe(2);
+    expect(apres.filter((r) => r.utilisations > 0)).toHaveLength(1);
     for (const r of RECETTES_BASE) {
       // L'énergie annoncée colle aux macros (4 / 4 / 9 kcal par g), à 12 % près (fibres, arrondis).
       const calcule = r.prot * 4 + r.gluc * 4 + r.lip * 9;
@@ -180,7 +187,7 @@ describe("recettes de départ", () => {
 });
 
 describe("suggestions", () => {
-  const recettes = RECETTES_BASE.map((r, i) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, ...r }));
+  const recettes = RECETTES_BASE.map((r, i) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, perso: false, utilisations: 0, ...r }));
   const sport = { objectif: null, seance_a_venir: false, seance_faite: false };
 
   it("300 kcal pour un encas : des encas sous le budget, les plus protéinés d'abord quand il manque des protéines", () => {

@@ -1,6 +1,6 @@
 # 0008 — Navigation : menu Applications + barre par app + feuilles
 
-**Date** : 8 nov. 2026 · **Statut** : acceptée (remplace la tab bar globale de la sitemap v1)
+**Date** : 8 nov. 2026 · **Statut** : acceptée (remplace la tab bar globale de la sitemap v1) · précisée par [0020](0020-sport-nutrition-selecteur-et-barres.md) pour Sport & Nutrition
 
 ## Contexte
 

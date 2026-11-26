@@ -2,10 +2,18 @@
  * Registre des modules de KVALIA OS — source : docs/sitemap.md.
  * Un module = un préfixe d'URL = un accent (`data-module`) = une icône Material Symbols Rounded (ligature).
  *
- * Navigation (v1.1) : un menu « apps » (burger, en haut à gauche) liste les applications ; chaque application
- * a sa propre barre inférieure (`onglets`) qui expose ses entrées. Sport et Nutrition forment une seule application.
+ * Navigation (v1.2) : un menu « apps » (burger, en haut à gauche) liste les applications ; chaque application
+ * a sa propre barre inférieure (`onglets`) qui expose ses entrées. Sport et Nutrition forment une seule application
+ * à deux espaces : on passe de l'un à l'autre par le sélecteur de l'en-tête (`ESPACES_SPORT_NUTRITION`), et chacun a
+ * sa barre (Sport : Accueil · Programme · Exos ; Nutrition : Accueil · Recettes + le « + » d'ajout rapide).
  */
-export type Onglet = { href: string; label: string; icon: string };
+export type Onglet = {
+  href: string;
+  label: string;
+  icon: string;
+  /** Autres préfixes d'URL rangés sous cet onglet (écrans de détail qui n'ont pas son préfixe). */
+  aussi?: readonly string[];
+};
 
 /** Design system (généré depuis Figma « Kvalia Design System ») : brands, typeRoles, cssVar, typeClass… */
 export * from "./tokens.gen";
@@ -49,12 +57,14 @@ export const onglets: Record<ModuleKey, readonly Onglet[]> = {
     { href: "/quotidien/habitudes", label: "Habitudes", icon: "repeat" },
   ],
   sport: [
-    { href: "/sport", label: "Jour", icon: "fitness_center" },
-    { href: "/sport/programme", label: "Programme", icon: "calendar_view_week" },
-    { href: "/sport/exercices", label: "Exercices", icon: "play_circle" },
-    { href: "/nutrition", label: "Nutrition", icon: "restaurant" },
+    { href: "/sport", label: "Accueil", icon: "home" },
+    { href: "/sport/programme", label: "Programme", icon: "calendar_month", aussi: ["/sport/historique"] },
+    { href: "/sport/exercices", label: "Exos", icon: "fitness_center" },
   ],
-  nutrition: [], // = sport (voir barrePour)
+  nutrition: [
+    { href: "/nutrition", label: "Accueil", icon: "home" },
+    { href: "/nutrition/recettes", label: "Recettes", icon: "menu_book" },
+  ],
   finances: [
     { href: "/finances", label: "Vue", icon: "donut_large" },
     { href: "/finances/transactions", label: "Transactions", icon: "receipt_long" },
@@ -98,9 +108,26 @@ export function appPour(key: ModuleKey): ModuleKey {
   return key;
 }
 
-/** La barre inférieure à afficher pour un module. */
+/** La barre inférieure à afficher pour un module : la sienne (Sport et Nutrition ont chacun la leur), sinon celle de son app. */
 export function barrePour(key: ModuleKey): readonly Onglet[] {
-  return onglets[appPour(key)];
+  return onglets[key].length ? onglets[key] : onglets[appPour(key)];
+}
+
+/** Les deux espaces de l'application Sport & Nutrition, dans l'ordre du sélecteur de l'en-tête. */
+export const ESPACES_SPORT_NUTRITION = [
+  { key: "sport", label: "Sport", icon: "fitness_center", path: "/sport" },
+  { key: "nutrition", label: "Nutrition", icon: "restaurant", path: "/nutrition" },
+] as const satisfies ReadonlyArray<{ key: ModuleKey; label: string; icon: string; path: string }>;
+
+/**
+ * Le bouton « + » à côté de la barre : `capture` (dire quelque chose à l'agent), `ajout_repas` (Nutrition : scan,
+ * photo, ajout à un repas) ou rien — Sport n'en a pas, ses actions sont dans les écrans.
+ */
+export type ActionBarre = "capture" | "ajout_repas" | null;
+export function actionPour(key: ModuleKey): ActionBarre {
+  if (key === "sport") return null;
+  if (key === "nutrition") return "ajout_repas";
+  return "capture";
 }
 
 /** Déduit le module depuis le premier segment d'un chemin. `/nutrition/plan` → nutrition ; `/` → home. */
@@ -113,9 +140,15 @@ export function moduleDepuisChemin(pathname: string): ModuleKey {
 /** L'onglet actif d'une barre pour un chemin : le préfixe le plus long qui correspond. */
 export function ongletActif(barre: readonly Onglet[], pathname: string): Onglet | undefined {
   let meilleur: Onglet | undefined;
+  let longueur = -1;
   for (const o of barre) {
-    const ok = o.href === "/" ? pathname === "/" : pathname === o.href || pathname.startsWith(o.href + "/");
-    if (ok && (!meilleur || o.href.length > meilleur.href.length)) meilleur = o;
+    for (const prefixe of [o.href, ...(o.aussi ?? [])]) {
+      const ok = prefixe === "/" ? pathname === "/" : pathname === prefixe || pathname.startsWith(prefixe + "/");
+      if (ok && prefixe.length > longueur) {
+        meilleur = o;
+        longueur = prefixe.length;
+      }
+    }
   }
   return meilleur;
 }
@@ -136,6 +169,7 @@ export const ECRANS_PLEIN_ECRAN: readonly string[] = [
   "/sport/ma-seance",
   "/sport/bienvenue",
   "/sport/seance",
+  "/nutrition/ajouter",
 ];
 export function estPleinEcran(chemin: string): boolean {
   return ECRANS_PLEIN_ECRAN.some((p) => chemin === p || chemin.startsWith(p + "/"));

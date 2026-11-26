@@ -4,25 +4,24 @@ import { redirect } from "next/navigation";
 import { bilanJour, defiSemaine, executer, listerDefis, parametresSport, poidsActuel } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
+import { Tuile } from "@/components/Tuile";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
 import { DefisDuJour } from "./Defis";
 import { enteteJour } from "./entete";
-import { EnergieJour } from "./EnergieJour";
 import { HeroSeance, TicketRepos } from "./HeroSeance";
 import { Records } from "./Records";
 import { FaireAujourdhui, ReporterSeance, type Occupes } from "./Reporter";
 import { ToastUrl } from "./ToastUrl";
-import { decaler, jourDepuis, kcalPrevues, libelleFocus, seancesPourJour } from "./lib";
+import { decaler, jourDepuis, kcalPrevues, seancesPourJour } from "./lib";
 
 type Props = { searchParams: Promise<{ jour?: string }> };
 
 /**
- * Sport — vue Jour (défaut), maquette « A01 · Home · séance du jour » : en-tête partagé avec Nutrition
- * (pastille du jour, semaine, bande de jours), ticket séance (5 états) → défis du jour (pas, minutes, case…) →
- * défi de la semaine → énergie → records.
- *
- * historique et énergie. Programme, Exercices et Nutrition sont dans la barre du bas : pas de carte en double.
+ * Sport — accueil du jour. Une chose à faire, en grand : le ticket de la séance (5 états) et, juste dessous, de
+ * quoi la reporter. Puis deux tuiles de chiffres (la semaine, l'énergie du jour → Nutrition), les défis du jour et
+ * les records. En-tête partagé avec Nutrition (sélecteur, date, bande de jours). Programme et exercices sont dans
+ * la barre du bas : pas de carte en double ici.
  */
 export default async function Page({ searchParams }: Props) {
   const { supabase, user } = await session();
@@ -87,14 +86,8 @@ export default async function Page({ searchParams }: Props) {
   const semaineSeances = semaine ?? [];
   const defi = defiSemaine(semaineSeances);
   const kcalSeancePrevue = seances.filter((x) => x.etat !== "faite").reduce((a, x) => a + kcalPrevues(x, poids), 0);
-  const focusJour = seances.find((s) => s.type !== "boxe")?.focus ?? seances[0]?.focus ?? null;
 
-  const titreDate = new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-  const surTitre = dansProgramme
-    ? `Sport · bloc ${libelleFocus(focusJour)?.toLowerCase() ?? pos.bloc} S${pos.semaine}/${pos.total ?? "?"}`
-    : programme && pos?.avant
-      ? "Sport · programme à venir"
-      : "Sport";
+  const reste = bilan.cible - bilan.consomme;
   const etapesOnboarding = 15;
   const defisDuJour = defis.filter((d) => d.du_jour);
   const sansProgrammePret = !programme && !!ob?.termine;
@@ -102,10 +95,11 @@ export default async function Page({ searchParams }: Props) {
   return (
     <ModuleFrame
       module="sport"
-      surTitre={surTitre}
-      titre={titreDate.charAt(0).toUpperCase() + titreDate.slice(1)}
+      surTitre={entete.surTitre}
+      titre={entete.titre}
       action={entete.action}
       barre={entete.barre}
+      jour={jour === auj ? undefined : jour}
       pied={
         sansProgrammePret ? (
           <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
@@ -181,43 +175,42 @@ export default async function Page({ searchParams }: Props) {
           <FaireAujourdhui seance={{ id: prochaine.id, titre: prochaine.titre, jour: prochaine.jour }} aujourdhui={auj} />
         )}
 
+        {/* Deux chiffres, pas plus : où en est la semaine, ce qu'il reste à manger aujourd'hui. */}
+        <section className="grid grid-cols-2 gap-[var(--inline-md)]" aria-label="En un coup d’œil">
+          {defi.total > 0 ? (
+            <Tuile
+              titre="Semaine"
+              icone="local_fire_department"
+              valeur={defi.faites}
+              unite={`/ ${defi.total} séance${defi.total > 1 ? "s" : ""}`}
+              part={defi.faites / defi.total}
+              detail={defi.releve ? "Défi relevé" : `Encore ${defi.total - defi.faites} d’ici dimanche`}
+              href="/sport/programme"
+            />
+          ) : (
+            <Tuile titre="Semaine" icone="local_fire_department" valeur="—" detail="Aucune séance prévue" href="/sport/programme" />
+          )}
+          <Tuile
+            module="nutrition"
+            titre="Énergie"
+            icone="restaurant"
+            valeur={Math.abs(reste).toLocaleString("fr-FR")}
+            unite="kcal"
+            part={bilan.cible > 0 ? bilan.consomme / bilan.cible : 0}
+            detail={
+              reste < 0
+                ? "Au-dessus de ta cible"
+                : kcalSeancePrevue > 0
+                  ? `Restantes, + ${kcalSeancePrevue} avec la séance`
+                  : bilan.brule > 0
+                    ? `Restantes, dont ${bilan.brule} de sport`
+                    : "Restantes à manger"
+            }
+            href={jour === auj ? "/nutrition" : `/nutrition?jour=${jour}`}
+          />
+        </section>
+
         {defisDuJour.length > 0 && <DefisDuJour defis={defisDuJour} jour={jour} aujourdhui={auj} modifiable={jour <= auj} />}
-
-        {/* Défi de la semaine : toutes les séances de salle de la semaine. */}
-        {defi.total > 0 && (
-          <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card-hero)] bg-surface-container-accent p-[var(--inset-lg)] text-fg-primary border border-line-subtle">
-            <div className="flex items-start justify-between gap-[var(--inline-md)]">
-              <div>
-                <p className="kv-overline">Défi de la semaine</p>
-                <p className="mt-[var(--stack-xs)] type-title-lg">
-                  {defi.releve ? "Défi relevé : " : ""}
-                  {defi.total} séance{defi.total > 1 ? "s" : ""} de salle{defi.releve ? "" : " d’ici dimanche"}
-                </p>
-              </div>
-              <p className="shrink-0 type-display-md">
-                {defi.faites}/{defi.total}
-              </p>
-            </div>
-            <div className="flex gap-[var(--inline-xs)]" aria-hidden>
-              {Array.from({ length: defi.total }, (_, i) => (
-                <span key={i} className={`h-2.5 flex-1 rounded-full ${i < defi.faites ? "bg-fg-primary" : "bg-data-track"}`} />
-              ))}
-            </div>
-            <p className="kv-mono">
-              {defi.releve
-                ? "Toutes les séances de salle sont faites."
-                : `Encore ${defi.total - defi.faites} séance${defi.total - defi.faites > 1 ? "s" : ""} cette semaine.`}
-            </p>
-          </section>
-        )}
-
-        <EnergieJour
-          jour={jour === auj ? "aujourd’hui" : new Date(jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}
-          cible={bilan.cible}
-          consomme={bilan.consomme}
-          brule={bilan.brule}
-          seancePrevue={kcalSeancePrevue}
-        />
 
         {sansProgrammePret && (
           <section className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)]">

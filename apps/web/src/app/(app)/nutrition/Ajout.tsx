@@ -1,7 +1,8 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { LIBELLES_REPAS, REPAS, type AlimentSortie, type Repas } from "@kvalia/core";
+import { EVENEMENT_AJOUT, type DemandeAjout } from "@/components/AjoutRapide";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Toast";
@@ -10,44 +11,65 @@ import { Photo } from "./Photo";
 import { Scanner } from "./Scanner";
 
 /**
- * Ajout d'un aliment au journal (feuille plein-hauteur, ouverte depuis la barre d'action ou depuis un repas) :
- * choix du repas, recherche dans la base (aliments génériques tout de suite, produits de marque d'Open Food Facts
- * juste après), scan du code-barres à la caméra (`Scanner` → fiche Open Food Facts → quantité), photo du repas
- * (`Photo` → estimation par le modèle de vision → éléments ajustables), récents, saisie
- * rapide de calories ; puis la quantité, avec les macros qui suivent.
- * `FournisseurAjout` partage l'ouverture de la feuille entre la barre d'action et la liste des repas.
+ * Ajout d'un aliment au journal (feuille plein-hauteur) : choix du repas, recherche dans la base (aliments
+ * génériques tout de suite, produits de marque d'Open Food Facts juste après), scan du code-barres à la caméra
+ * (`Scanner` → fiche Open Food Facts → quantité), photo du repas (`Photo` → estimation par le modèle de vision →
+ * éléments ajustables), récents, saisie rapide de calories ; puis la quantité, avec les macros qui suivent.
+ *
+ * `FournisseurAjout` est posé une fois pour tout Nutrition (nutrition/layout) : la feuille s'ouvre depuis le « + »
+ * de la barre (`AjoutRapide`, par événement : il vit hors de ce contexte), depuis une tuile de repas ou depuis la
+ * page « Ajouter à un repas ».
  */
 
-/** `mode` : ouvrir directement sur le scan du code-barres, ou prendre le repas en photo. */
-type Mode = "scan" | "photo";
-type Contexte = { ouvrir: (repas?: Repas, mode?: Mode) => void; repasDuMoment: Repas };
+/** `mode` : ouvrir directement sur le scan du code-barres, la photo du repas ou la saisie rapide. */
+type Mode = "scan" | "photo" | "libre";
+type Options = {
+  repas?: Repas;
+  mode?: Mode;
+  /** Jour visé ; par défaut celui affiché (`?jour=`), ramené à aujourd'hui s'il est dans le futur. */
+  jour?: string;
+  /** Aliment déjà choisi (un récent) : la feuille s'ouvre sur la quantité. */
+  aliment?: AlimentSortie;
+};
+type Contexte = { ouvrir: (o?: Options) => void; repasDuMoment: Repas };
 const ContexteAjout = createContext<Contexte>({ ouvrir: () => {}, repasDuMoment: "dejeuner" });
 export const useAjout = () => useContext(ContexteAjout);
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
-/** Au-dessus de la barre de l'app et de la barre d'action. */
-const BAS_TOAST = "calc(var(--page-tabbar-offset) + var(--tabbar-h) + var(--control-xl) + var(--stack-md))";
+/** Au-dessus de la barre du module. */
+export const BAS_TOAST = "calc(var(--page-tabbar-offset) + var(--tabbar-h) + var(--stack-md))";
 
-type Props = { jour: string; repasDuMoment: Repas; recents: AlimentSortie[]; children: ReactNode };
+type Props = { aujourdhui: string; repasDuMoment: Repas; recents: AlimentSortie[]; children: ReactNode };
+type Demande = { jour: string; mode?: Mode; aliment?: AlimentSortie };
 
-export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Props) {
+export function FournisseurAjout({ aujourdhui, repasDuMoment, recents, children }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [demande, setDemande] = useState<Demande | null>(null);
   const [ouvert, setOuvert] = useState(false);
   const [repas, setRepas] = useState<Repas>(repasDuMoment);
-  const [scanDabord, setScanDabord] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const appareil = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<string | null>(null);
   const ouvrir = useCallback(
-    (r?: Repas, mode?: Mode) => {
-      setRepas(r ?? repasDuMoment);
-      setScanDabord(mode === "scan");
+    (o: Options = {}) => {
+      const affiche = new URLSearchParams(window.location.search).get("jour");
+      const voulu = o.jour ?? (affiche && /^\d{4}-\d{2}-\d{2}$/.test(affiche) ? affiche : aujourdhui);
+      setDemande({ jour: voulu > aujourdhui ? aujourdhui : voulu, mode: o.mode, aliment: o.aliment });
+      setRepas(o.repas ?? repasDuMoment);
       setPhoto(null);
       // Photo : l'appareil du téléphone s'ouvre tout de suite (dans le geste) ; la feuille suit, la photo choisie.
-      if (mode === "photo") return appareil.current?.click();
+      if (o.mode === "photo") return appareil.current?.click();
       setOuvert(true);
     },
-    [repasDuMoment],
+    [repasDuMoment, aujourdhui],
   );
+  // Le « + » de la barre vit dans le layout de l'app, hors de ce contexte : il demande l'ouverture par événement.
+  useEffect(() => {
+    const surDemande = (e: Event) => ouvrir({ mode: (e as CustomEvent<DemandeAjout>).detail.mode });
+    window.addEventListener(EVENEMENT_AJOUT, surDemande);
+    return () => window.removeEventListener(EVENEMENT_AJOUT, surDemande);
+  }, [ouvrir]);
   const valeur = useMemo(() => ({ ouvrir, repasDuMoment }), [ouvrir, repasDuMoment]);
   return (
     <ContexteAjout.Provider value={valeur}>
@@ -66,52 +88,27 @@ export function FournisseurAjout({ jour, repasDuMoment, recents, children }: Pro
           setOuvert(true);
         }}
       />
-      {ouvert && (
+      {ouvert && demande && (
         <FeuilleAjout
-          jour={jour}
+          jour={demande.jour}
           repas={repas}
           setRepas={setRepas}
           recents={recents}
-          scanDabord={scanDabord}
+          scanDabord={demande.mode === "scan"}
+          libreDabord={demande.mode === "libre"}
+          alimentDabord={demande.aliment ?? null}
           photoDabord={photo}
           onFermer={() => setOuvert(false)}
           onAjoute={(message) => {
             setOuvert(false);
             setToast(message);
+            // Depuis la page d'ajout, c'est fini : retour au journal du jour, où la ligne vient d'apparaître.
+            if (pathname.startsWith("/nutrition/ajouter")) router.push(demande.jour === aujourdhui ? "/nutrition" : `/nutrition?jour=${demande.jour}`);
           }}
         />
       )}
       <Toast message={toast} onFermer={() => setToast(null)} bas={BAS_TOAST} />
     </ContexteAjout.Provider>
-  );
-}
-
-/** Barre d'action : « Ajouter » (au repas du moment), et le scan du code-barres ou la photo à un geste. */
-export function BoutonAjout() {
-  const { ouvrir } = useAjout();
-  return (
-    <div className="flex gap-[var(--inline-md)]">
-      <button type="button" onClick={() => ouvrir()} className="kv-btn kv-btn-primary kv-btn-xl min-w-0 flex-1">
-        <Icon name="add" size={22} />
-        <span className="kv-btn-label">Ajouter</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => ouvrir(undefined, "scan")}
-        aria-label="Scanner un code-barres"
-        className="kv-btn kv-btn-tertiary kv-btn-xl aspect-square shrink-0 border border-line-default px-0"
-      >
-        <Icon name="barcode_scanner" size={24} />
-      </button>
-      <button
-        type="button"
-        onClick={() => ouvrir(undefined, "photo")}
-        aria-label="Prendre le repas en photo"
-        className="kv-btn kv-btn-tertiary kv-btn-xl aspect-square shrink-0 border border-line-default px-0"
-      >
-        <Icon name="photo_camera" size={24} />
-      </button>
-    </div>
   );
 }
 
@@ -121,6 +118,8 @@ function FeuilleAjout({
   setRepas,
   recents,
   scanDabord,
+  libreDabord,
+  alimentDabord,
   photoDabord,
   onFermer,
   onAjoute,
@@ -130,6 +129,8 @@ function FeuilleAjout({
   setRepas: (r: Repas) => void;
   recents: AlimentSortie[];
   scanDabord: boolean;
+  libreDabord: boolean;
+  alimentDabord: AlimentSortie | null;
   photoDabord: File | null;
   onFermer: () => void;
   onAjoute: (message: string) => void;
@@ -138,9 +139,9 @@ function FeuilleAjout({
   const [q, setQ] = useState("");
   const [resultats, setResultats] = useState<AlimentSortie[] | null>(null);
   const [etat, setEtat] = useState<"repos" | "base" | "marques" | "hors_ligne">("repos");
-  const [choisi, setChoisi] = useState<AlimentSortie | null>(null);
-  const [grammes, setGrammes] = useState(100);
-  const [libre, setLibre] = useState(false);
+  const [choisi, setChoisi] = useState<AlimentSortie | null>(alimentDabord);
+  const [grammes, setGrammes] = useState(alimentDabord?.portion_g ?? 100);
+  const [libre, setLibre] = useState(libreDabord);
   const [scan, setScan] = useState<"non" | "camera" | "recherche">(scanDabord ? "camera" : "non");
   const [photo, setPhoto] = useState<File | null>(photoDabord);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -286,7 +287,7 @@ function FeuilleAjout({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Skyr, riz basmati, code-barres…"
                 className="kv-field-input"
-                autoFocus={!scanDabord && !photoDabord}
+                autoFocus={!scanDabord && !photoDabord && !alimentDabord}
                 enterKeyHint="search"
                 aria-label="Chercher un aliment"
               />

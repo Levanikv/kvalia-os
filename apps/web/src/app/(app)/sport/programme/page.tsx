@@ -16,6 +16,7 @@ import {
 import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
+import { Segments } from "@/components/Segments";
 import { aujourdhui, session } from "@/lib/session";
 import { DefisProgramme } from "../Defis";
 import { libelleFocus, libelleType, positionProgramme, trierParJour } from "../lib";
@@ -24,19 +25,31 @@ import { ORDRE_SEMAINE, Phases, SemaineType, type JourType } from "./Phases";
 type Db = SupabaseClient<Database>;
 type Rythme = { salle?: number; boxe?: number; objectif?: string; niveau?: string; duree_min?: number; methode?: string };
 
+type Vue = "semaine" | "plan" | "seances";
+type Props = { searchParams: Promise<{ vue?: string }> };
+
+const VUES = [
+  { cle: "semaine", label: "Semaine", href: "/sport/programme" },
+  { cle: "plan", label: "Plan", href: "/sport/programme?vue=plan" },
+  { cle: "seances", label: "Mes séances", href: "/sport/programme?vue=seances" },
+] as const;
+
 /**
- * Onglet Programme (maquette « 14 · Programme actif ») : carte du programme en cours (objectif, rythme, semaine n,
- * fin), phases, semaine type, défis (pas, minutes, répétitions, case à cocher), puis les infos secondaires (avancement,
- * toutes les semaines, mes séances). Les deux entrées « Modifier » et « Nouveau programme » (parcours
- * /sport/programme/nouveau, sans questions de profil) sont dans la barre d'action fixe, au-dessus de la barre de l'app.
- * Sans programme : état vide « Construis ton programme » (maquette 02).
+ * Onglet Programme : tout ce qui se planifie, en trois vues (`?vue=`), une seule à l'écran.
+ * - **Semaine** (défaut) : la carte du programme (objectif, rythme, semaine n / N), la semaine jour par jour, les défis.
+ * - **Plan** : les chiffres du programme, les phases, toutes les semaines, la méthode, l'historique, « Nouveau programme ».
+ * - **Mes séances** : les séances perso (créer, mettre au programme) — « Créer une séance » en barre d'action.
+ * « Modifier le programme » est le bouton de l'en-tête. Sans programme : « Construis ton programme » (maquette 02)
+ * et Mes séances.
  */
-export default async function Page() {
+export default async function Page({ searchParams }: Props) {
+  const sp = await searchParams;
+  const vue: Vue = sp.vue === "plan" || sp.vue === "seances" ? sp.vue : "semaine";
   const { supabase, user } = await session();
   const auj = aujourdhui();
   const { data: prog } = await supabase.from("programmes").select("*").eq("actif", true).maybeSingle();
 
-  if (!prog) return sansProgramme(supabase, user.id);
+  if (!prog) return sansProgramme(supabase, user.id, vue === "seances");
 
   const [{ data: brutes }, modeles, reglages, defis] = await Promise.all([
     supabase
@@ -96,203 +109,235 @@ export default async function Page() {
   return (
     <ModuleFrame
       module="sport"
-      surTitre={`Sport · ${objectif}`}
+      surTitre={`${objectif} · semaine ${semaineCourante} / ${nbSemaines}`}
       titre="Programme"
-      pied={
-        <div className="flex gap-[var(--inline-sm)]">
-          <Link href="/sport/programme/modifier" className="kv-btn kv-btn-secondary kv-btn-lg min-w-0 flex-1 !px-[var(--inset-sm)]">
-            <Icon name="tune" size={20} />
-            <span className="kv-btn-label truncate">Modifier</span>
-          </Link>
-          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-lg min-w-0 flex-[1.4] !px-[var(--inset-sm)]">
-            <span className="kv-btn-label truncate">Nouveau programme</span>
-          </Link>
-        </div>
+      action={
+        <Link
+          href="/sport/programme/modifier"
+          aria-label="Modifier le programme"
+          className="kv-iconbtn border border-line-default bg-surface-container-default text-fg-primary"
+        >
+          <Icon name="tune" size={22} />
+        </Link>
       }
+      pied={vue === "seances" ? <BoutonCreerSeance /> : undefined}
     >
       <RealtimeRefresh tables={["seances", "programmes", "defis", "defis_suivi"]} />
-      <div className="cascade flex flex-col gap-[var(--stack-lg)]">
-        {/* Programme en cours */}
-        <section
-          data-module="sport"
-          data-theme="dark"
-          className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
-        >
-          <div className="kv-ground-content flex flex-col gap-[var(--stack-md)] p-[var(--inset-lg)]">
-            <div className="flex items-center justify-between gap-[var(--inline-md)]">
-              <span className={`kv-tag ${etat === "Actif" ? "kv-tag-success" : "kv-tag-neutral"}`}>
-                {etat === "Actif" && <Icon name="check" size={14} />} {etat}
-              </span>
-              <span className="kv-mono">{nbSemaines} semaines</span>
-            </div>
-            <div>
-              <h2 className="type-display-lg">{objectif}</h2>
-              <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
-                {[
-                  libelleFocus(focusCourant),
-                  r.salle ? `${r.salle} salle / sem.` : null,
-                  r.boxe ? `${r.boxe} boxe` : null,
-                  r.duree_min ? `${r.duree_min} min` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </div>
-            <div className="flex flex-col gap-[var(--stack-xs)]">
-              <div className="flex items-baseline justify-between">
-                <span className="type-label-lg">
-                  Semaine {semaineCourante}
-                  <span className="text-fg-tertiary"> / {nbSemaines}</span>
+      <div className="flex flex-col gap-[var(--stack-lg)]">
+        <Segments items={VUES} actif={vue} label="Vue du programme" />
+
+        {vue === "semaine" && (
+          <div className="cascade flex flex-col gap-[var(--stack-lg)]">
+            {/* Programme en cours */}
+            <section
+              data-module="sport"
+              data-theme="dark"
+              className="kv-ground overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle"
+            >
+              <div className="kv-ground-content flex flex-col gap-[var(--stack-md)] p-[var(--inset-lg)]">
+                <div className="flex items-center justify-between gap-[var(--inline-md)]">
+                  <span className={`kv-tag ${etat === "Actif" ? "kv-tag-success" : "kv-tag-neutral"}`}>
+                    {etat === "Actif" && <Icon name="check" size={14} />} {etat}
+                  </span>
+                  <span className="kv-mono">{nbSemaines} semaines</span>
+                </div>
+                <div>
+                  <h2 className="type-display-lg">{objectif}</h2>
+                  <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
+                    {[
+                      libelleFocus(focusCourant),
+                      r.salle ? `${r.salle} salle / sem.` : null,
+                      r.boxe ? `${r.boxe} boxe` : null,
+                      r.duree_min ? `${r.duree_min} min` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-[var(--stack-xs)]">
+                  <div className="flex items-baseline justify-between">
+                    <span className="type-label-lg">
+                      Semaine {semaineCourante}
+                      <span className="text-fg-tertiary"> / {nbSemaines}</span>
+                    </span>
+                    {finTexte && <span className="kv-mono">fin {finTexte}</span>}
+                  </div>
+                  <div className="kv-progress-track" aria-hidden>
+                    <div
+                      className="kv-progress-fill pousse-x bg-action-primary"
+                      style={{ width: `${(Math.min(semaineCourante, nbSemaines) / nbSemaines) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <SemaineType jours={jours} note="touche une séance" />
+
+            <DefisProgramme defis={defis} finProgramme={prog.fin} />
+          </div>
+        )}
+
+        {vue === "plan" && (
+          <div className="cascade flex flex-col gap-[var(--stack-lg)]">
+            {/* Infos secondaires */}
+            <section className="grid grid-cols-3 gap-[var(--inline-md)]">
+              <div className="kv-stat">
+                <span className="kv-overline">Séances</span>
+                <span className="kv-stat-row">
+                  <span className="kv-stat-value">{faites.length}</span>
+                  <span className="kv-mono">/ {seances.length}</span>
                 </span>
-                {finTexte && <span className="kv-mono">fin {finTexte}</span>}
               </div>
-              <div className="kv-progress-track" aria-hidden>
-                <div
-                  className="kv-progress-fill pousse-x bg-action-primary"
-                  style={{ width: `${(Math.min(semaineCourante, nbSemaines) / nbSemaines) * 100}%` }}
-                />
+              <div className="kv-stat">
+                <span className="kv-overline">Brûlées</span>
+                <span className="kv-stat-row">
+                  <span className="kv-stat-value">{kcal >= 10000 ? `${Math.round(kcal / 1000)}k` : kcal.toLocaleString("fr-FR")}</span>
+                  <span className="kv-mono">kcal</span>
+                </span>
               </div>
-            </div>
-          </div>
-        </section>
+              <div className="kv-stat">
+                <span className="kv-overline">Régularité</span>
+                <span className="kv-stat-row">
+                  <span className="kv-stat-value">{regularite ?? "—"}</span>
+                  {regularite !== null && <span className="kv-mono">%</span>}
+                </span>
+              </div>
+            </section>
 
-        <Phases semaines={semainesFocus} semaineCourante={pos?.avant || pos?.apres ? null : semaineCourante} />
+            <Phases semaines={semainesFocus} semaineCourante={pos?.avant || pos?.apres ? null : semaineCourante} />
 
-        <SemaineType jours={jours} note={`semaine ${semaineCourante} · touche une séance`} />
-
-        {/* Méthode d'entraînement et ses sources */}
-        <details className="group overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
-          <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
-              <Icon name="menu_book" size={20} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block kv-overline">Méthode</span>
-              <span className="block truncate type-title-sm">{methode.nom}</span>
-            </span>
-            <Icon name="expand_more" size={20} className="text-icon-tertiary transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="flex flex-col gap-[var(--stack-sm)] px-[var(--inset-md)] pb-[var(--inset-md)]">
-            <p className="type-body-sm text-fg-secondary">{methode.resume}</p>
-            <p className="type-body-sm">
-              <span className="text-fg-brand">Progression · </span>
-              {methode.progression}
-            </p>
-            <ul className="flex flex-col gap-[var(--stack-2xs)] border-t border-line-subtle pt-[var(--stack-sm)]">
-              {methode.sources.map((x) => (
-                <li key={x.url}>
-                  <a href={x.url} target="_blank" rel="noreferrer" className="flex items-start gap-[var(--inline-sm)] type-body-sm text-fg-link">
-                    <Icon name="open_in_new" size={16} className="mt-0.5 shrink-0" />
-                    <span>{x.titre}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </details>
-
-        <DefisProgramme defis={defis} finProgramme={prog.fin} />
-
-        {/* Infos secondaires */}
-        <section className="grid grid-cols-3 gap-[var(--inline-md)]">
-          <div className="kv-stat">
-            <span className="kv-overline">Séances</span>
-            <span className="kv-stat-row">
-              <span className="kv-stat-value">{faites.length}</span>
-              <span className="kv-mono">/ {seances.length}</span>
-            </span>
-          </div>
-          <div className="kv-stat">
-            <span className="kv-overline">Brûlées</span>
-            <span className="kv-stat-row">
-              <span className="kv-stat-value">{kcal >= 10000 ? `${Math.round(kcal / 1000)}k` : kcal.toLocaleString("fr-FR")}</span>
-              <span className="kv-mono">kcal</span>
-            </span>
-          </div>
-          <div className="kv-stat">
-            <span className="kv-overline">Régularité</span>
-            <span className="kv-stat-row">
-              <span className="kv-stat-value">{regularite ?? "—"}</span>
-              {regularite !== null && <span className="kv-mono">%</span>}
-            </span>
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-[var(--stack-sm)]">
-          <h2 className="px-[var(--inline-xs)] type-title-lg">Toutes les semaines</h2>
-          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
-            {[...parSemaine.keys()]
-              .sort((a, b) => a - b)
-              .map((n) => {
-                const ss = parSemaine.get(n) ?? [];
-                const ok = ss.filter((s) => s.etat === "faite").length;
-                const courante = n === semaineCourante;
-                const focus = semainesFocus.find((x) => x.semaine === n)?.focus ?? null;
-                return (
-                  <li key={n} className="border-b border-line-subtle last:border-b-0">
-                    <details open={courante} className="group">
-                      <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
-                        <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full type-label-md ${
-                            courante
-                              ? "bg-action-primary text-fg-on-brand"
-                              : ok === ss.length
-                                ? "bg-feedback-success-subtle text-feedback-success-text"
-                                : "bg-action-tertiary text-fg-secondary"
-                          }`}
-                        >
-                          {ok === ss.length && !courante ? <Icon name="check" size={16} /> : n}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block type-title-sm">
-                            Semaine {n} <span className="text-fg-tertiary">· bloc {ss[0]?.bloc ?? Math.ceil(n / 4)}</span>
-                          </span>
-                          <span className="block kv-mono">
-                            {libelleFocus(focus)} · {new Date(ss[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                          </span>
-                        </span>
-                        <span className="kv-mono">
-                          {ok}/{ss.length}
-                        </span>
-                        <Icon name="expand_more" size={20} className="text-icon-tertiary transition-transform group-open:rotate-180" />
-                      </summary>
-                      <ul className="pb-[var(--inset-xs)]">
-                        {ss.map((s) => (
-                          <li key={s.id}>
-                            <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-[var(--inline-lg)] px-[var(--inset-md)]">
-                              <Icon
-                                name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
-                                size={20}
-                                filled={s.etat === "faite"}
-                                className={s.etat === "faite" ? "text-feedback-success-text" : s.jour === auj ? "text-fg-brand" : "text-icon-tertiary"}
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className={`block truncate type-body-md ${s.jour === auj ? "font-semibold" : ""}`}>{s.titre ?? libelleType(s.type)}</span>
-                                <span className="block kv-mono">
-                                  {new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })} · {s.duree_min} min
-                                  {s.etat === "faite" ? ` · ${Number(s.kcal ?? 0)} kcal` : ""}
-                                </span>
+            <section className="flex flex-col gap-[var(--stack-sm)]">
+              <h2 className="px-[var(--inline-xs)] type-title-lg">Toutes les semaines</h2>
+              <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
+                {[...parSemaine.keys()]
+                  .sort((a, b) => a - b)
+                  .map((n) => {
+                    const ss = parSemaine.get(n) ?? [];
+                    const ok = ss.filter((s) => s.etat === "faite").length;
+                    const courante = n === semaineCourante;
+                    const focus = semainesFocus.find((x) => x.semaine === n)?.focus ?? null;
+                    return (
+                      <li key={n} className="border-b border-line-subtle last:border-b-0">
+                        <details open={courante} className="group">
+                          <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
+                            <span
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full type-label-md ${
+                                courante
+                                  ? "bg-action-primary text-fg-on-brand"
+                                  : ok === ss.length
+                                    ? "bg-feedback-success-subtle text-feedback-success-text"
+                                    : "bg-action-tertiary text-fg-secondary"
+                              }`}
+                            >
+                              {ok === ss.length && !courante ? <Icon name="check" size={16} /> : n}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block type-title-sm">
+                                Semaine {n} <span className="text-fg-tertiary">· bloc {ss[0]?.bloc ?? Math.ceil(n / 4)}</span>
                               </span>
-                              <Icon name="chevron_right" size={18} className="text-icon-tertiary" />
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </li>
-                );
-              })}
-          </ul>
-        </section>
+                              <span className="block kv-mono">
+                                {libelleFocus(focus)} · {new Date(ss[0].jour + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                              </span>
+                            </span>
+                            <span className="kv-mono">
+                              {ok}/{ss.length}
+                            </span>
+                            <Icon name="expand_more" size={20} className="text-icon-tertiary transition-transform group-open:rotate-180" />
+                          </summary>
+                          <ul className="pb-[var(--inset-xs)]">
+                            {ss.map((s) => (
+                              <li key={s.id}>
+                                <Link href={`/sport/seance/${s.id}`} className="tap flex items-center gap-[var(--inline-lg)] px-[var(--inset-md)]">
+                                  <Icon
+                                    name={s.etat === "faite" ? "check_circle" : s.type === "boxe" ? "sports_mma" : "fitness_center"}
+                                    size={20}
+                                    filled={s.etat === "faite"}
+                                    className={s.etat === "faite" ? "text-feedback-success-text" : s.jour === auj ? "text-fg-brand" : "text-icon-tertiary"}
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className={`block truncate type-body-md ${s.jour === auj ? "font-semibold" : ""}`}>
+                                      {s.titre ?? libelleType(s.type)}
+                                    </span>
+                                    <span className="block kv-mono">
+                                      {new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })} · {s.duree_min} min
+                                      {s.etat === "faite" ? ` · ${Number(s.kcal ?? 0)} kcal` : ""}
+                                    </span>
+                                  </span>
+                                  <Icon name="chevron_right" size={18} className="text-icon-tertiary" />
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </section>
 
-        <MesSeances modeles={Object.values(modeles)} perso={reglages.seances_perso} />
+            {/* Méthode d'entraînement et ses sources */}
+            <details className="group overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
+              <summary className="tap flex cursor-pointer list-none items-center gap-[var(--inline-lg)] px-[var(--inset-md)] py-[var(--inset-sm)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
+                  <Icon name="menu_book" size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block kv-overline">Méthode</span>
+                  <span className="block truncate type-title-sm">{methode.nom}</span>
+                </span>
+                <Icon name="expand_more" size={20} className="text-icon-tertiary transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="flex flex-col gap-[var(--stack-sm)] px-[var(--inset-md)] pb-[var(--inset-md)]">
+                <p className="type-body-sm text-fg-secondary">{methode.resume}</p>
+                <p className="type-body-sm">
+                  <span className="text-fg-brand">Progression · </span>
+                  {methode.progression}
+                </p>
+                <ul className="flex flex-col gap-[var(--stack-2xs)] border-t border-line-subtle pt-[var(--stack-sm)]">
+                  {methode.sources.map((x) => (
+                    <li key={x.url}>
+                      <a href={x.url} target="_blank" rel="noreferrer" className="flex items-start gap-[var(--inline-sm)] type-body-sm text-fg-link">
+                        <Icon name="open_in_new" size={16} className="mt-0.5 shrink-0" />
+                        <span>{x.titre}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+
+            <Link
+              href="/sport/historique"
+              className="tap flex items-center gap-[var(--inline-lg)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default px-[var(--inset-md)] py-[var(--inset-sm)]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-brand-subtle text-fg-brand">
+                <Icon name="history" size={20} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block kv-overline">Historique</span>
+                <span className="block truncate type-title-sm">
+                  {faites.length} séance{faites.length > 1 ? "s" : ""} terminée{faites.length > 1 ? "s" : ""}
+                </span>
+              </span>
+              <Icon name="chevron_right" size={20} className="text-icon-tertiary" />
+            </Link>
+
+            <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-secondary kv-btn-lg kv-btn-block">
+              <Icon name="auto_awesome" size={20} />
+              <span className="kv-btn-label">Nouveau programme</span>
+            </Link>
+          </div>
+        )}
+
+        {vue === "seances" && <MesSeances modeles={Object.values(modeles)} perso={reglages.seances_perso} />}
       </div>
     </ModuleFrame>
   );
 }
 
 /** Maquette 02 · Onglet Programmes vide : construire son programme, comment ça marche, ce que l'IA sait déjà. */
-async function sansProgramme(supabase: Db, userId: string) {
+async function sansProgramme(supabase: Db, userId: string, mesSeances: boolean) {
   const [params, modeles] = await Promise.all([parametresSport(supabase, userId), chargerModeles(supabase, userId)]);
   const [{ poids, source }, nutrition] = await Promise.all([poidsActuel(supabase, userId, params), parametresNutrition(supabase, userId)]);
   const connu = [
@@ -302,78 +347,103 @@ async function sansProgramme(supabase: Db, userId: string) {
     params.profil?.lieu ? { salle: "Salle", maison: "Maison", les_deux: "Salle + maison" }[params.profil.lieu] : null,
     params.profil?.douleurs?.length ? `À ménager : ${params.profil.douleurs.join(", ")}` : null,
   ].filter(Boolean) as string[];
+  const vues = [
+    { cle: "programme", label: "Programme", href: "/sport/programme" },
+    { cle: "seances", label: "Mes séances", href: "/sport/programme?vue=seances" },
+  ] as const;
   return (
     <ModuleFrame
       module="sport"
-      surTitre="Sport"
+      surTitre="Aucun programme actif"
       titre="Programme"
       pied={
-        <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
-          <span className="kv-btn-label">Créer mon programme</span>
-          <span className="kv-btn-end">
-            <Icon name="arrow_forward" size={22} />
-          </span>
-        </Link>
+        mesSeances ? (
+          <BoutonCreerSeance />
+        ) : (
+          <Link href="/sport/programme/nouveau" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block kv-btn-has-end">
+            <span className="kv-btn-label">Créer mon programme</span>
+            <span className="kv-btn-end">
+              <Icon name="arrow_forward" size={22} />
+            </span>
+          </Link>
+        )
       }
     >
       <div className="flex flex-col gap-[var(--stack-lg)]">
-        <Link
-          href="/sport/programme/nouveau"
-          data-module="sport"
-          data-theme="dark"
-          className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle active:opacity-95"
-        >
-          <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
-            <div className="flex items-center justify-between">
-              <span className="kv-tag kv-tag-neutral">Aucun programme</span>
-              <span className="kv-mono">3 questions · 1 min</span>
-            </div>
-            <div>
-              <h2 className="type-display-lg">Construis ton programme.</h2>
-              <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
-                Tu réponds à l’essentiel, l’IA s’occupe du reste : séances, charges, progression et ajustements chaque semaine.
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <section className="flex flex-col gap-[var(--stack-sm)]">
-          <h2 className="px-[var(--inline-xs)] type-title-lg">Comment ça marche</h2>
-          <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
-            {[
-              ["3 questions", "Objectif, échéance, rythme. Ton profil est déjà connu."],
-              ["Proposition", "Phases, semaine type et durée : tu vois avant de valider."],
-              ["Génération", "L’IA construit les séances, les exercices et les charges."],
-              ["C’est parti", "Les séances arrivent dans Sport, jour par jour."],
-            ].map(([t, d], i) => (
-              <li key={t} className="flex gap-[var(--inline-lg)] border-b border-line-subtle px-[var(--inset-md)] py-[var(--inset-sm)] last:border-b-0">
-                <span className="kv-mono pt-0.5 !text-fg-brand">{String(i + 1).padStart(2, "0")}</span>
-                <span>
-                  <span className="block type-title-sm">{t}</span>
-                  <span className="block type-body-sm text-fg-secondary">{d}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {connu.length > 0 && (
-          <section className="flex flex-col gap-[var(--stack-sm)]">
-            <h2 className="px-[var(--inline-xs)] type-title-lg">Ce que l’IA sait déjà</h2>
-            <div className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
-              <p className="type-body-sm text-fg-secondary">Récupéré depuis ton profil et tes autres apps : pas besoin de le redemander.</p>
-              <div className="flex flex-wrap gap-[var(--inline-sm)]">
-                {connu.map((c) => (
-                  <span key={c} className="kv-tag kv-tag-neutral">
-                    {c}
-                  </span>
-                ))}
+        <Segments items={vues} actif={mesSeances ? "seances" : "programme"} label="Vue du programme" />
+        {mesSeances ? (
+          <MesSeances modeles={Object.values(modeles)} perso={params.seances_perso} />
+        ) : (
+          <div className="flex flex-col gap-[var(--stack-lg)]">
+            <Link
+              href="/sport/programme/nouveau"
+              data-module="sport"
+              data-theme="dark"
+              className="kv-ground block overflow-hidden rounded-[var(--radius-card-hero)] bg-surface-page text-fg-primary border border-line-subtle active:opacity-95"
+            >
+              <div className="kv-ground-content flex flex-col gap-[var(--stack-lg)] p-[var(--inset-lg)]">
+                <div className="flex items-center justify-between">
+                  <span className="kv-tag kv-tag-neutral">Aucun programme</span>
+                  <span className="kv-mono">3 questions · 1 min</span>
+                </div>
+                <div>
+                  <h2 className="type-display-lg">Construis ton programme.</h2>
+                  <p className="mt-[var(--stack-xs)] type-body-md text-fg-secondary">
+                    Tu réponds à l’essentiel, l’IA s’occupe du reste : séances, charges, progression et ajustements chaque semaine.
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </Link>
+
+            <section className="flex flex-col gap-[var(--stack-sm)]">
+              <h2 className="px-[var(--inline-xs)] type-title-lg">Comment ça marche</h2>
+              <ol className="overflow-hidden rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default">
+                {[
+                  ["3 questions", "Objectif, échéance, rythme. Ton profil est déjà connu."],
+                  ["Proposition", "Phases, semaine type et durée : tu vois avant de valider."],
+                  ["Génération", "L’IA construit les séances, les exercices et les charges."],
+                  ["C’est parti", "Les séances arrivent dans Sport, jour par jour."],
+                ].map(([t, d], i) => (
+                  <li key={t} className="flex gap-[var(--inline-lg)] border-b border-line-subtle px-[var(--inset-md)] py-[var(--inset-sm)] last:border-b-0">
+                    <span className="kv-mono pt-0.5 !text-fg-brand">{String(i + 1).padStart(2, "0")}</span>
+                    <span>
+                      <span className="block type-title-sm">{t}</span>
+                      <span className="block type-body-sm text-fg-secondary">{d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            {connu.length > 0 && (
+              <section className="flex flex-col gap-[var(--stack-sm)]">
+                <h2 className="px-[var(--inline-xs)] type-title-lg">Ce que l’IA sait déjà</h2>
+                <div className="flex flex-col gap-[var(--stack-sm)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)]">
+                  <p className="type-body-sm text-fg-secondary">Récupéré depuis ton profil et tes autres apps : pas besoin de le redemander.</p>
+                  <div className="flex flex-wrap gap-[var(--inline-sm)]">
+                    {connu.map((c) => (
+                      <span key={c} className="kv-tag kv-tag-neutral">
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
         )}
       </div>
     </ModuleFrame>
+  );
+}
+
+/** « Créer une séance » : l'action de la vue Mes séances, en barre fixe. */
+function BoutonCreerSeance() {
+  return (
+    <Link href="/sport/ma-seance/nouvelle" className="kv-btn kv-btn-primary kv-btn-xl kv-btn-block">
+      <Icon name="add" size={22} />
+      <span className="kv-btn-label">Créer une séance</span>
+    </Link>
   );
 }
 
@@ -388,13 +458,10 @@ function MesSeances({
   perso: Array<{ jour: number; modele_id: string }>;
 }) {
   return (
-    <section className="flex flex-col gap-[var(--stack-sm)]">
-      <div className="flex items-baseline justify-between px-[var(--inline-xs)]">
-        <h2 className="type-title-lg">Mes séances</h2>
-        <Link href="/sport/ma-seance/nouvelle" className="flex items-center gap-[var(--inline-xs)] type-label-md text-fg-link">
-          <Icon name="add" size={18} /> Créer
-        </Link>
-      </div>
+    <section className="flex flex-col gap-[var(--stack-sm)]" aria-label="Mes séances">
+      <p className="px-[var(--inline-xs)] type-body-sm text-fg-secondary">
+        Tes séances à toi : enregistre-les une fois, mets-les au programme un jour fixe ou ponctuellement.
+      </p>
       {modeles.length === 0 ? (
         <Link
           href="/sport/ma-seance/nouvelle"
@@ -405,9 +472,7 @@ function MesSeances({
           </span>
           <span>
             <span className="block type-title-sm">Crée ta propre séance</span>
-            <span className="block type-body-sm text-fg-secondary">
-              Tes exercices, tes séries : enregistre-la, mets-la au programme un jour fixe ou une fois.
-            </span>
+            <span className="block type-body-sm text-fg-secondary">Tes exercices, tes séries, ton ordre.</span>
           </span>
         </Link>
       ) : (

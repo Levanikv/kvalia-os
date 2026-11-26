@@ -24,3 +24,4 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0017](0017-deplacer-une-seance.md)                 | Sport : déplacer une séance (reporter, avancer) — le programme suit, jamais deux séances le même jour | acceptée |
 | [0018](0018-noms-anglais-et-jour-le-jour.md)        | Sport : noms de séances et d'exercices en anglais ; programme en file, au jour le jour              | acceptée |
 | [0019](0019-bibliotheque-exercices-gym-visual.md)   | Bibliothèque d'exercices : 1 324 exercices animés, données MIT, médias © Gym visual (remplace 0006)  | acceptée |
+| [0020](0020-sport-nutrition-selecteur-et-barres.md) | Sport & Nutrition : sélecteur dans l'en-tête, une barre par espace, « + » seulement là où il sert (précise 0008) | acceptée |

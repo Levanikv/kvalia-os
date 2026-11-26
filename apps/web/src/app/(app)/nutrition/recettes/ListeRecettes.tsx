@@ -1,116 +1,141 @@
 "use client";
-import Link from "next/link";
 import { useState } from "react";
 import { LIBELLES_REPAS, REPAS, type RecetteSortie, type Repas } from "@kvalia/core";
+import { BottomSheet } from "@/components/BottomSheet";
+import { BoutonFiltres, ChampRecherche } from "@/components/ChampRecherche";
 import { Icon } from "@/components/Icon";
+import { Puces } from "@/components/Puces";
+import { Segments } from "@/components/Segments";
+import { CarteRecette } from "./CarteRecette";
 import { LIBELLES_TAGS } from "./tags";
 
-/** Liste des recettes : filtre par repas, par usage, tri selon l'objectif du programme sportif. */
+/**
+ * Liste des recettes. Même grammaire de filtres que la bibliothèque d'exercices : « Toutes / Mes recettes » en
+ * segmented control, la recherche, une rangée de puces (le repas), et les usages dans la feuille « Filtres ».
+ * Tri : ce qui sert l'objectif du programme sportif d'abord.
+ */
 type Props = { recettes: RecetteSortie[]; objectif: string | null; repasInitial: Repas | null };
+type Vue = "toutes" | "miennes";
 
+const VUES = [
+  { cle: "toutes", label: "Toutes" },
+  { cle: "miennes", label: "Mes recettes" },
+] as const;
 const USAGES = ["avant_seance", "apres_seance", "riche_proteines", "leger", "rapide", "vegetarien"];
 /** Étiquettes mises en avant selon l'objectif du programme actif. */
-const POUR_OBJECTIF: Record<string, { tags: string[]; texte: string }> = {
-  perte_de_gras: { tags: ["seche", "leger"], texte: "Ton programme vise la perte de gras : les recettes rassasiantes et légères sont en tête." },
-  hypertrophie: {
-    tags: ["masse", "riche_proteines"],
-    texte: "Ton programme vise la prise de muscle : les recettes denses et riches en protéines sont en tête.",
-  },
-  force: { tags: ["masse", "riche_proteines"], texte: "Ton programme vise la force : les recettes denses et riches en protéines sont en tête." },
-  endurance: { tags: ["avant_seance"], texte: "Ton programme vise l’endurance : les recettes riches en glucides sont en tête." },
+const POUR_OBJECTIF: Record<string, string[]> = {
+  perte_de_gras: ["seche", "leger"],
+  hypertrophie: ["masse", "riche_proteines"],
+  force: ["masse", "riche_proteines"],
+  endurance: ["avant_seance"],
 };
 
-const nf = (n: number) => n.toLocaleString("fr-FR");
-
 export function ListeRecettes({ recettes, objectif, repasInitial }: Props) {
+  const [vue, setVue] = useState<Vue>("toutes");
+  const [q, setQ] = useState("");
   const [repas, setRepas] = useState<Repas | null>(repasInitial);
-  const [usage, setUsage] = useState<string | null>(null);
+  const [usages, setUsages] = useState<string[]>([]);
+  const [feuille, setFeuille] = useState(false);
   const pour = objectif ? POUR_OBJECTIF[objectif] : undefined;
   const petit = repas === "collation" || repas === "encas";
+  const t = q.trim().toLowerCase();
   const visibles = recettes
+    .filter((r) => vue === "toutes" || r.perso || r.utilisations > 0)
+    .filter((r) => !t || r.nom.toLowerCase().includes(t))
     .filter((r) => !repas || r.repas.includes(repas) || (petit && (r.repas.includes("collation") || r.repas.includes("encas"))))
-    .filter((r) => !usage || r.tags.includes(usage))
-    .map((r) => ({ r, pertinence: pour ? pour.tags.filter((t) => r.tags.includes(t)).length : 0 }))
-    .sort((a, b) => b.pertinence - a.pertinence || a.r.nom.localeCompare(b.r.nom));
+    .filter((r) => usages.every((u) => r.tags.includes(u)))
+    .map((r) => ({ r, pertinence: pour ? pour.filter((x) => r.tags.includes(x)).length : 0 }))
+    .sort((a, b) => (vue === "miennes" ? b.r.utilisations - a.r.utilisations : 0) || b.pertinence - a.pertinence || a.r.nom.localeCompare(b.r.nom));
+  const basculer = (u: string) => setUsages((x) => (x.includes(u) ? x.filter((y) => y !== u) : [...x, u]));
 
   return (
     <div className="flex flex-col gap-[var(--stack-md)]">
-      <div className="-mx-[var(--page-gutter)] flex gap-[var(--inline-sm)] overflow-x-auto px-[var(--page-gutter)] pb-1" role="radiogroup" aria-label="Repas">
-        <button type="button" role="radio" aria-checked={!repas} onClick={() => setRepas(null)} className={`kv-chip shrink-0 ${!repas ? "is-on" : ""}`}>
-          Tout
-        </button>
-        {REPAS.map((r) => (
+      <Segments items={VUES} actif={vue} label="Quelles recettes" onChoisir={setVue} />
+      <ChampRecherche
+        valeur={q}
+        onChange={setQ}
+        placeholder="Chercher une recette"
+        label="Chercher une recette"
+        apres={<BoutonFiltres actifs={usages.length} onClick={() => setFeuille(true)} />}
+      />
+      <Puces label="Repas" items={REPAS.map((r) => ({ cle: r, label: LIBELLES_REPAS[r] }))} actif={repas} onChoisir={setRepas} />
+
+      <div className="flex min-h-[var(--control-sm)] flex-wrap items-center gap-[var(--inline-sm)] px-[var(--inline-xs)]">
+        <span className="type-label-md text-fg-secondary">
+          {visibles.length} recette{visibles.length > 1 ? "s" : ""}
+          {pour && vue === "toutes" ? " · triées pour ton programme" : ""}
+        </span>
+        {usages.map((u) => (
           <button
-            key={r}
+            key={u}
             type="button"
-            role="radio"
-            aria-checked={repas === r}
-            onClick={() => setRepas(r)}
-            className={`kv-chip shrink-0 ${repas === r ? "is-on" : ""}`}
+            onClick={() => basculer(u)}
+            aria-label={`Retirer le filtre ${LIBELLES_TAGS[u]}`}
+            className="flex h-[var(--control-sm)] items-center gap-[var(--inline-xs)] rounded-full bg-surface-container-brand-subtle pl-[var(--inset-sm)] pr-[var(--inset-xs)] type-label-md text-fg-brand"
           >
-            {LIBELLES_REPAS[r]}
+            {LIBELLES_TAGS[u]}
+            <Icon name="close" size={16} />
           </button>
         ))}
       </div>
-      <div className="-mx-[var(--page-gutter)] flex gap-[var(--inline-sm)] overflow-x-auto px-[var(--page-gutter)] pb-1" aria-label="Usage">
-        {USAGES.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={usage === t}
-            onClick={() => setUsage(usage === t ? null : t)}
-            className={`kv-chip shrink-0 ${usage === t ? "is-on" : ""}`}
-          >
-            {LIBELLES_TAGS[t]}
-          </button>
-        ))}
-      </div>
-      {pour && (
-        <p className="flex items-start gap-[var(--inline-sm)] rounded-[var(--radius-input)] bg-surface-container-brand-subtle p-[var(--inset-sm)] type-body-sm">
-          <Icon name="fitness_center" size={18} className="mt-0.5 shrink-0 text-fg-brand" />
-          <span>{pour.texte}</span>
-        </p>
-      )}
-      <p className="px-[var(--inline-xs)] kv-overline">
-        {visibles.length} recette{visibles.length > 1 ? "s" : ""}
-      </p>
+
       {visibles.length === 0 ? (
         <p className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-[var(--inset-lg)] text-center type-body-sm text-fg-secondary">
-          Aucune recette pour ces filtres. Retire-en un.
+          {vue === "miennes" && !t && !repas && usages.length === 0
+            ? "Tes recettes arrivent ici dès que tu en notes une au journal — ou demande à l’agent d’en créer une."
+            : "Aucune recette pour ces filtres. Retire-en un."}
         </p>
       ) : (
         <ul className="flex flex-col gap-[var(--stack-sm)]">
           {visibles.map(({ r, pertinence }) => (
             <li key={r.id}>
-              <Link
+              <CarteRecette
+                recette={r}
                 href={`/nutrition/recettes/${r.id}${repas ? `?repas=${repas}` : ""}`}
-                className="flex flex-col gap-[var(--stack-xs)] rounded-[var(--radius-card)] border border-line-subtle bg-surface-container-default p-[var(--inset-md)] active:opacity-90"
-              >
-                <div className="flex items-start justify-between gap-[var(--inline-md)]">
-                  <h2 className="type-title-sm">{r.nom}</h2>
-                  <span className="shrink-0 text-right">
-                    <span className="type-title-md tabular-nums">{nf(r.kcal)}</span> <span className="kv-mono">kcal</span>
-                  </span>
-                </div>
-                <p className="kv-mono">
-                  P {r.prot} g · G {r.gluc} g · L {r.lip} g{r.temps_min ? ` · ${r.temps_min} min` : ""}
-                </p>
-                <div className="flex flex-wrap gap-[var(--inline-xs)]">
-                  {pertinence > 0 && <span className="kv-tag kv-tag-brand">Pour ton programme</span>}
-                  {r.tags
-                    .filter((t) => ["avant_seance", "apres_seance", "riche_proteines", "leger", "vegetarien"].includes(t))
-                    .slice(0, 3)
-                    .map((t) => (
-                      <span key={t} className="kv-tag kv-tag-neutral">
-                        {LIBELLES_TAGS[t]}
-                      </span>
-                    ))}
-                </div>
-              </Link>
+                etiquette={
+                  vue === "miennes" ? (r.utilisations > 0 ? `Notée ${r.utilisations} fois` : "Ta recette") : pertinence > 0 ? "Pour ton programme" : undefined
+                }
+              />
             </li>
           ))}
         </ul>
       )}
+
+      <BottomSheet
+        ouvert={feuille}
+        onFermer={() => setFeuille(false)}
+        titre="Filtres"
+        module="nutrition"
+        pied={
+          <div className="flex gap-[var(--inline-md)]">
+            <button type="button" disabled={!usages.length} onClick={() => setUsages([])} className="kv-btn kv-btn-tertiary kv-btn-lg flex-1">
+              Tout effacer
+            </button>
+            <button type="button" onClick={() => setFeuille(false)} className="kv-btn kv-btn-primary kv-btn-lg flex-[1.6]">
+              <span className="kv-btn-label">
+                Voir {visibles.length} recette{visibles.length > 1 ? "s" : ""}
+              </span>
+            </button>
+          </div>
+        }
+      >
+        <section className="flex flex-col gap-[var(--stack-sm)] pt-[var(--stack-xs)]">
+          <h3 className="type-title-sm">Pour quoi ?</h3>
+          <div className="flex flex-wrap gap-[var(--inline-sm)]">
+            {USAGES.map((u) => (
+              <button
+                key={u}
+                type="button"
+                aria-pressed={usages.includes(u)}
+                onClick={() => basculer(u)}
+                className={`kv-chip ${usages.includes(u) ? "is-on" : ""}`}
+              >
+                {LIBELLES_TAGS[u]}
+              </button>
+            ))}
+          </div>
+        </section>
+      </BottomSheet>
     </div>
   );
 }

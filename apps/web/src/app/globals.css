@@ -307,6 +307,168 @@ body {
   }
 }
 
+/*
+ * Sport & Nutrition — navigation (docs/sitemap.md § Navigation).
+ * - .bascule : sélecteur Sport / Nutrition de l'en-tête (deux segments, l'actif sur une pastille claire).
+ * - .onglet-actif : l'onglet courant de la barre s'ouvre et montre son nom.
+ * - .segments : segmented control en grand (vues d'un même écran).
+ * - .ajout-* : le « + » de Nutrition qui se déploie (voile, actions en cascade, « + » qui tourne en croix).
+ */
+.bascule {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: min(100%, 15.5rem);
+  height: var(--control-md);
+  margin-inline: auto;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-control);
+  background: var(--surface-container-sunken);
+}
+.bascule-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-control);
+  border: var(--border-width-default) solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-quick) var(--ease-standard),
+    color var(--duration-quick) var(--ease-standard);
+}
+.bascule-item.is-on {
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-container-default);
+  border-color: var(--border-subtle);
+}
+.kv-tab {
+  transition:
+    background-color var(--duration-quick) var(--ease-standard),
+    opacity var(--duration-quick) var(--ease-standard);
+}
+.kv-tab.onglet-actif {
+  width: auto;
+  gap: var(--inline-sm);
+  padding: 0 var(--inset-md) 0 var(--inset-sm);
+  border-radius: var(--radius-control);
+}
+.kv-seg.segments {
+  height: var(--control-lg);
+}
+.kv-seg.segments .kv-seg-item {
+  font-size: 15px;
+  border: var(--border-width-default) solid transparent;
+}
+.kv-seg.segments .kv-seg-item.is-on {
+  border-color: var(--border-subtle);
+}
+.puces {
+  scrollbar-width: none;
+}
+.puces::-webkit-scrollbar {
+  display: none;
+}
+.puces .kv-chip {
+  height: var(--control-md);
+  font-size: 14px;
+}
+
+.ajout-rapide {
+  position: relative;
+  display: flex;
+}
+.kv-tabbar {
+  transition: opacity var(--duration-quick) var(--ease-standard);
+}
+.kv-tabbar-wrap:has(.ajout-rapide[data-ouvert="true"]) .kv-tabbar {
+  opacity: 0;
+  pointer-events: none;
+}
+.ajout-plus {
+  transition: transform var(--duration-base) var(--ease-emphasized);
+}
+.ajout-rapide[data-ouvert="true"] .ajout-plus {
+  transform: rotate(135deg);
+}
+.ajout-voile {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--surface-page) 86%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: feuille-voile var(--duration-base) var(--ease-decelerate);
+}
+.ajout-actions {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--stack-lg));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--stack-md);
+}
+@keyframes ajout-monte {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ajout-actions > li {
+  transform-origin: right bottom;
+  animation: ajout-monte var(--duration-slow) var(--ease-emphasized) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+.ajout-action {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-md);
+  /* La pastille (56) se centre sur le « + » (64). */
+  padding-right: 4px;
+  white-space: nowrap;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.ajout-action:active {
+  transform: scale(0.96);
+}
+.ajout-etiquette {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ajout-pastille {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-avatar);
+  background: var(--surface-container-default);
+  border: var(--border-width-default) solid var(--border-default);
+  color: var(--text-brand);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ajout-voile,
+  .ajout-actions > li {
+    animation: none;
+  }
+  .ajout-plus,
+  .ajout-action {
+    transition: none;
+  }
+}
+
 /* Bande de jours : défilement horizontal, snap, sans barre */
 .bande-jours {
   scroll-snap-type: x proximity;

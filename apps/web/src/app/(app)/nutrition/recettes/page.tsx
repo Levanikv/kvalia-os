@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { listerRecettes, Repas } from "@kvalia/core";
-import { Icon } from "@/components/Icon";
 import { ModuleFrame } from "@/components/ModuleFrame";
 import { session } from "@/lib/session";
 import { ListeRecettes } from "./ListeRecettes";
@@ -8,8 +6,9 @@ import { ListeRecettes } from "./ListeRecettes";
 type Props = { searchParams: Promise<{ repas?: string }> };
 
 /**
- * Recettes : les recettes avec leurs macros par portion, filtrables par repas et par usage (avant / après la séance,
- * riche en protéines, léger…). L'objectif du programme actif met en avant ce qui lui correspond.
+ * Onglet Recettes : toutes les recettes, ou seulement les siennes (créées, ou déjà notées au journal — `perso` et
+ * `utilisations` de l'outil lister_recettes), par recherche, repas et usage. L'objectif du programme actif met en
+ * tête ce qui lui correspond.
  */
 export default async function Page({ searchParams }: Props) {
   const { supabase, user } = await session();
@@ -21,16 +20,7 @@ export default async function Page({ searchParams }: Props) {
   const objectif = (prog?.rythme as { objectif?: string } | null)?.objectif ?? null;
   const initial = Repas.safeParse(repas);
   return (
-    <ModuleFrame
-      module="nutrition"
-      surTitre="Nutrition"
-      titre="Recettes"
-      gauche={
-        <Link href="/nutrition" className="kv-iconbtn" aria-label="Retour au journal">
-          <Icon name="chevron_left" size={24} />
-        </Link>
-      }
-    >
+    <ModuleFrame module="nutrition" surTitre={`${recettes.length} recettes · macros par portion`} titre="Recettes">
       <ListeRecettes recettes={recettes} objectif={objectif} repasInitial={initial.success ? initial.data : null} />
     </ModuleFrame>
   );
