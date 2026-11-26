@@ -397,6 +397,7 @@ export async function executer<T extends ToolName>(nom: T, entree: ToolInput<T>,
         score: x.score,
         image_url: x.image_url,
         video_url: x.video_url,
+        gif_url: x.gif_url,
       })) as ToolOutput<T>;
     }
 

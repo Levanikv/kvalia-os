@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
+import { CREDIT_MEDIA, estAnimation } from "../../lib";
 
 export type Video = {
   nom: string;
@@ -127,7 +128,12 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
 
         {/* Vidéo au format d'origine (16:9), entière : plus de recadrage en hauteur. */}
         <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-surface-container-inverse">
-          {v.video ? (
+          {estAnimation(v.video) ? (
+            <>
+              <img src={v.video ?? ""} alt="" className="h-full w-full bg-white object-contain" />
+              <span className="absolute bottom-1 right-2 kv-mono text-black/60">{CREDIT_MEDIA}</span>
+            </>
+          ) : v.video ? (
             <video
               ref={ref}
               src={v.video}
@@ -147,7 +153,7 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
               <Icon name="videocam_off" size={40} />
             </div>
           )}
-          {v.video && (
+          {v.video && !estAnimation(v.video) && (
             <button type="button" onClick={basculer} aria-label={lecture ? "Pause" : "Lecture"} className="absolute inset-0 flex items-center justify-center">
               <span
                 className={`flex h-14 w-14 items-center justify-center rounded-full bg-action-glass backdrop-blur transition-opacity ${lecture ? "opacity-0" : "opacity-100"}`}
@@ -156,7 +162,7 @@ function Panneau({ video: v, onFermer, action }: Props & { video: Video }) {
               </span>
             </button>
           )}
-          {v.video && temps.d > 0 && (
+          {v.video && !estAnimation(v.video) && temps.d > 0 && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-action-glass" aria-hidden>
               <div className="h-full bg-action-primary" style={{ width: `${(temps.t / temps.d) * 100}%` }} />
             </div>

@@ -48,7 +48,7 @@ Config de build : `railpack.json` (racine, agent) et `apps/web/railpack.json` (w
 
 - **Migration** : écrire `supabase/migrations/YYYYMMDDHHMMSS_nom.sql`, l'appliquer (MCP Supabase `apply_migration` avec le même nom, ou `pnpm db:push`), régénérer les types (`pnpm db:types` ou MCP `generate_typescript_types` → `packages/core/src/database.types.ts`), committer les deux.
 - **Realtime** : `alter publication supabase_realtime add table public.<table>; alter table public.<table> replica identity full;`
-- **Seed des exercices** : `pnpm --filter @kvalia/agent seed:exercices` (service role, upsert par lots de 100). Vérifier : `select count(*) from exercices_ref` = 317.
+- **Seed des exercices** : fait par l'agent à son démarrage si la base n'est pas à jour (`apps/agent/src/semer-exercices.ts`, ADR 0019) ; à la main : `pnpm --filter @kvalia/agent seed:exercices`. Vérifier : `select count(*) from exercices_ref where source = 'gym-visual'` = 1 324.
 - **Programme sans réseau** : `pnpm --filter @kvalia/core exec tsx scripts/programme-sql.ts <user_id> <lundi ISO> [poids]` → SQL dans `/tmp/prog-*.sql`, à exécuter via MCP Supabase `execute_sql`.
 - **Inspecter** : MCP Supabase `execute_sql` (lecture) ; `get_advisors` pour la sécurité/perf après une migration.
 

@@ -70,7 +70,7 @@ export default async function Page({ params, searchParams }: Props) {
         ) : undefined
       }
     >
-      <Video src={e.video_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
+      <Video src={e.video_url ?? e.gif_url} srcF={e.video_url_f} poster={e.image_url} posterF={e.image_url_f} />
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
         {e.partie_corps && <span className="rounded-full bg-action-primary/20 px-2.5 py-1 font-medium text-fg-brand">{libellePartie(e.partie_corps)}</span>}

@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@kvalia/core";
+import { SOURCE_EXERCICES, type Database } from "@kvalia/core";
 import { aujourdhui } from "@/lib/session";
 import { decaler, libellePartie, nomAffiche } from "../lib";
 
-/** Référentiel pour le sélecteur d'exercices (317 mouvements, nom affiché en français) et dates utiles. */
+/** Référentiel pour le sélecteur d'exercices (bibliothèque en service, noms d'usage en anglais) et dates utiles. */
 export async function donneesEditeur(db: SupabaseClient<Database>) {
-  const { data } = await db.from("exercices_ref").select("id, nom, nom_fr, partie_corps, equipement, image_url").order("nom");
+  const { data } = await db
+    .from("exercices_ref")
+    .select("id, nom, nom_fr, partie_corps, equipement, image_url")
+    .eq("source", SOURCE_EXERCICES)
+    .order("nom")
+    .limit(3000);
   const refs = (data ?? []).map((e) => ({
     id: e.id,
     nom: nomAffiche(e),

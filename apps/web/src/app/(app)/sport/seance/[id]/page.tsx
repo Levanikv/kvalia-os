@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { dernieresCharges, parametresSport, poidsActuel, type Realise } from "@kvalia/core";
 import { RealtimeRefresh } from "@/components/RealtimeRefresh";
 import { aujourdhui, session } from "@/lib/session";
-import { chargerSeance, kcalPrevues, libelleFocus, libellePartie, libelleType, nomAffiche, positionProgramme } from "../../lib";
+import { demo, chargerSeance, kcalPrevues, libelleFocus, libellePartie, libelleType, nomAffiche, positionProgramme } from "../../lib";
 import { SeanceLive, type ExoVue, type SeanceVue } from "./SeanceLive";
 
 type Props = { params: Promise<{ id: string }> };
@@ -47,7 +47,7 @@ export default async function Page({ params }: Props) {
       nom: nomAffiche(e.exercices_ref),
       partie: libellePartie(e.exercices_ref.partie_corps),
       image: e.exercices_ref.image_url,
-      video: e.exercices_ref.video_url,
+      video: demo(e.exercices_ref),
       series: e.series,
       reps: e.reps,
       repos_s: e.repos_s,

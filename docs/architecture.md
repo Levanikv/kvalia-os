@@ -44,7 +44,7 @@ Une base Supabase (Postgres + RLS + Realtime) au centre ; un **noyau TypeScript*
 
 - **Identité** : `auth.users` → `profils` (prénom, `reglages` jsonb : `sport`, `nutrition`, widgets…).
 - **Quotidien** : `listes` / `lignes` / `produits` (courses), `taches`, `habitudes` / `habitudes_log`.
-- **Sport** : `exercices_ref` (référentiel, 317, vidéos H/F, MET), `programmes` (actif, rythme jsonb, matériel), `seances` (jour, type, bloc, semaine, focus, état, kcal, debut_le, faite_le, ressenti), `exercices_seance` (prescription séries/reps/repos, duree_s, kcal, fait, charge_kg, realise jsonb, substitut_de).
+- **Sport** : `exercices_ref` (référentiel, 1 324 exercices animés en service — ADR 0019 —, MET), `programmes` (actif, rythme jsonb, matériel), `seances` (jour, type, bloc, semaine, focus, état, kcal, debut_le, faite_le, ressenti), `exercices_seance` (prescription séries/reps/repos, duree_s, kcal, fait, charge_kg, realise jsonb, substitut_de).
 - **Nutrition** : `journal_repas`, `pesees`, `recettes`, `plans_repas` (phase 2).
 - **Transverse** : `vue_jour` (RPC), `appels_outils` (journal des appels agent), `documents`, `objectifs`.
 

@@ -34,7 +34,7 @@ Source de vérité pour le routing de `apps/web`. Une mini-app = un module = un 
 │   │                                 un autre jour ; résumé quand elle est faite
 │   ├── /sport/seance/[id]/fin        Fin de séance : kcal, volume, séries, exercices, défi de la semaine, ratés reprogrammés
 │   │                                 → « Retour à l'accueil » (/sport?enregistree=1 : toast « Séance enregistrée »)
-│   ├── /sport/exercices              Bibliothèque (317 vidéos) : recherche, partie du corps, matériel
+│   ├── /sport/exercices              Bibliothèque (1 324 exercices animés, © Gym visual) : recherche, partie du corps, matériel, 40 par page
 │   ├── /sport/exercices/[id]         Fiche exercice : vidéo en boucle H/F, consignes, repères, erreurs, respiration
 │   │                                 (?seance=<id> : prescription + « Fait → suivant »)
 │   ├── /sport/programme              Programme actif (maquette 14) : carte du programme (objectif, rythme, semaine n / N,

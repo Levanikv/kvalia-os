@@ -14,6 +14,7 @@ import { createServiceClient, executer, tools, toolsAvecConfirmation, type ToolN
 import { analyseurClaude } from "@kvalia/vision";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { semerExercices } from "./semer-exercices";
 import { contexteTiime } from "./tiime";
 
 // Charge le .env à la racine du mono-repo (apps/agent/src → ../../../.env). En prod les variables viennent de l'hébergeur.
@@ -129,3 +130,12 @@ if (MCP_TOKEN) {
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`KVALIA OS agent — MCP sur http://localhost:${PORT}/mcp`);
 });
+
+// Bibliothèque d'exercices : mise à niveau au démarrage si la base n'est pas à jour (sans bloquer le serveur).
+try {
+  semerExercices(createServiceClient())
+    .then((r) => (r.semes || r.ranges ? console.log(`[kvalia] exercices : ${r.semes} semés, ${r.ranges} anciens rangés`) : null))
+    .catch((e) => console.error("[kvalia] exercices non semés :", e instanceof Error ? e.message : e));
+} catch (e) {
+  console.error("[kvalia] exercices non semés :", e instanceof Error ? e.message : e);
+}

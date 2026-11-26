@@ -1,6 +1,6 @@
 # 0006 — Référentiel d'exercices : free-exercise-db-with-videos
 
-**Date** : 7 nov. 2026 · **Statut** : acceptée
+**Date** : 7 nov. 2026 · **Statut** : remplacée par [0019](0019-bibliotheque-exercices-gym-visual.md)
 
 ## Contexte
 

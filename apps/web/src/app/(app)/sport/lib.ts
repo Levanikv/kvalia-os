@@ -6,7 +6,7 @@ import type { MarqueJour } from "@/components/BandeJours";
 type Db = SupabaseClient<Database>;
 
 export const SELECT_SEANCE =
-  "*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, nom_fr, partie_corps, muscles, equipement, image_url, video_url, difficulte))";
+  "*, exercices_seance(*, exercices_ref!exercices_seance_exercice_id_fkey(id, nom, nom_fr, partie_corps, muscles, equipement, image_url, video_url, gif_url, difficulte))";
 
 export type SeanceComplete = NonNullable<Awaited<ReturnType<typeof chargerSeance>>>;
 export type ExoSeance = SeanceComplete["exercices_seance"][number];
@@ -120,3 +120,11 @@ export function kcalPrevues(s: { exercices_seance: Array<{ kcal: number | null }
 export function nomAffiche(e: { nom: string; nom_fr?: string | null }): string {
   return nomUsuel(e.nom);
 }
+
+/** La démonstration d'un exercice : une vidéo (ancienne bibliothèque) ou, désormais, une animation GIF (ADR 0019). */
+export function demo(e: { video_url?: string | null; gif_url?: string | null }): string | null {
+  return e.video_url ?? e.gif_url ?? null;
+}
+export const estAnimation = (url: string | null | undefined) => !!url && /\.gif(\?|$)/i.test(url);
+/** Mention obligatoire sous chaque animation ou vignette de la bibliothèque. */
+export const CREDIT_MEDIA = "© Gym visual — gymvisual.com";

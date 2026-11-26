@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LIBELLES } from "@kvalia/core";
 import { Icon } from "@/components/Icon";
+import { CREDIT_MEDIA } from "../lib";
 
 type E = {
   id: string;
@@ -16,12 +17,15 @@ type E = {
   compose: boolean;
 };
 
+const PAGE = 40;
 const PARTIES = ["chest", "back", "shoulders", "upper arms", "lower arms", "upper legs", "lower legs", "waist", "hips", "cardio"];
 
 export function Bibliotheque({ exercices }: { exercices: E[] }) {
   const [q, setQ] = useState("");
   const [partie, setPartie] = useState<string | null>(null);
   const [materiel, setMateriel] = useState<string | null>(null);
+  // On n'affiche qu'une page à la fois : la liste reste légère même avec plus de mille exercices.
+  const [visibles, setVisibles] = useState(PAGE);
 
   const materiels = useMemo(() => [...new Set(exercices.map((e) => e.equipement).filter(Boolean) as string[])].sort(), [exercices]);
   const liste = useMemo(() => {
@@ -40,7 +44,10 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
         <Icon name="search" size={20} className="text-fg-tertiary" />
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setVisibles(PAGE);
+          }}
           placeholder="Rechercher (développé, lats, squat…)"
           className="tap w-full bg-transparent text-sm outline-none"
         />
@@ -76,14 +83,16 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
         {liste.length} exercice{liste.length > 1 ? "s" : ""}
       </p>
       <ul className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {liste.map((e) => (
+        {liste.slice(0, visibles).map((e) => (
           <li key={e.id}>
             <Link
               href={`/sport/exercices/${e.id}`}
               className="block overflow-hidden rounded-lg border border-line-default bg-surface-default active:opacity-80"
             >
-              <div className="relative aspect-[4/3] bg-surface-sunken">
-                {e.image_url && <img src={e.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />}
+              <div className="relative aspect-[4/3] bg-white">
+                {e.image_url && (
+                  <img src={e.image_url} alt="" loading="lazy" decoding="async" width={180} height={180} className="h-full w-full object-contain" />
+                )}
                 <span className="kv-tag kv-tag-neutral absolute bottom-1.5 left-1.5">{LIBELLES.partie[e.partie_corps ?? ""] ?? e.partie_corps}</span>
               </div>
               <div className="p-2.5">
@@ -97,6 +106,12 @@ export function Bibliotheque({ exercices }: { exercices: E[] }) {
           </li>
         ))}
       </ul>
+      {liste.length > visibles && (
+        <button type="button" onClick={() => setVisibles((n) => n + PAGE)} className="kv-btn kv-btn-tertiary kv-btn-lg kv-btn-block mt-4">
+          <span className="kv-btn-label">Afficher plus · {liste.length - visibles} restants</span>
+        </button>
+      )}
+      <p className="mt-4 text-center kv-mono">{CREDIT_MEDIA}</p>
     </div>
   );
 }

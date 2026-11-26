@@ -19,6 +19,7 @@ type Equivalent = {
   raison: string;
   image_url: string | null;
   video_url: string | null;
+  gif_url?: string | null;
 };
 /** Vidéo à montrer dans la feuille vidéo (exercice de la séance ou équivalent proposé). */
 export type Apercu = { nom: string; video: string | null; image: string | null; detail: string };
@@ -225,7 +226,7 @@ function Contenu({ exo, index, total, modifiable, peutModifier, onApercu, enPaus
                     onClick={() =>
                       onApercu({
                         nom: nomAffiche(q),
-                        video: q.video_url,
+                        video: q.video_url ?? q.gif_url ?? null,
                         image: q.image_url,
                         detail: `${exo.series} × ${exo.reps}${q.equipement ? ` · ${libelleMateriel(q.equipement)}` : ""}`,
                       })

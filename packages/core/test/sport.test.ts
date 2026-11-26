@@ -195,22 +195,22 @@ describe("suivi d'une séance", () => {
 describe("equivalents / remplacerExercice", () => {
   it("propose des exercices du même muscle cible, matériel disponible", async () => {
     const db = base();
-    const eq = await equivalents(db, "0025", PARAMETRES_SPORT_DEFAUT.materiel, [], 5); // Barbell Bench Press
+    const eq = await equivalents(db, "gv-0025", PARAMETRES_SPORT_DEFAUT.materiel, [], 5); // Barbell Bench Press
     expect(eq.length).toBe(5);
     expect(eq.every((e) => e.muscles.map((m) => m.toLowerCase()).includes("pectorals"))).toBe(true);
-    expect(eq.find((e) => e.id === "0025")).toBeUndefined();
+    expect(eq.find((e) => e.id === "gv-0025")).toBeUndefined();
   });
 
   it("remplace dans toutes les séances à venir du programme, avec kcal recalculées et substitut_de renseigné", async () => {
     const db = base();
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 80 }, "2026-11-09");
-    const premiere = db.tables.exercices_seance.find((e: any) => e.exercice_id === "0025");
-    const occurrences = db.tables.exercices_seance.filter((e: any) => e.exercice_id === "0025").length;
-    const r = await remplacerExercice(db, USER, premiere.id, "0302", "programme");
+    const premiere = db.tables.exercices_seance.find((e: any) => e.exercice_id === "gv-0025");
+    const occurrences = db.tables.exercices_seance.filter((e: any) => e.exercice_id === "gv-0025").length;
+    const r = await remplacerExercice(db, USER, premiere.id, "gv-0308", "programme");
     expect(r.remplaces).toBe(occurrences);
-    expect(db.tables.exercices_seance.filter((e: any) => e.exercice_id === "0025")).toHaveLength(0);
-    expect(premiere.exercice_id).toBe("0302");
-    expect(premiere.substitut_de).toBe("0025");
+    expect(db.tables.exercices_seance.filter((e: any) => e.exercice_id === "gv-0025")).toHaveLength(0);
+    expect(premiere.exercice_id).toBe("gv-0308");
+    expect(premiere.substitut_de).toBe("gv-0025");
     expect(premiere.kcal).toBe(kcalPour(4.5, 80, premiere.duree_s));
   });
 });
@@ -893,7 +893,7 @@ describe("méthodes de référence", () => {
 });
 
 describe("simple et efficace : des classiques, pas de farfelus", () => {
-  const noms = async (params: Partial<ParametresSport>) => {
+  const nomsGeneres = async (params: Partial<ParametresSport>) => {
     const db = base();
     await genererProgramme(db, USER, { ...PARAMETRES_SPORT_DEFAUT, poids_kg: 82, ...params }, "2026-11-09");
     const parId = new Map(exercicesRef().map((e) => [e.id, e]));
@@ -915,14 +915,31 @@ describe("simple et efficace : des classiques, pas de farfelus", () => {
 
   it("en salle (4 ou 5 séances) : uniquement des classiques, développé couché et tirage en tête de séance", async () => {
     for (const salle of [4, 5]) {
-      const tous = await noms({ rythme: { salle, boxe: 0 }, jours_salle: [1, 2, 3, 4, 5].slice(0, salle), jours_boxe: [] });
+      const tous = await nomsGeneres({ rythme: { salle, boxe: 0 }, jours_salle: [1, 2, 3, 4, 5].slice(0, salle), jours_boxe: [] });
       expect([...new Set(tous.filter((n) => simplicite(n) !== "classique"))]).toEqual([]);
       expect(tous).toContain("Barbell Bench Press");
     }
   });
 
+  it("bibliothèque actuelle : machines modernes disponibles, et choisies quand on préfère les machines", async () => {
+    const noms = new Set(exercicesRef().map((e) => e.nom));
+    for (const n of [
+      "Smith Bench Press",
+      "Smith Incline Bench Press",
+      "Sled Hack Squat",
+      "Sled 45° Leg Press",
+      "Lever Chest Press",
+      "Lever Seated Fly",
+      "Lever Seated Row",
+    ])
+      expect(noms.has(n)).toBe(true);
+    expect(exercicesRef().every((e) => e.source === "gym-visual" && e.gif_url && e.image_url && e.consignes.length > 0)).toBe(true);
+    const machines = await nomsGeneres({ rythme: { salle: 4, boxe: 0 }, jours_boxe: [], profil: { preference_materiel: "machines" } });
+    expect(machines).toEqual(expect.arrayContaining(["Smith Bench Press", "Sled Hack Squat", "Sled 45° Leg Press", "Lever Seated Row"]));
+  });
+
   it("à la maison avec peu de matériel : jamais de farfelu", async () => {
-    const tous = await noms({ rythme: { salle: 3, boxe: 0 }, jours_boxe: [], materiel: ["dumbbell", "body weight", "band"] });
+    const tous = await nomsGeneres({ rythme: { salle: 3, boxe: 0 }, jours_boxe: [], materiel: ["dumbbell", "body weight", "band"] });
     expect(tous.filter((n) => simplicite(n) === "farfelu")).toEqual([]);
   });
 
@@ -1073,10 +1090,14 @@ describe("déplacer une séance : empêchement ou jour en plus, le programme sui
 
   it("noms d'usage en anglais : ceux qu'on entend en salle", () => {
     expect(nomUsuel("Barbell Bench Press")).toBe("Barbell Bench Press");
-    expect(nomUsuel("Sled 45 Degree Wide Leg Press")).toBe("Leg Press");
-    expect(nomUsuel("Barbell Straight Leg Deadlift")).toBe("Romanian Deadlift");
-    expect(nomUsuel("Wide Grip Cable Lat Pulldown")).toBe("Lat Pulldown");
+    expect(nomUsuel("Sled 45° Leg Press")).toBe("Leg Press");
+    expect(nomUsuel("Barbell Romanian Deadlift")).toBe("Romanian Deadlift");
+    expect(nomUsuel("Cable Pulldown (Pro Lat Bar)")).toBe("Lat Pulldown");
+    expect(nomUsuel("Smith Bench Press")).toBe("Smith Machine Bench Press");
+    expect(nomUsuel("Lever Seated Fly")).toBe("Pec Deck");
+    // Hors table : le jargon du référentiel est seulement nettoyé.
     expect(nomUsuel("Lever Kneeling Leg Curl")).toBe("Machine Kneeling Leg Curl");
+    expect(nomUsuel("Smith Deadlift")).toBe("Smith Machine Deadlift");
   });
 
   it("refus : séance déjà commencée, jour passé, même jour", async () => {

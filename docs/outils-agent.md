@@ -88,7 +88,7 @@ Lit les paramètres du programme sportif (rythme salle/boxe, jours, durée, mat�
 - `jours_salle` : liste de entier — défaut `[1,2,4,5]`
 - `jours_boxe` : liste de entier — défaut `[3]`
 - `duree_min` : entier — défaut `60`
-- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","weighted"]`
+- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","sled machine","weighted"]`
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"`
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"`
 - `semaines` : entier — défaut `12`
@@ -108,7 +108,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `jours_salle` : liste de entier — défaut `[1,2,4,5]` (optionnel)
 - `jours_boxe` : liste de entier — défaut `[3]` (optionnel)
 - `duree_min` : entier — défaut `60` (optionnel)
-- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","weighted"]` (optionnel)
+- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","sled machine","weighted"]` (optionnel)
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"` (optionnel)
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"` (optionnel)
 - `semaines` : entier — défaut `12` (optionnel)
@@ -124,7 +124,7 @@ Modifie un ou plusieurs paramètres du programme sportif (ex. passer à 3 séanc
 - `jours_salle` : liste de entier — défaut `[1,2,4,5]`
 - `jours_boxe` : liste de entier — défaut `[3]`
 - `duree_min` : entier — défaut `60`
-- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","weighted"]`
+- `materiel` : liste de string — défaut `["barbell","dumbbell","cable","leverage machine","body weight","ez barbell","smith machine","sled machine","weighted"]`
 - `objectif` : `hypertrophie` · `force` · `perte_de_gras` · `endurance` — défaut `"hypertrophie"`
 - `niveau` : `beginner` · `intermediate` · `advanced` — défaut `"intermediate"`
 - `semaines` : entier — défaut `12`
@@ -310,7 +310,7 @@ Propose des exercices équivalents (même muscle cible, matériel disponible, m�
 - `limite` : entier — défaut `8`
 
 **Sortie**
-- liste de objet { id, nom, nom_fr, partie_corps, equipement, compose, raison, score, image_url, video_url }
+- liste de objet { id, nom, nom_fr, partie_corps, equipement, compose, raison, score, image_url, video_url, gif_url }
 
 ## `remplacer_exercice`
 

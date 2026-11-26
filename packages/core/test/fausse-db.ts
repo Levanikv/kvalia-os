@@ -271,27 +271,10 @@ export function fausseDb(tables: Tables) {
   } as any;
 }
 
-/** Les 317 exercices du référentiel, mappés comme le seed (sans réseau). */
+/** Le référentiel d'exercices tel qu'il est semé en base (`supabase/seed/exercices_ref.source.json`), sans réseau. */
 export function exercicesRef(): Ligne[] {
-  const src = JSON.parse(readFileSync(fileURLToPath(new URL("../../../supabase/seed/exercices_ref.source.json", import.meta.url)), "utf8")) as Array<
-    Record<string, any>
-  >;
-  const met = (e: any) => (e.bodyPart === "cardio" ? 8 : e.equipment === "body weight" ? (e.compound ? 5 : 3.8) : e.compound ? 6 : 4.5);
-  return src.map((e) => ({
-    id: e.id,
-    nom: e.name,
-    nom_fr: null,
-    muscles: [e.target, ...(e.muscleGroup && e.muscleGroup !== e.target ? [e.muscleGroup] : [])].filter(Boolean),
-    muscles_secondaires: e.secondaryMuscles ?? [],
-    equipement: e.equipment ?? null,
-    partie_corps: e.bodyPart ?? null,
-    difficulte: e.difficulty ?? null,
-    compose: Boolean(e.compound),
-    unilateral: Boolean(e.unilateral),
-    met: met(e),
-    image_url: null,
-    video_url: null,
-  }));
+  const src = JSON.parse(readFileSync(fileURLToPath(new URL("../../../supabase/seed/exercices_ref.source.json", import.meta.url)), "utf8")) as Ligne[];
+  return src.map((e) => ({ nom_fr: null, video_url: null, ...e }));
 }
 
 export const USER = "00000000-0000-4000-8000-000000000001";

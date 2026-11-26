@@ -79,7 +79,9 @@ export const ParametresSport = z.object({
   jours_boxe: z.array(z.number().int().min(0).max(6)).default([3]),
   duree_min: z.number().int().min(20).max(150).default(60),
   /** Matériel disponible — valeurs du référentiel (equipement). */
-  materiel: z.array(z.string()).default(["barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "weighted"]),
+  materiel: z
+    .array(z.string())
+    .default(["barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "sled machine", "weighted"]),
   objectif: ObjectifSport.default("hypertrophie"),
   niveau: Niveau.default("intermediate"),
   semaines: z.number().int().min(4).max(24).default(12),
@@ -99,6 +101,12 @@ export const ParametresSport = z.object({
 });
 export type ParametresSport = z.infer<typeof ParametresSport>;
 export const PARAMETRES_SPORT_DEFAUT: ParametresSport = ParametresSport.parse({});
+
+/**
+ * Bibliothèque d'exercices en service (ADR 0019). Les exercices de l'ancienne bibliothèque restent en base pour
+ * les séances déjà faites, mais ne sont plus proposés : générateur, équivalents et listes filtrent sur cette source.
+ */
+export const SOURCE_EXERCICES = "gym-visual";
 
 export const MATERIEL_CONNU = [
   "barbell",
@@ -194,7 +202,7 @@ export function masseMaigre(profil: Pick<ProfilSport, "poids_kg" | "morpho" | "s
 
 // ---------- Onboarding → paramètres ----------
 const MATERIEL_SALLE: Record<z.infer<typeof TypeSalle>, string[]> = {
-  complete: ["barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "weighted"],
+  complete: ["barbell", "dumbbell", "cable", "leverage machine", "body weight", "ez barbell", "smith machine", "sled machine", "weighted"],
   basique: ["dumbbell", "cable", "leverage machine", "body weight"],
 };
 const MATERIEL_MAISON_REF: Record<z.infer<typeof MaterielMaison>, string[]> = {
@@ -562,66 +570,75 @@ for (const [cle, slot] of Object.entries(S)) slot.cle = cle;
  * que s'il n'y en a aucun (peu de matériel).
  */
 export const CLASSIQUES: Record<string, string[]> = {
-  pecsCompose: ["Barbell Bench Press", "Lever Lying Chest Press", "Push-Up"],
-  pecsIncline: ["Dumbbell Incline Bench Press", "Barbell Incline Bench Press", "Lever Incline Hammer Chest Press", "Incline Push-Up"],
-  pecsIso: ["Pec Deck Fly", "Cable Standing Fly", "Dumbbell Fly"],
+  pecsCompose: ["Barbell Bench Press", "Dumbbell Bench Press", "Smith Bench Press", "Lever Chest Press", "Push-Up"],
+  pecsIncline: ["Dumbbell Incline Bench Press", "Barbell Incline Bench Press", "Smith Incline Bench Press", "Lever Incline Chest Press", "Incline Push-Up"],
+  pecsIso: ["Lever Seated Fly", "Cable Middle Fly", "Dumbbell Fly", "Cable Standing Fly"],
   dosHorizontal: [
-    "Seated Cable Row (V-Grip)",
-    "Dumbbell Bent-Over Row",
-    "Lever T-Bar Row",
-    "Barbell Underhand Bent-Over Row",
-    "Seated Cable Row (Wide-Grip)",
+    "Cable Seated Row",
+    "Dumbbell Bent Over Row",
+    "Lever Seated Row",
+    "Barbell Bent Over Row",
+    "Lever T Bar Row",
     "Lever High Row",
     "Dumbbell Incline Row",
-    "Band Seated Row",
+    "Smith Bent Over Row",
+    "Inverted Row",
   ],
-  dosVertical: ["Wide Grip Cable Lat Pulldown", "Pull-Up / Chin-Up", "Cable Pulldown", "Reverse Grip Machine Lat Pulldown", "Band Assisted Pull-up"],
-  epaulesCompose: ["Seated Dumbbell Shoulder Press", "Military Press", "Smith Seated Shoulder Press"],
+  dosVertical: ["Cable Pulldown (Pro Lat Bar)", "Pull-Up", "Cable Pulldown", "Lever Front Pulldown", "Twin Handle Parallel Grip Lat Pulldown", "Chin-Up"],
+  epaulesCompose: [
+    "Dumbbell Seated Shoulder Press",
+    "Barbell Seated Overhead Press",
+    "Lever Shoulder Press",
+    "Smith Seated Shoulder Press",
+    "Smith Shoulder Press",
+  ],
   epaulesLateral: ["Dumbbell Lateral Raise", "Cable Lateral Raise", "Lever Lateral Raise"],
-  arriereEpaules: ["Lever Seated Reverse Fly", "Cable Rear Delt Row (with rope)", "Dumbbell Rear Delt Row", "Band Bent-Over Rear Lateral Raise"],
-  biceps: ["Barbell Curl", "Dumbbell Biceps Curl", "EZ Bar Biceps Curl", "Dumbbell Cross Body Hammer Curl", "Dumbbell Incline Curl", "Lever Preacher Curl"],
+  arriereEpaules: ["Lever Seated Reverse Fly", "Cable Rear Delt Row (With Rope)", "Dumbbell Rear Lateral Raise", "Dumbbell Reverse Fly"],
+  biceps: [
+    "Barbell Curl",
+    "Dumbbell Biceps Curl",
+    "EZ Barbell Curl",
+    "Dumbbell Hammer Curl",
+    "Cable Curl",
+    "Dumbbell Incline Curl",
+    "Lever Preacher Curl",
+    "Lever Bicep Curl",
+  ],
   triceps: [
-    "Cable Rope Triceps Pushdown",
-    "EZ Bar Lying Triceps Extension",
-    "Cable Triceps Pushdown",
+    "Cable Pushdown (With Rope Attachment)",
+    "Barbell Lying Triceps Extension Skull Crusher",
+    "Cable Pushdown",
     "Dumbbell Seated Triceps Extension",
-    "Cable Rope Overhead Triceps Extension",
+    "Cable Overhead Triceps Extension (Rope Attachment)",
     "Lever Triceps Extension",
-    "Triceps Dips",
-    "Band Triceps Pushdown",
-    "Bench Dips",
+    "Triceps Dip",
+    "Lever Seated Dip",
   ],
-  quadsCompose: [
-    "Barbell Back Squat",
-    "Sled 45 Degree Wide Leg Press",
-    "Sled Hack Squat",
-    "Lever Horizontal Leg Press",
-    "Dumbbell Goblet Squat",
-    "Dumbbell Lunge",
-  ],
-  quadsIso: ["Lever Leg Extension", "Band Seated Leg Extension"],
+  quadsCompose: ["Barbell Full Squat", "Sled 45° Leg Press", "Sled Hack Squat", "Smith Squat", "Dumbbell Goblet Squat", "Dumbbell Lunge"],
+  quadsIso: ["Lever Leg Extension"],
   ischiosCompose: [
-    "Barbell Straight Leg Deadlift",
-    "Dumbbell Stiff Leg Deadlift",
-    "45 Degree Hyperextension",
+    "Barbell Romanian Deadlift",
+    "Dumbbell Romanian Deadlift",
+    "Hyperextension",
     "Lever Back Extension",
-    "Dumbbell Deadlift",
-    "Glute Bridge",
+    "Barbell Straight Leg Deadlift",
+    "Barbell Glute Bridge",
+    "Cable Pull Through (With Rope)",
   ],
-  ischiosIso: ["Lever Seated Leg Curl", "Lever Lying Leg Curl", "Band Standing Leg Curl"],
-  fessiers: ["Dumbbell Lunge", "Barbell Lunge", "Lever Standing Hip Extension", "Glute Bridge"],
+  ischiosIso: ["Lever Seated Leg Curl", "Lever Lying Leg Curl"],
+  fessiers: ["Dumbbell Lunge", "Barbell Lunge", "Barbell Glute Bridge", "Cable Standing Hip Extension", "Lever Seated Hip Abduction", "Walking Lunge"],
   mollets: [
     "Lever Standing Calf Raise",
     "Lever Seated Calf Raise",
+    "Sled 45° Calf Press",
+    "Smith Standing Leg Calf Raise",
     "Dumbbell Standing Calf Raise",
-    "Smith Machine Calf Raise",
-    "Sled 45 Degree Calf Press",
-    "Band Standing Calf Raise",
+    "Bodyweight Standing Calf Raise",
   ],
-  abdos: ["Cable Kneeling Crunch", "Floor Crunch", "Lying Leg Raise", "Lever Seated Crunch", "Front Plank", "Reverse Crunch"],
-  obliques: ["Side Plank", "Dumbbell Side Bend", "Twisting Crunch"],
-  trapezes: ["Dumbbell Shrug", "Barbell Shrug", "Lever Shrug"],
-  cardioFin: ["Stationary Bike", "Elliptical Trainer", "Treadmill Running"],
+  abdos: ["Cable Kneeling Crunch", "Crunch Floor", "Hanging Leg Raise", "Lever Seated Crunch", "Lying Leg Raise Flat Bench"],
+  obliques: ["Cable Side Bend", "Dumbbell Side Bend", "Russian Twist"],
+  trapezes: ["Dumbbell Shrug", "Barbell Shrug", "Lever Shrug", "Smith Shrug", "Cable Shrug"],
+  cardioFin: ["Stationary Bike Walk", "Walk Elliptical Cross Trainer", "Walking On Incline Treadmill", "Walking On Stepmill"],
 };
 const NOMS_CLASSIQUES = new Set(Object.values(CLASSIQUES).flat());
 
@@ -631,13 +648,62 @@ const NOMS_CLASSIQUES = new Set(Object.values(CLASSIQUES).flat());
  * par le générateur tant qu'il reste autre chose pour le créneau, et relégués dans les équivalents proposés.
  */
 const FARFELU =
-  /ball|prone|supine|zottman|anti gravity|iron cross|spell caster|otis|landmine|cambered|commando|between chairs|straps|\bring\b|rotation|twist|kneeling|one.?arm|one.?leg|single|alternat|donkey|scapula|behind|drag curl|pronate|bicycle|jackknife|pilates|scissor|v-up|sissy|clean and press|reverse hyper|wall|deep push|bench pull|decline|hammer press|hammer grip|arnold|inner curl|old school|step-up|chair|weighted|concentration|kickback|wrist/i;
+  /ball|prone|supine|zottman|anti gravity|iron cross|spell caster|otis|landmine|cambered|commando|between chairs|straps|\bring\b|rotation|twist|kneeling|one.?arm|one.?leg|single|alternat|donkey|scapula|behind|drag curl|pronate|bicycle|jackknife|pilates|scissor|v-up|sissy|clean and press|reverse hyper|wall|deep push|bench pull|decline|hammer press|hammer grip|arnold|inner curl|old school|step-up|chair|weighted|concentration|kickback|wrist|bosu|\(male\)|\(female\)|pov\)|v\. \d|suspended|towel|stork|bowling|arm blaster|potty|frankenstein|guillotine|bradford|cuban|planche|plyo|clock|superman/i;
 
 /**
  * Le nom qu'on entend en salle (ADR 0018) : en anglais, sans le jargon du référentiel (« Lever », « Sled 45 Degree »…).
  * Les classiques ont leur nom d'usage ; les autres sont seulement nettoyés. Les descriptions restent en français.
  */
 const NOMS_USUELS: Record<string, string> = {
+  "Lever Chest Press": "Machine Chest Press",
+  "Lever Incline Chest Press": "Incline Machine Press",
+  "Smith Bench Press": "Smith Machine Bench Press",
+  "Smith Incline Bench Press": "Smith Machine Incline Press",
+  "Lever Seated Fly": "Pec Deck",
+  "Cable Middle Fly": "Cable Fly",
+  "Cable Seated Row": "Seated Cable Row",
+  "Dumbbell Bent Over Row": "Dumbbell Row",
+  "Lever Seated Row": "Machine Row",
+  "Barbell Bent Over Row": "Barbell Row",
+  "Lever T Bar Row": "T-Bar Row",
+  "Smith Bent Over Row": "Smith Machine Row",
+  "Cable Pulldown (Pro Lat Bar)": "Lat Pulldown",
+  "Lever Front Pulldown": "Machine Lat Pulldown",
+  "Twin Handle Parallel Grip Lat Pulldown": "Neutral-Grip Lat Pulldown",
+  "Dumbbell Seated Shoulder Press": "Dumbbell Shoulder Press",
+  "Barbell Seated Overhead Press": "Overhead Press",
+  "Lever Shoulder Press": "Machine Shoulder Press",
+  "Smith Seated Shoulder Press": "Smith Machine Shoulder Press",
+  "Cable Rear Delt Row (With Rope)": "Face Pull",
+  "Dumbbell Rear Lateral Raise": "Rear Delt Raise",
+  "EZ Barbell Curl": "EZ Bar Curl",
+  "Dumbbell Hammer Curl": "Hammer Curl",
+  "Lever Bicep Curl": "Machine Curl",
+  "Cable Pushdown (With Rope Attachment)": "Rope Pushdown",
+  "Cable Pushdown": "Triceps Pushdown",
+  "Barbell Lying Triceps Extension Skull Crusher": "Skull Crusher",
+  "Cable Overhead Triceps Extension (Rope Attachment)": "Overhead Rope Extension",
+  "Triceps Dip": "Dips",
+  "Lever Seated Dip": "Machine Dip",
+  "Barbell Full Squat": "Back Squat",
+  "Sled 45° Leg Press": "Leg Press",
+  "Smith Squat": "Smith Machine Squat",
+  "Barbell Romanian Deadlift": "Romanian Deadlift",
+  Hyperextension: "Back Extension",
+  "Barbell Straight Leg Deadlift": "Stiff-Leg Deadlift",
+  "Cable Pull Through (With Rope)": "Cable Pull-Through",
+  "Cable Standing Hip Extension": "Cable Kickback",
+  "Lever Seated Hip Abduction": "Hip Abduction Machine",
+  "Lever Seated Hip Adduction": "Hip Adduction Machine",
+  "Sled 45° Calf Press": "Calf Press",
+  "Smith Standing Leg Calf Raise": "Smith Machine Calf Raise",
+  "Bodyweight Standing Calf Raise": "Bodyweight Calf Raise",
+  "Crunch Floor": "Crunch",
+  "Lying Leg Raise Flat Bench": "Lying Leg Raise",
+  "Stationary Bike Walk": "Stationary Bike",
+  "Walk Elliptical Cross Trainer": "Elliptical",
+  "Walking On Incline Treadmill": "Incline Treadmill Walk",
+  "Walking On Stepmill": "Stair Climber",
   "Lever Lying Chest Press": "Machine Chest Press",
   "Lever Incline Hammer Chest Press": "Incline Machine Press",
   "Cable Standing Fly": "Cable Fly",
@@ -654,7 +720,6 @@ const NOMS_USUELS: Record<string, string> = {
   "Band Assisted Pull-up": "Band-Assisted Pull-Up",
   "Seated Dumbbell Shoulder Press": "Dumbbell Shoulder Press",
   "Military Press": "Overhead Press",
-  "Smith Seated Shoulder Press": "Smith Shoulder Press",
   "Lever Lateral Raise": "Machine Lateral Raise",
   "Lever Seated Reverse Fly": "Reverse Pec Deck",
   "Cable Rear Delt Row (with rope)": "Face Pull",
@@ -676,7 +741,6 @@ const NOMS_USUELS: Record<string, string> = {
   "Lever Horizontal Leg Press": "Horizontal Leg Press",
   "Dumbbell Goblet Squat": "Goblet Squat",
   "Lever Leg Extension": "Leg Extension",
-  "Barbell Straight Leg Deadlift": "Romanian Deadlift",
   "Dumbbell Stiff Leg Deadlift": "Dumbbell Romanian Deadlift",
   "45 Degree Hyperextension": "Back Extension",
   "Lever Back Extension": "Machine Back Extension",
@@ -700,6 +764,7 @@ export function nomUsuel(nom: string): string {
     NOMS_USUELS[nom] ??
     nom
       .replace(/\bLever\b/g, "Machine")
+      .replace(/\bSmith(?! Machine)\b/g, "Smith Machine")
       .replace(/\bSled( 45 Degree)?\b/g, "")
       .replace(/\s+/g, " ")
       .trim()
@@ -980,7 +1045,7 @@ export type ProgrammeGenere = {
  */
 export async function genererProgramme(db: KvaliaClient, userId: string, params: ParametresSport, debutIso?: string): Promise<ProgrammeGenere> {
   const avertissements: string[] = [];
-  const { data: refsData, error: errRefs } = await db.from("exercices_ref").select("*");
+  const { data: refsData, error: errRefs } = await db.from("exercices_ref").select("*").eq("source", SOURCE_EXERCICES).limit(3000);
   if (errRefs) throw errRefs;
   const refs = (refsData ?? []) as Ref[];
   if (refs.length === 0) throw new Error("Bibliothèque d'exercices vide : lance le seed (pnpm --filter @kvalia/agent seed:exercices).");
@@ -1120,7 +1185,8 @@ async function planifierSeances(
           const slots = [...modele.slots];
           if (params.objectif === "perte_de_gras") slots.push(S.cardioFin);
           slots.forEach((slot, ordre) => {
-            const ref = choisir(refs, slot, params, pris, bloc - 1 + idxSalle);
+            // Les séances A prennent le premier classique, les B le second ; l'ordre s'inverse au bloc suivant.
+            const ref = choisir(refs, slot, params, pris, bloc - 1 + Math.floor(idxSalle / 2));
             if (!ref) return;
             pris.add(ref.id);
             const p = prescription(params, bloc, semaineDansBloc, slot, ordre === 0);
@@ -1926,7 +1992,7 @@ export async function dernieresCharges(db: KvaliaClient, userId: string, exercic
 // ---------- Remplacer un exercice ----------
 export type Equivalent = Pick<
   Ref,
-  "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url" | "video_url"
+  "id" | "nom" | "nom_fr" | "partie_corps" | "muscles" | "muscles_secondaires" | "equipement" | "difficulte" | "compose" | "image_url" | "video_url" | "gif_url"
 > & { score: number; raison: string };
 
 /**
@@ -1940,7 +2006,9 @@ export async function equivalents(db: KvaliaClient, exerciceId: string, materiel
   const famille = new Set([...orig.muscles, ...orig.muscles_secondaires].map((m) => m.toLowerCase()));
   const { data: cands } = await db
     .from("exercices_ref")
-    .select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url, video_url")
+    .select("id, nom, nom_fr, partie_corps, muscles, muscles_secondaires, equipement, difficulte, compose, image_url, video_url, gif_url")
+    .eq("source", SOURCE_EXERCICES)
+    .limit(3000)
     .neq("id", exerciceId)
     .in("equipement", materiel.length ? materiel : (MATERIEL_CONNU as unknown as string[]));
   const interdits = new Set(exclure);

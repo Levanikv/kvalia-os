@@ -8,7 +8,7 @@
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
-    "seed:exercices": "node scripts/seed-exercices.mjs",
+    "seed:exercices": "tsx src/semer-exercices.ts",
     "seed:aliments": "node scripts/seed-aliments.mjs",
     "tiime:connexion": "tsx scripts/tiime-connexion.ts",
     "tiime:synchro": "tsx scripts/tiime-connexion.ts --synchro",

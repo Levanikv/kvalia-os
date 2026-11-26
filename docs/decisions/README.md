@@ -10,7 +10,7 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0003](0003-supabase-rls-mono-utilisateur.md)      | Supabase avec RLS dès le départ, un seul utilisateur en v1                                          | acceptée |
 | [0004](0004-railway-pwa-seule.md)                  | Hébergement Railway (web + agent), PWA seule (pas de natif)                                         | acceptée |
 | [0005](0005-mcp-token-dans-url.md)                 | Auth MCP v0 : token dans l'URL, OAuth plus tard                                                     | acceptée |
-| [0006](0006-bibliotheque-exercices.md)             | Référentiel d'exercices : free-exercise-db-with-videos, importé en base                             | acceptée |
+| [0006](0006-bibliotheque-exercices.md)             | Référentiel d'exercices : free-exercise-db-with-videos, importé en base                             | remplacée par 0019 |
 | [0007](0007-generateur-deterministe.md)            | Programme sportif généré par règles déterministes dans core (pas par LLM)                           | acceptée |
 | [0008](0008-navigation-menu-apps-barre-par-app.md) | Navigation : menu Applications + barre par app + feuilles (remplace la tab bar globale)             | acceptée |
 | [0009](0009-outillage-agents.md)                   | Outillage pour coder avec des agents : CLAUDE.md en couches, tests du noyau, doc générée, Biome, CI | acceptée |
@@ -23,3 +23,4 @@ Un agent qui veut faire autrement **lit l'ADR d'abord** et, s'il a une vraie rai
 | [0016](0016-exercices-classiques.md)                | Sport : exercices classiques par créneau, simples à installer — pas de farfelus                    | acceptée |
 | [0017](0017-deplacer-une-seance.md)                 | Sport : déplacer une séance (reporter, avancer) — le programme suit, jamais deux séances le même jour | acceptée |
 | [0018](0018-noms-anglais-et-jour-le-jour.md)        | Sport : noms de séances et d'exercices en anglais ; programme en file, au jour le jour              | acceptée |
+| [0019](0019-bibliotheque-exercices-gym-visual.md)   | Bibliothèque d'exercices : 1 324 exercices animés, données MIT, médias © Gym visual (remplace 0006)  | acceptée |

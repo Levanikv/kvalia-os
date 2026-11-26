@@ -1,15 +1,30 @@
 "use client";
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
+import { CREDIT_MEDIA, estAnimation } from "../../lib";
 
 type Props = { src: string | null; srcF: string | null; poster: string | null; posterF: string | null };
 
-/** Vidéo en boucle, muette, inline (autoplay iOS), au format d'origine 16:9 ; bascule démonstrateur H/F si les deux existent. */
+/**
+ * Démonstration d'un exercice : animation GIF (bibliothèque actuelle, fond blanc, mention du détenteur des droits) ou
+ * vidéo en boucle, muette, inline (ancienne bibliothèque) ; bascule démonstrateur H/F si les deux vidéos existent.
+ */
 export function Video({ src, srcF, poster, posterF }: Props) {
   const [femme, setFemme] = useState(false);
   const [erreur, setErreur] = useState(false);
   const url = femme && srcF ? srcF : src;
   const affiche = femme && posterF ? posterF : poster;
+
+  if (estAnimation(url) && !erreur)
+    return (
+      <figure className="-mx-4 sm:mx-0">
+        <div className="flex aspect-video items-center justify-center overflow-hidden bg-white sm:rounded-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element -- animation GIF servie par un CDN, 180 × 180 */}
+          <img src={url ?? ""} alt="" onError={() => setErreur(true)} className="h-full object-contain" />
+        </div>
+        <figcaption className="px-4 pt-1 text-right kv-mono sm:px-0">{CREDIT_MEDIA}</figcaption>
+      </figure>
+    );
 
   return (
     <div className="relative -mx-4 aspect-video overflow-hidden bg-surface-container-inverse sm:mx-0 sm:rounded-lg">

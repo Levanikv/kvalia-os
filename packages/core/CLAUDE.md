@@ -11,7 +11,7 @@ Tout ce qui est une **règle** vit ici. L'app (`apps/web`) et l'agent (`apps/age
 - `src/schemas.ts` — schémas partagés (VueJour, Ligne, Tache…).
 - `src/supabase.ts` — `KvaliaClient`, `createServiceClient`.
 - `src/database.types.ts` — **généré** (`pnpm db:types`), ne pas éditer.
-- `test/fausse-db.ts` — faux client Supabase en mémoire + `exercicesRef()` (317 exos du seed). Étends-le si une règle utilise une méthode PostgREST qu'il ne couvre pas.
+- `test/fausse-db.ts` — faux client Supabase en mémoire + `exercicesRef()` (les 1 324 exercices du seed). Étends-le si une règle utilise une méthode PostgREST qu'il ne couvre pas.
 - `scripts/` — `doc-outils.ts` (génère `docs/outils-agent.md`), `essai-generateur.ts`, `programme-sql.ts` (programme → SQL quand pas de réseau).
 
 ## Règles locales

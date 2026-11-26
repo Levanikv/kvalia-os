@@ -6,6 +6,6 @@ Hono + `@modelcontextprotocol/sdk` (`WebStandardStreamableHTTPServerTransport`, 
 - Auth v0 : le token est dans l'URL (`/mcp/<MCP_TOKEN>`) ; `/mcp` sans token → 404. OAuth viendra avec le multi-utilisateur (ADR 0005).
 - Contexte : `KVALIA_USER_ID` = l'unique utilisateur ; client Supabase **service role** (`SUPABASE_SERVICE_ROLE_KEY`) → les règles de core filtrent sur `user_id`.
 - `/health` renvoie `{ ok, node, outils }`. Les erreurs PostgREST sont formatées (`messageErreur`).
-- `scripts/smoke.mjs` : appelle chaque outil en local (lit `.env`). `scripts/seed-exercices.mjs` : upsert du référentiel d'exercices (service role).
+- `scripts/smoke.mjs` : appelle chaque outil en local (lit `.env`). `src/semer-exercices.ts` : sème le référentiel d'exercices au démarrage si la base n'est pas à jour (ADR 0019).
 - Variables : voir `.env.example`. Le `.env` racine est chargé par `process.loadEnvFile` en local ; en prod, Railway fournit les variables.
 - Après un push, Railway redéploie ; si le déploiement ne part pas, `connect-service-source` (MCP Railway) le relance. Vérifie `/health` et `list-deployments`.

@@ -332,6 +332,7 @@ export const tools = {
         score: z.number(),
         image_url: z.string().nullable(),
         video_url: z.string().nullable(),
+        gif_url: z.string().nullable().describe("Animation de démonstration (© Gym visual)"),
       }),
     ),
   },
